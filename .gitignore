@@ -1,0 +1,18 @@
+# Machine-specific audit output
+reports/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# PowerShell local state
+*.clixml
