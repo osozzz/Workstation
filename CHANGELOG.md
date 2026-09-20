@@ -2,6 +2,16 @@
 
 All notable changes to this workstation toolkit are documented here.
 
+## Unreleased
+
+### Repository foundation
+
+- Added repository ownership and editor configuration.
+- Added security policy and structured Issue Forms.
+- Added canonical `/docs` information architecture.
+- Documented repository governance, worktree hygiene, Issue/Project conventions, audit safety, and release policy.
+- Aligned contribution and Pull Request conventions with the project workflow.
+
 ## 0.1.0 — 2026-09-17
 
 - Added read-only workstation audit.
