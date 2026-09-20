@@ -1,14 +1,31 @@
 ## Summary
 
-Describe the change and its purpose.
+<!-- What changed and why? -->
+
+Closes #
+
+## Scope
+
+- [ ] Change is scoped to the linked Issue or stated governance task.
+- [ ] Relevant canonical docs / decisions were reviewed.
+- [ ] No unrelated refactor was bundled into this PR.
 
 ## Validation
 
-- [ ] PowerShell scripts parse successfully.
-- [ ] JSON configuration is valid.
-- [ ] No machine-specific reports or secrets are included.
-- [ ] Documentation is updated when behavior or policy changes.
+- [ ] PowerShell syntax/static checks pass where applicable.
+- [ ] JSON/schema validation passes where applicable.
+- [ ] Relevant tests pass.
+- [ ] No machine-specific reports, credentials, tokens, or secrets are included.
+- [ ] Documentation is updated when behavior, policy, or architecture changes.
 
 ## Impact
 
-Describe any workstation-policy change, migration step, compatibility concern, or rollback consideration.
+- **Documentation / decision:**
+- **Workstation policy:**
+- **Compatibility / migration:**
+- **Security / privacy:**
+- **Release:**
+
+## Known limitations
+
+<!-- None, or list them explicitly. -->

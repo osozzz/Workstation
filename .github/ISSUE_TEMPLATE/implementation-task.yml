@@ -1,0 +1,45 @@
+name: Implementation task
+description: Plan a scoped implementation, refactor, documentation, validation, or maintenance task.
+title: ""
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What outcome should this task deliver?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included and explicitly excluded?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use checkboxes for verifiable completion criteria.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification and evidence
+      description: How will the task be verified?
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and related work
+      description: Link blocking, blocked-by, parent, child, or related work where applicable.
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risks and constraints
+      description: Note safety, compatibility, security, or migration concerns.

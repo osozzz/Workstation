@@ -1,36 +1,76 @@
 # Developer Workstation Standard
 
-A Windows developer-workstation toolkit for auditing, standardizing, updating, and comparing development environments across multiple PCs.
+A Windows developer-workstation toolkit for auditing, comparing, and standardizing development environments across multiple PCs.
 
-## Current release
+## Current phase
 
-`0.1.0` — Phase 1 audit and workstation baseline.
+**v0.2.0 — Repository Foundation**
+
+The repository is currently focused on governance, documentation, issue/PR conventions, release policy, and the architecture required for a complete read-only audit system.
+
+The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
 
 ## Repository model
 
-This public repository stores only reusable scripts, policies, configuration, validation, and documentation. Generated audits, inventories, comparisons, and other machine-specific outputs remain local to each cloned workstation and are excluded from version control.
+This public repository stores reusable scripts, policies, configuration, schemas, validation assets, and documentation only.
 
-Recommended layout after cloning:
+Generated audits, inventories, comparisons, machine names, local paths, and other workstation-specific outputs remain local to each clone and are excluded from version control.
 
-```text
-workstation/
-├── config/
-│   └── workstation.policy.json
-├── reports/                 # generated locally; ignored by Git
-├── scripts/
-│   ├── Audit-Workstation.ps1
-│   ├── Compare-Workstations.ps1
-├── .gitattributes
-├── .gitignore
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── README.md
-├── Run-Audit.cmd
-├── VERSION
-└── .github/
-```
+## Documentation
 
-## Clone on another PC
+Canonical documentation lives in `/docs`.
+
+Start with:
+
+- `docs/README.md`
+- `docs/governance/repository-governance.md`
+- `docs/governance/issue-project-model.md`
+- `docs/releases/versioning-and-releases.md`
+- `docs/policies/audit-safety.md`
+- `docs/architecture/audit-system-roadmap.md`
+
+The GitHub Wiki, when used, is a navigation/help layer only and must not override canonical repository documentation.
+
+## Current audit skeleton
+
+The current scripts are an early read-only foundation and are **not yet the complete baseline system**.
+
+Today the repository can inspect parts of:
+
+- Windows and PowerShell
+- Node / npm / pnpm / NVM
+- Angular / TypeScript / Prisma
+- Zoho tooling
+- Flutter / Dart
+- Python
+- Java
+- .NET
+- Rust / Cargo
+- Go
+- Git / GitHub CLI
+- Docker
+- ADB
+- WinGet
+- PATH and selected environment variables
+
+The complete detector system will expand this into modular providers with normalized output, version intelligence, local-project discovery, Git/worktree hygiene, and cross-PC comparison.
+
+## Roadmap
+
+- `v0.1.0` — Initial Audit Skeleton
+- `v0.2.0` — Repository Foundation
+- `v0.3.0` — Audit Core
+- `v0.4.0` — Runtime & SDK Detection
+- `v0.5.0` — PATH & Environment Intelligence
+- `v0.6.0` — Project & Git Discovery
+- `v0.7.0` — Version Intelligence
+- `v0.8.0` — Cross-PC Comparison
+- `v0.9.0` — Audit Hardening
+- `v1.0.0` — Baseline Ready
+
+Only after `v1.0.0` will workstation mutation/update automation become the primary focus.
+
+## Clone
 
 With GitHub CLI:
 
@@ -46,86 +86,30 @@ git clone https://github.com/osozzz/Workstation.git
 cd Workstation
 ```
 
+## Repository workflow
 
-## Phase 1 — Audit (safe)
+- `main` is the only permanent branch.
+- Changes use short-lived branches.
+- Normal changes go through Pull Requests.
+- Squash merge is the default strategy.
+- Generated workstation outputs are never committed.
+- Issues are the source of truth for executable work.
+- Project fields handle planning metadata such as Status, Priority, Area, and Risk.
+- Native parent/sub-issue and blocking relationships are preferred over duplicated status labels.
 
-This phase does **not install, uninstall, update, or edit PATH/environment variables**. It inventories the machine and creates a JSON baseline plus a readable Markdown report.
+See `CONTRIBUTING.md` for the full workflow.
 
-Run:
+## Safety
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\Audit-Workstation.ps1 -IncludeWingetInventory
-```
+Audit functionality is read-only by default.
 
-Or double-click/run:
+It must not silently:
 
-```text
-Run-Audit.cmd
-```
+- install or uninstall software;
+- modify PATH or environment variables;
+- delete branches or worktrees;
+- upgrade dependencies;
+- rewrite Git history;
+- expose arbitrary environment variables or secrets.
 
-Reports are written to `reports/` and are ignored by Git.
-
-The audit currently covers:
-
-- Windows + PowerShell
-- Node / npm / pnpm / NVM
-- Angular / TypeScript / Prisma / nodemon / rimraf
-- Zoho ZET / Catalyst / Heroku / Redis Commander
-- Flutter / Dart
-- Python / pip / pipx / uv
-- Java / Maven / Gradle
-- .NET
-- Rust / Cargo / rustup
-- Go
-- Git / GitHub CLI
-- Docker / Docker Compose
-- Android ADB
-- Supabase / Vercel
-- WinGet available upgrades
-- npm and pnpm global packages
-- PATH duplicates, missing entries, and unresolved variables
-- command collisions such as multiple Node, npm, Dart, or Java installations
-- a safe whitelist of environment variables including `PNPM_HOME`, `JAVA_HOME`, `ANDROID_HOME`, and `NVM_HOME`
-
-The audit intentionally does not dump every environment variable because developer machines often contain credentials, tokens, or other secrets.
-
-## Compare two PCs
-
-Run the audit on both machines, then compare the generated JSON reports locally:
-
-```powershell
-.\scripts\Compare-Workstations.ps1 `
-  -Reference .\reports\MAIN-PC.json `
-  -Target .\reports\SECOND-PC.json
-```
-
-Reports are not intended to be committed. Transfer them privately when a cross-machine comparison is needed.
-
-## Workstation policy
-
-`config/workstation.policy.json` records the target decisions for the workstation standard:
-
-- WinGet for Windows applications
-- NVM for Windows for Node runtimes
-- latest Node LTS as the default, with Current installed alongside it
-- pnpm as the primary/global JavaScript package manager
-- project dependencies pinned locally
-- Angular major project migrations handled explicitly
-- global TypeScript may be current while projects use framework-compatible local TypeScript
-- global Prisma RC is allowed while projects pin their required Prisma version
-- Flutter stable with Flutter-bundled Dart preferred
-- no dead or duplicate PATH entries
-
-## Planned phases
-
-The repository will grow in controlled stages:
-
-1. `Migrate-NodeToNvm.ps1`
-2. `Update-Toolchains.ps1`
-3. `Update-WindowsApps.ps1`
-4. `Repair-Environment.ps1`
-5. `Audit-Projects.ps1`
-6. `Update-Workstation.ps1` with safe and major-upgrade modes
-
-Major project migrations remain explicitly gated instead of being applied blindly.
+See `SECURITY.md` and `docs/policies/audit-safety.md`.
