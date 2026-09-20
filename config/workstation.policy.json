@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "windows": {
+    "applicationManager": "winget",
+    "updatePolicy": "review-then-upgrade"
+  },
+  "node": {
+    "manager": "nvm-windows",
+    "defaultTrack": "lts",
+    "alsoInstallCurrent": true,
+    "projectVersionsMustBePinned": true
+  },
+  "javascript": {
+    "primaryPackageManager": "pnpm",
+    "globalPackageManager": "pnpm",
+    "npmRole": "bundled-fallback",
+    "projectDependencies": "local-and-pinned"
+  },
+  "angular": {
+    "globalCliTrack": "latest-stable",
+    "projectMajorUpgradesRequireExplicitMigration": true
+  },
+  "typescript": {
+    "globalTrack": "latest-stable",
+    "projectsMustUseLocalCompatibleVersion": true
+  },
+  "prisma": {
+    "globalTrack": "release-candidate-allowed",
+    "projectsMustUseLocalPinnedVersion": true
+  },
+  "flutter": {
+    "channel": "stable",
+    "dartSource": "flutter-sdk-preferred"
+  },
+  "path": {
+    "allowMissingEntries": false,
+    "allowDuplicateEntries": false,
+    "auditCommandCollisions": true
+  }
+}
