@@ -530,7 +530,8 @@ function Ensure-Project {
         $currentField = @($snapshot.fields.nodes | Where-Object { $_.name -eq $desiredField.name }) | Select-Object -First 1
 
         if ($null -eq $currentField) {
-            if ($desiredField.builtIn) {
+            $isBuiltIn = ($desiredField.PSObject.Properties.Name -contains "builtIn") -and [bool]$desiredField.builtIn
+            if ($isBuiltIn) {
                 throw "Expected built-in project field '$($desiredField.name)' was not found."
             }
 
@@ -686,32 +687,15 @@ function Ensure-IssueMetadata {
 
         Invoke-GhRaw -Arguments $args | Out-Null
 
-        $viewResult = Invoke-GhRaw -Arguments @(
-            "issue", "view", "$issueNumber",
-            "--repo", (Get-RepositorySlug),
-            "--json", "projectItems"
-        )
-        $viewJson = Convert-JsonOrNull $viewResult.Output
-        $hasProject = $false
+        $addResult = Invoke-GhRaw -Arguments @(
+            "project", "item-add", "$ProjectNumber",
+            "--owner", $script:Config.repository.owner,
+            "--url", $issueUrl,
+            "--format", "json"
+        ) -AllowFailure
 
-        foreach ($item in @($viewJson.projectItems)) {
-            if (($item.title -eq $script:Config.project.title) -or
-                ($null -ne $item.project -and $item.project.title -eq $script:Config.project.title)) {
-                $hasProject = $true
-            }
-        }
-
-        if (-not $hasProject) {
-            $addResult = Invoke-GhRaw -Arguments @(
-                "project", "item-add", "$ProjectNumber",
-                "--owner", $script:Config.repository.owner,
-                "--url", $issueUrl,
-                "--format", "json"
-            ) -AllowFailure
-
-            if ($addResult.ExitCode -ne 0 -and $addResult.Output -notmatch "already") {
-                throw "Could not add issue #$issueNumber to project: $($addResult.Output)"
-            }
+        if ($addResult.ExitCode -ne 0 -and $addResult.Output -notmatch "already") {
+            throw "Could not add issue #$issueNumber to project: $($addResult.Output)"
         }
 
         $fieldValues = @{
@@ -828,8 +812,9 @@ function Remove-MergedBranches {
             continue
         }
 
+        $encodedBranch = Escape-PathSegment $branch
         $branchCheck = Invoke-GhRaw -Arguments @(
-            "api", "repos/$(Get-RepositorySlug)/branches/$branch"
+            "api", "repos/$(Get-RepositorySlug)/branches/$encodedBranch"
         ) -AllowFailure
 
         if ($branchCheck.ExitCode -ne 0) {
@@ -852,7 +837,7 @@ function Remove-MergedBranches {
             continue
         }
 
-        $deleteResult = Invoke-GhApi -Method DELETE -Endpoint "repos/$(Get-RepositorySlug)/git/refs/heads/$branch" -Body $null -AllowFailure
+        $deleteResult = Invoke-GhApi -Method DELETE -Endpoint "repos/$(Get-RepositorySlug)/git/refs/heads/$encodedBranch" -Body $null -AllowFailure
         if ($deleteResult.ExitCode -ne 0) {
             Write-Warn "Could not delete merged branch '$branch': $($deleteResult.Output)"
         }
