@@ -1,0 +1,547 @@
+{
+  "schemaVersion": "1.0",
+  "githubApiVersion": "2026-03-10",
+  "repository": {
+    "owner": "osozzz",
+    "name": "Workstation",
+    "description": "PowerShell toolkit for auditing, comparing, and standardizing Windows developer workstations.",
+    "homepage": "",
+    "topics": [
+      "windows",
+      "powershell",
+      "workstation",
+      "developer-tools",
+      "dev-environment",
+      "environment-audit",
+      "winget",
+      "sdk-management",
+      "automation",
+      "pnpm"
+    ],
+    "settings": {
+      "has_issues": true,
+      "has_projects": true,
+      "has_wiki": true,
+      "has_discussions": false,
+      "allow_squash_merge": true,
+      "allow_merge_commit": false,
+      "allow_rebase_merge": false,
+      "allow_auto_merge": false,
+      "delete_branch_on_merge": true,
+      "allow_update_branch": true,
+      "squash_merge_commit_title": "PR_TITLE",
+      "squash_merge_commit_message": "BLANK"
+    },
+    "security": {
+      "enablePrivateVulnerabilityReporting": true,
+      "enableVulnerabilityAlerts": true,
+      "enableSecretScanning": true,
+      "enablePushProtection": true
+    },
+    "mergedBranchesToDelete": [
+      "chore/bootstrap-workstation",
+      "chore/v0.2-repository-foundation"
+    ]
+  },
+  "labels": [
+    {
+      "name": "bug",
+      "color": "D73A4A",
+      "description": "Confirmed defects or incorrect behavior."
+    },
+    {
+      "name": "documentation",
+      "color": "0075CA",
+      "description": "Documentation and repository knowledge changes."
+    },
+    {
+      "name": "enhancement",
+      "color": "A2EEEF",
+      "description": "New or improved product, audit, or tooling capability."
+    },
+    {
+      "name": "maintenance",
+      "color": "D4C5F9",
+      "description": "Repository and tooling maintenance work."
+    },
+    {
+      "name": "security",
+      "color": "B60205",
+      "description": "Security, privacy, secrets, or trust-boundary work."
+    },
+    {
+      "name": "testing",
+      "color": "FBCA04",
+      "description": "Tests, fixtures, validation coverage, and quality engineering."
+    },
+    {
+      "name": "dependencies",
+      "color": "0366D6",
+      "description": "Dependency, package, runtime, or action version maintenance."
+    },
+    {
+      "name": "validation",
+      "color": "CF222E",
+      "description": "Technical validation gates, experiments, and verification work."
+    },
+    {
+      "name": "governance",
+      "color": "8250DF",
+      "description": "Repository governance, planning rules, policies, and project organization."
+    },
+    {
+      "name": "ci",
+      "color": "9A6700",
+      "description": "Continuous integration, automated quality checks, and pull request validation."
+    }
+  ],
+  "milestones": [
+    {
+      "title": "Sprint 0 — Repository Foundation · v0.2.0",
+      "description": "Repository identity, governance, planning metadata, and operational GitHub configuration."
+    },
+    {
+      "title": "Sprint 1 — Audit Core · v0.3.0",
+      "description": "Modular read-only audit core and normalized provider contract."
+    },
+    {
+      "title": "Sprint 2 — Runtime & SDK Detection · v0.4.0",
+      "description": "Complete runtime, SDK, package-manager, and developer CLI detection."
+    },
+    {
+      "title": "Sprint 3 — PATH & Environment Intelligence · v0.5.0",
+      "description": "PATH resolution, environment-variable health, and command-precedence intelligence."
+    },
+    {
+      "title": "Sprint 4 — Project & Git Discovery · v0.6.0",
+      "description": "Local project discovery plus Git repository and worktree hygiene detection."
+    },
+    {
+      "title": "Sprint 5 — Version Intelligence · v0.7.0",
+      "description": "Installed-versus-current version intelligence with ecosystem-aware channels."
+    },
+    {
+      "title": "Sprint 6 — Cross-PC Comparison · v0.8.0",
+      "description": "Schema-aware comparison between workstation audit reports."
+    },
+    {
+      "title": "Sprint 7 — Audit Hardening · v0.9.0",
+      "description": "Schemas, tests, static analysis, fixtures, CI, and audit reliability hardening."
+    },
+    {
+      "title": "Sprint 8 — Baseline Ready · v1.0.0",
+      "description": "Complete trusted read-only audit ready for the first authoritative workstation baseline."
+    }
+  ],
+  "project": {
+    "title": "Workstation — Development",
+    "description": "Planning and execution board for the Workstation audit and standardization roadmap.",
+    "visibility": "PUBLIC",
+    "fields": [
+      {
+        "name": "Status",
+        "builtIn": true,
+        "options": [
+          {
+            "name": "Backlog",
+            "color": "GRAY",
+            "description": "Defined work not yet ready to start."
+          },
+          {
+            "name": "Ready",
+            "color": "BLUE",
+            "description": "Ready to be pulled into active execution."
+          },
+          {
+            "name": "In Progress",
+            "color": "YELLOW",
+            "description": "Actively being implemented or configured."
+          },
+          {
+            "name": "Review",
+            "color": "PURPLE",
+            "description": "Implementation complete and awaiting review or verification."
+          },
+          {
+            "name": "Done",
+            "color": "GREEN",
+            "description": "Acceptance criteria verified and complete."
+          }
+        ]
+      },
+      {
+        "name": "Priority",
+        "dataType": "SINGLE_SELECT",
+        "options": [
+          {
+            "name": "P0 — Critical",
+            "color": "RED",
+            "description": "Blocks the release or protects a critical contract."
+          },
+          {
+            "name": "P1 — High",
+            "color": "ORANGE",
+            "description": "Important work for the current or next release."
+          },
+          {
+            "name": "P2 — Medium",
+            "color": "YELLOW",
+            "description": "Normal-priority planned work."
+          },
+          {
+            "name": "P3 — Low",
+            "color": "GRAY",
+            "description": "Useful but deferrable work."
+          }
+        ]
+      },
+      {
+        "name": "Area",
+        "dataType": "SINGLE_SELECT",
+        "options": [
+          {
+            "name": "Repository",
+            "color": "PURPLE",
+            "description": "Repository governance, planning, metadata, and GitHub configuration."
+          },
+          {
+            "name": "Audit Core",
+            "color": "BLUE",
+            "description": "Audit orchestration, provider contracts, and normalized schemas."
+          },
+          {
+            "name": "Runtime & SDK",
+            "color": "GREEN",
+            "description": "Runtimes, SDKs, package managers, and developer CLI detection."
+          },
+          {
+            "name": "PATH & Environment",
+            "color": "YELLOW",
+            "description": "PATH, environment variables, command resolution, and collision analysis."
+          },
+          {
+            "name": "Projects",
+            "color": "PINK",
+            "description": "Local development-project discovery and per-project constraints."
+          },
+          {
+            "name": "Git Hygiene",
+            "color": "ORANGE",
+            "description": "Repository, branch, upstream, and worktree health."
+          },
+          {
+            "name": "Version Intelligence",
+            "color": "BLUE",
+            "description": "Installed-versus-current version intelligence and release channels."
+          },
+          {
+            "name": "Comparison",
+            "color": "GREEN",
+            "description": "Cross-PC normalized comparison and drift reporting."
+          },
+          {
+            "name": "Testing & CI",
+            "color": "YELLOW",
+            "description": "Tests, schemas, fixtures, static analysis, and CI."
+          },
+          {
+            "name": "Documentation",
+            "color": "GRAY",
+            "description": "Canonical documentation and help/navigation content."
+          },
+          {
+            "name": "Security",
+            "color": "RED",
+            "description": "Security, privacy, secrets, and trust boundaries."
+          }
+        ]
+      },
+      {
+        "name": "Risk",
+        "dataType": "SINGLE_SELECT",
+        "options": [
+          {
+            "name": "Low",
+            "color": "GREEN",
+            "description": "Low chance or impact of regression."
+          },
+          {
+            "name": "Medium",
+            "color": "YELLOW",
+            "description": "Moderate implementation or compatibility risk."
+          },
+          {
+            "name": "High",
+            "color": "ORANGE",
+            "description": "Significant compatibility, architecture, or data-risk surface."
+          },
+          {
+            "name": "Critical",
+            "color": "RED",
+            "description": "Potentially release-blocking or destructive-risk surface."
+          }
+        ]
+      }
+    ],
+    "views": [
+      {
+        "name": "Execution",
+        "layout": "board",
+        "filter": "is:open",
+        "verticalGroupBy": "Status"
+      },
+      {
+        "name": "Backlog",
+        "layout": "table",
+        "filter": "status:Backlog"
+      },
+      {
+        "name": "By Area",
+        "layout": "table",
+        "filter": "is:issue",
+        "groupBy": "Area"
+      },
+      {
+        "name": "Risk",
+        "layout": "table",
+        "filter": "is:issue",
+        "groupBy": "Risk"
+      },
+      {
+        "name": "Releases",
+        "layout": "table",
+        "filter": "is:issue"
+      },
+      {
+        "name": "Pull Requests",
+        "layout": "table",
+        "filter": "is:pr"
+      },
+      {
+        "name": "Audit Coverage",
+        "layout": "table",
+        "filter": "is:issue -label:governance"
+      }
+    ]
+  },
+  "issues": [
+    {
+      "number": 3,
+      "labels": [
+        "governance"
+      ],
+      "milestone": "Sprint 0 — Repository Foundation · v0.2.0",
+      "status": "In Progress",
+      "priority": "P1 — High",
+      "area": "Repository",
+      "risk": "Medium"
+    },
+    {
+      "number": 4,
+      "labels": [
+        "governance"
+      ],
+      "milestone": "Sprint 0 — Repository Foundation · v0.2.0",
+      "status": "Ready",
+      "priority": "P1 — High",
+      "area": "Repository",
+      "risk": "Medium"
+    },
+    {
+      "number": 5,
+      "labels": [
+        "enhancement"
+      ],
+      "milestone": "Sprint 1 — Audit Core · v0.3.0",
+      "status": "Backlog",
+      "priority": "P1 — High",
+      "area": "Audit Core",
+      "risk": "High",
+      "blockedBy": [
+        3,
+        4
+      ]
+    },
+    {
+      "number": 6,
+      "labels": [
+        "enhancement"
+      ],
+      "milestone": "Sprint 2 — Runtime & SDK Detection · v0.4.0",
+      "status": "Backlog",
+      "priority": "P1 — High",
+      "area": "Runtime & SDK",
+      "risk": "High",
+      "blockedBy": [
+        5
+      ]
+    },
+    {
+      "number": 7,
+      "labels": [
+        "enhancement"
+      ],
+      "milestone": "Sprint 3 — PATH & Environment Intelligence · v0.5.0",
+      "status": "Backlog",
+      "priority": "P1 — High",
+      "area": "PATH & Environment",
+      "risk": "High",
+      "blockedBy": [
+        5
+      ]
+    },
+    {
+      "number": 8,
+      "labels": [
+        "enhancement"
+      ],
+      "milestone": "Sprint 4 — Project & Git Discovery · v0.6.0",
+      "status": "Backlog",
+      "priority": "P1 — High",
+      "area": "Projects",
+      "risk": "Medium",
+      "blockedBy": [
+        5
+      ]
+    },
+    {
+      "number": 9,
+      "labels": [
+        "enhancement"
+      ],
+      "milestone": "Sprint 5 — Version Intelligence · v0.7.0",
+      "status": "Backlog",
+      "priority": "P2 — Medium",
+      "area": "Version Intelligence",
+      "risk": "Medium",
+      "blockedBy": [
+        6,
+        7
+      ]
+    },
+    {
+      "number": 10,
+      "labels": [
+        "enhancement"
+      ],
+      "milestone": "Sprint 6 — Cross-PC Comparison · v0.8.0",
+      "status": "Backlog",
+      "priority": "P2 — Medium",
+      "area": "Comparison",
+      "risk": "Medium",
+      "blockedBy": [
+        9
+      ]
+    },
+    {
+      "number": 11,
+      "labels": [
+        "testing",
+        "ci"
+      ],
+      "milestone": "Sprint 7 — Audit Hardening · v0.9.0",
+      "status": "Backlog",
+      "priority": "P1 — High",
+      "area": "Testing & CI",
+      "risk": "Medium",
+      "blockedBy": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "number": 12,
+      "labels": [
+        "validation"
+      ],
+      "milestone": "Sprint 8 — Baseline Ready · v1.0.0",
+      "status": "Backlog",
+      "priority": "P0 — Critical",
+      "area": "Audit Core",
+      "risk": "High",
+      "blockedBy": [
+        10,
+        11
+      ]
+    },
+    {
+      "number": 13,
+      "labels": [
+        "governance"
+      ],
+      "milestone": "Sprint 0 — Repository Foundation · v0.2.0",
+      "status": "In Progress",
+      "priority": "P1 — High",
+      "area": "Repository",
+      "risk": "Low"
+    }
+  ],
+  "relationships": {
+    "parentIssue": 13,
+    "subIssues": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ]
+  },
+  "ruleset": {
+    "name": "main",
+    "target": "branch",
+    "enforcement": "active",
+    "conditions": {
+      "ref_name": {
+        "include": [
+          "~DEFAULT_BRANCH"
+        ],
+        "exclude": []
+      }
+    },
+    "rules": [
+      {
+        "type": "deletion"
+      },
+      {
+        "type": "non_fast_forward"
+      },
+      {
+        "type": "required_linear_history"
+      },
+      {
+        "type": "pull_request",
+        "parameters": {
+          "allowed_merge_methods": [
+            "squash"
+          ],
+          "dismiss_stale_reviews_on_push": false,
+          "require_code_owner_review": false,
+          "require_last_push_approval": false,
+          "required_approving_review_count": 0,
+          "required_review_thread_resolution": true
+        }
+      },
+      {
+        "type": "required_status_checks",
+        "parameters": {
+          "do_not_enforce_on_create": true,
+          "required_status_checks": [
+            {
+              "context": "validate"
+            }
+          ],
+          "strict_required_status_checks_policy": false
+        }
+      }
+    ]
+  }
+}
