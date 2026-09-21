@@ -460,10 +460,16 @@ function New-CommandComponent {
         [Parameter(Mandatory)][string[]]$Arguments,
         [Parameter(Mandatory)][string]$EvidenceId,
         [AllowNull()][scriptblock]$VersionParser,
-        [object[]]$AdditionalInstallations = @()
+        [object[]]$AdditionalInstallations = @(),
+        [AllowNull()][object]$CommandResult
     )
 
-    $result = Invoke-AuditCommand -Command $Command -Arguments $Arguments -TimeoutSeconds 20
+    $result = if ($null -ne $CommandResult) {
+        $CommandResult
+    }
+    else {
+        Invoke-AuditCommand -Command $Command -Arguments $Arguments -TimeoutSeconds 20
+    }
 
     if (-not $result.Found) {
         $installations = New-Object System.Collections.Generic.List[object]
@@ -769,26 +775,8 @@ $components.Add([pscustomobject][ordered]@{
 $adbResult = Invoke-AuditCommand -Command 'adb' -Arguments @('version') -TimeoutSeconds 20
 $adbVersion = if ($adbResult.Found) { Get-VersionRecordFromText -Text $adbResult.Captured -Channel $null } else { $null }
 
-if ($adbResult.Found) {
-    $evidence.Add((New-AuditEvidence -EvidenceId 'mobile.adb.version' -Type command -Source 'adb version' -ExitCode $adbResult.ExitCode -Captured $adbResult.Captured -Redacted:$adbResult.Redacted -Attributes @{
-        status = $adbResult.Status
-        truncated = $adbResult.Truncated
-        timedOut = $adbResult.TimedOut
-        resolutionCount = @($adbResult.Resolutions).Count
-    }))
-}
-
 $sdkManagerResult = Invoke-AuditCommand -Command 'sdkmanager' -Arguments @('--version') -TimeoutSeconds 20
 $sdkManagerVersion = if ($sdkManagerResult.Found) { Get-VersionRecordFromText -Text $sdkManagerResult.Captured -Channel $null } else { $null }
-
-if ($sdkManagerResult.Found) {
-    $evidence.Add((New-AuditEvidence -EvidenceId 'mobile.sdkmanager.version' -Type command -Source 'sdkmanager --version' -ExitCode $sdkManagerResult.ExitCode -Captured $sdkManagerResult.Captured -Redacted:$sdkManagerResult.Redacted -Attributes @{
-        status = $sdkManagerResult.Status
-        truncated = $sdkManagerResult.Truncated
-        timedOut = $sdkManagerResult.TimedOut
-        resolutionCount = @($sdkManagerResult.Resolutions).Count
-    }))
-}
 
 $androidRootCandidates = New-Object System.Collections.Generic.List[object]
 
@@ -938,7 +926,7 @@ foreach ($metadata in $androidMetadata) {
 $adbComponent = New-CommandComponent -ComponentId 'adb' -Name 'Android Debug Bridge' -Command 'adb' -Arguments @('version') -EvidenceId 'mobile.adb.version' -VersionParser {
     param($text)
     Get-VersionRecordFromText -Text $text -Channel $null
-} -AdditionalInstallations $adbAdditionalInstallations.ToArray()
+} -AdditionalInstallations $adbAdditionalInstallations.ToArray() -CommandResult $adbResult
 
 if ($adbComponent.state -eq 'partial' -and -not $adbResult.Found -and $adbAdditionalInstallations.Count -gt 0) {
     $hasPartial = $true
@@ -964,7 +952,7 @@ foreach ($metadata in $androidMetadata) {
 $components.Add((New-CommandComponent -ComponentId 'sdkmanager' -Name 'Android SDK Manager' -Command 'sdkmanager' -Arguments @('--version') -EvidenceId 'mobile.sdkmanager.version' -VersionParser {
     param($text)
     Get-VersionRecordFromText -Text $text -Channel $null
-} -AdditionalInstallations $sdkManagerAdditionalInstallations.ToArray()))
+} -AdditionalInstallations $sdkManagerAdditionalInstallations.ToArray() -CommandResult $sdkManagerResult))
 
 $anyPresent = @(
     $components |
