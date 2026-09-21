@@ -187,6 +187,19 @@
       }
     },
     {
+      "evidenceId": "rust.active-toolchain",
+      "type": "derived",
+      "source": "rustup not detected; active managed toolchain unavailable",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "status": "not-applicable",
+        "activeToolchain": null,
+        "autoInstallGuard": null
+      }
+    },
+    {
       "evidenceId": "go.version",
       "type": "command",
       "source": "go version",
