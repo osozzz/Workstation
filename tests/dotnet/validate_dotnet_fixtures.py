@@ -229,12 +229,22 @@ def validate_source_ownership() -> None:
     ):
         fail(".NET provider must execute before the generic inventory.")
 
-    if not re.search(
+    dotnet_order = re.search(
+        r"providerid\s*=\s*['\"]dotnet\.toolchain['\"][\s\S]*?"
+        r"order\s*=\s*(\d+)",
+        provider_source,
+    )
+    inventory_order = re.search(
         r"providerid\s*=\s*['\"]inventory\.commands['\"][\s\S]*?"
-        r"order\s*=\s*26",
+        r"order\s*=\s*(\d+)",
         command_source,
+    )
+    if (
+        not dotnet_order
+        or not inventory_order
+        or int(inventory_order.group(1)) <= int(dotnet_order.group(1))
     ):
-        fail("Generic inventory must move behind the .NET provider.")
+        fail("Generic inventory must run after the .NET provider.")
 
     if re.search(r"\bid\s*=\s*['\"]dotnet-sdk['\"]", command_source):
         fail(
