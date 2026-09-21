@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audit-report.schema.json",
+  "title": "Workstation Audit Report",
+  "description": "Normalized read-only Workstation audit report envelope.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "audit",
+    "host",
+    "summary",
+    "providers",
+    "warnings",
+    "errors"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "toolVersion"
+      ],
+      "properties": {
+        "mode": {
+          "const": "read-only"
+        },
+        "toolVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+        }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "platform",
+        "architecture"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "platform": {
+          "const": "windows"
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "providerCount",
+        "successCount",
+        "warningCount",
+        "partialCount",
+        "failedCount",
+        "unavailableCount",
+        "notApplicableCount"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "warning",
+            "partial",
+            "failed"
+          ]
+        },
+        "providerCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "successCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warningCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "partialCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unavailableCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notApplicableCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "$ref": "provider-result.schema.json"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "provider-result.schema.json#/$defs/warning"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "provider-result.schema.json#/$defs/error"
+      }
+    }
+  }
+}

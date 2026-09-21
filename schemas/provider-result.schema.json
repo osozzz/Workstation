@@ -1,0 +1,514 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "provider-result.schema.json",
+  "title": "Workstation Provider Result",
+  "description": "Normalized result envelope returned by one read-only Workstation audit provider.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "providerId",
+    "category",
+    "status",
+    "observedAt",
+    "components",
+    "warnings",
+    "errors",
+    "evidence"
+  ],
+  "properties": {
+    "providerId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+    },
+    "category": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "status": {
+      "$ref": "#/$defs/providerStatus"
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/error"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    }
+  },
+  "$defs": {
+    "providerStatus": {
+      "type": "string",
+      "enum": [
+        "success",
+        "warning",
+        "partial",
+        "failed",
+        "unavailable",
+        "not-applicable"
+      ]
+    },
+    "componentState": {
+      "type": "string",
+      "enum": [
+        "present",
+        "missing",
+        "partial",
+        "unavailable",
+        "not-applicable",
+        "unknown"
+      ]
+    },
+    "versionIntelligenceStatus": {
+      "type": "string",
+      "enum": [
+        "known",
+        "unknown",
+        "unavailable",
+        "not-applicable"
+      ]
+    },
+    "evidenceType": {
+      "type": "string",
+      "enum": [
+        "command",
+        "path",
+        "environment",
+        "registry",
+        "filesystem",
+        "api",
+        "configuration",
+        "derived"
+      ]
+    },
+    "versionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw",
+        "normalized",
+        "channel"
+      ],
+      "properties": {
+        "raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "normalized": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "channel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "installation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "version",
+        "active",
+        "source"
+      ],
+      "properties": {
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/versionRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "command",
+            "registry",
+            "filesystem",
+            "environment",
+            "configuration",
+            "package-manager",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "commandResolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "path",
+        "commandType",
+        "version",
+        "precedence",
+        "active"
+      ],
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "commandType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "version": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/versionRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "precedence": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "active": {
+          "type": "boolean"
+        }
+      }
+    },
+    "versionIntelligence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "latestStable",
+        "latestLts",
+        "latestCurrent",
+        "source",
+        "checkedAt",
+        "message"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/versionIntelligenceStatus"
+        },
+        "latestStable": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/versionRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latestLts": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/versionRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latestCurrent": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/versionRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checkedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "issueBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "severity",
+        "componentId",
+        "evidenceIds"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "type": "string"
+        },
+        "componentId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "warning": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/issueBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "severity": {
+              "enum": [
+                "info",
+                "warning"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "error": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/issueBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "severity": {
+              "const": "error"
+            }
+          }
+        }
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceId",
+        "type",
+        "source",
+        "exitCode",
+        "captured",
+        "redacted",
+        "attributes"
+      ],
+      "properties": {
+        "evidenceId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+        },
+        "type": {
+          "$ref": "#/$defs/evidenceType"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exitCode": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "captured": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 32768
+        },
+        "redacted": {
+          "type": "boolean"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "componentId",
+        "name",
+        "state",
+        "installed",
+        "activeVersion",
+        "discoveredVersions",
+        "installations",
+        "commandResolutions",
+        "versionIntelligence"
+      ],
+      "properties": {
+        "componentId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "$ref": "#/$defs/componentState"
+        },
+        "installed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "activeVersion": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/versionRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "discoveredVersions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/versionRecord"
+          }
+        },
+        "installations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/installation"
+          }
+        },
+        "commandResolutions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/commandResolution"
+          }
+        },
+        "versionIntelligence": {
+          "$ref": "#/$defs/versionIntelligence"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "present"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "installed": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "missing"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "installed": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
