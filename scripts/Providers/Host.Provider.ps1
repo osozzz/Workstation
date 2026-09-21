@@ -272,10 +272,15 @@ $osArchitecture = if ([Environment]::Is64BitOperatingSystem) { '64-bit' } else {
 $displayVersion = $null
 $editionId = $null
 $ubr = $null
+$cimCaptionAvailable = $false
+$registryProductName = $null
 
 try {
     $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
-    if ($os.Caption) { $osCaption = [string]$os.Caption }
+    if ($os.Caption) {
+        $osCaption = [string]$os.Caption
+        $cimCaptionAvailable = $true
+    }
     if ($os.Version) { $osVersion = [string]$os.Version }
     if ($os.BuildNumber) { $osBuild = [string]$os.BuildNumber }
     if ($os.OSArchitecture) { $osArchitecture = [string]$os.OSArchitecture }
@@ -294,14 +299,19 @@ try {
     $windowsRegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
     $windowsRegistry = Get-ItemProperty -LiteralPath $windowsRegistryPath -ErrorAction Stop
 
-    if ($windowsRegistry.ProductName) { $osCaption = [string]$windowsRegistry.ProductName }
+    if ($windowsRegistry.ProductName) {
+        $registryProductName = [string]$windowsRegistry.ProductName
+        if (-not $cimCaptionAvailable) {
+            $osCaption = $registryProductName
+        }
+    }
     if ($windowsRegistry.DisplayVersion) { $displayVersion = [string]$windowsRegistry.DisplayVersion }
     if ($windowsRegistry.EditionID) { $editionId = [string]$windowsRegistry.EditionID }
     if ($windowsRegistry.CurrentBuildNumber) { $osBuild = [string]$windowsRegistry.CurrentBuildNumber }
     if ($null -ne $windowsRegistry.UBR) { $ubr = [string]$windowsRegistry.UBR }
 
     $evidence.Add((New-AuditEvidence -EvidenceId 'host.windows.registry' -Type registry -Source $windowsRegistryPath -Captured $null -Attributes @{
-        productName    = $osCaption
+        productName    = $registryProductName
         displayVersion = $displayVersion
         editionId      = $editionId
         build           = $osBuild
