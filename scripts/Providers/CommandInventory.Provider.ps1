@@ -109,7 +109,7 @@ foreach ($spec in $toolSpecs) {
         state              = $state
         installed          = $true
         activeVersion      = $activeVersion
-        discoveredVersions = $(if ($activeVersion) { @($activeVersion) } else { @() })
+        discoveredVersions = @(if ($null -ne $activeVersion) { $activeVersion })
         installations      = @()
         commandResolutions = @($result.Resolutions)
         versionIntelligence = New-NotApplicableVersionIntelligence
