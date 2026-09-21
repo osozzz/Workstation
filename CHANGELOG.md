@@ -4,6 +4,22 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 0.4.0 — 2026-09-21
+
+### Runtime & SDK detection
+
+- Added specialized read-only providers for Windows/PowerShell/WinGet, Node.js and JavaScript tooling, Java/JVM, Flutter/Dart/Android, Python, .NET, Rust/Go, and Git/Docker/developer CLIs.
+- Added normalized detection for multiple installations, active/default versions, command-resolution precedence, manager/toolchain relationships, approved environment roots, and partial/unavailable states.
+- Added safety guards that prevent audit-time installs, upgrades, authentication/session inspection, Docker daemon/context inspection, and other workstation mutation.
+- Migrated specialized ownership out of the transitional command inventory; it now has zero remaining components.
+- Expanded provider-specific synthetic fixtures and CI validation across all Sprint 2 ecosystems.
+- Added the Sprint 2 integration gate with 42 committed fixtures across 8 ecosystem suites and a controlled Windows runner audit.
+- Validated 11 built-in providers together with 47 uniquely owned components, no built-in provider failures, and no report-level errors.
+- Fixed normalized array-shape handling for single discovered versions, synchronized approved .NET root variables with aggregate audit context, and corrected empty .NET runtime/workload states.
+- Kept controlled real-machine JSON/Markdown reports ephemeral under runner temporary storage and removed them after validation.
+- Preserved the project rule that authoritative workstation baselines remain deferred until v1.0.0.
+
+
 ## 0.3.0 — 2026-09-21
 
 ### Audit core
