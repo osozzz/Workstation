@@ -674,14 +674,22 @@ if ($pythonResolutions.Count -gt 1) {
     $warnings.Add((New-AuditIssue -Code 'PYTHON_COMMAND_COLLISION' -Message 'Multiple python command resolutions were detected. Precedence is preserved instead of silently collapsing them.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.command-resolution')))
 }
 
+if (
+    -not [string]::IsNullOrWhiteSpace($activePythonPath) -and
+    $null -eq $activePythonVersion
+) {
+    $hasPartial = $true
+    $warnings.Add((New-AuditIssue -Code 'PYTHON_VERSION_INCOMPLETE' -Message 'The active Python executable was resolved safely, but its version could not be determined.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.command-resolution')))
+}
+
 if (@($unsafePythonResolutions | Where-Object active).Count -gt 0) {
     $hasPartial = $true
-    $warnings.Add((New-AuditIssue -Code 'PYTHON_ACTIVE_ALIAS_NOT_EXECUTED' -Message 'The active python resolution is a Windows app/manager alias and was intentionally not executed to avoid automatic installation side effects.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.command-resolution', 'python.launcher-list')))
+    $warnings.Add((New-AuditIssue -Code 'PYTHON_ACTIVE_ALIAS_NOT_EXECUTED' -Message 'The active python resolution is a Windows app/manager alias and was intentionally not executed to avoid automatic installation side effects.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.command-resolution')))
 }
 
 if ($pythonResolutions.Count -eq 0 -and $pythonInstallations.Count -gt 0) {
     $hasPartial = $true
-    $warnings.Add((New-AuditIssue -Code 'PYTHON_COMMAND_UNRESOLVED' -Message 'Python interpreters were discovered, but the python command is not resolvable.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.launcher-list', 'python.installations')))
+    $warnings.Add((New-AuditIssue -Code 'PYTHON_COMMAND_UNRESOLVED' -Message 'Python interpreters were discovered, but the python command is not resolvable.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.installations')))
 }
 
 $pythonState = if (
