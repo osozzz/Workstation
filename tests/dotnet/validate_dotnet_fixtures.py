@@ -163,6 +163,17 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
             "metadata."
         )
 
+    workload_evidence = evidence(multiple, "dotnet.workloads")
+    if workload_evidence.get("captured") is not None:
+        fail(
+            "Successful workload JSON must not be retained because it may "
+            "contain updateAvailable metadata."
+        )
+    if workload_metadata.get("rawOutputRetained") is not False:
+        fail(
+            "Successful workload raw output must be explicitly discarded."
+        )
+
     missing_workloads = fixtures["missing-workloads.json"]
     if missing_workloads["status"] != "partial":
         fail("missing-workloads.json must use provider status partial.")
