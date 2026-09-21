@@ -79,6 +79,20 @@ def component(provider: dict[str, Any], component_id: str) -> dict[str, Any]:
     return matches[0]
 
 
+def evidence(provider: dict[str, Any], evidence_id: str) -> dict[str, Any]:
+    matches = [
+        item
+        for item in provider["evidence"]
+        if item["evidenceId"] == evidence_id
+    ]
+    if len(matches) != 1:
+        fail(
+            f"{provider['providerId']}: expected exactly one "
+            f"evidence '{evidence_id}', found {len(matches)}."
+        )
+    return matches[0]
+
+
 def validate_fixture_safety(path: Path) -> None:
     raw = path.read_text(encoding="utf-8").lower()
     for marker in FORBIDDEN_FIXTURE_MARKERS:
@@ -125,6 +139,47 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
         fail(
             "standalone-node.json must preserve representative global "
             "JavaScript CLI visibility."
+        )
+
+    angular = component(standalone, "angular-cli")
+    package_manager_installations = [
+        item
+        for item in angular["installations"]
+        if item["source"] == "package-manager"
+    ]
+    if len(package_manager_installations) < 1:
+        fail(
+            "standalone-node.json must preserve selected global package "
+            "installation provenance."
+        )
+
+    for evidence_id in (
+        "javascript.npm.global-inventory",
+        "javascript.pnpm.global-inventory",
+    ):
+        inventory = evidence(standalone, evidence_id)
+        if inventory["captured"] is not None or inventory["redacted"] is not True:
+            fail(
+                f"{evidence_id} must redact raw global package inventory output."
+            )
+        if inventory["attributes"].get("parseSucceeded") is not True:
+            fail(f"{evidence_id} must represent successful structured parsing.")
+
+    pnpm_inventory = evidence(
+        standalone,
+        "javascript.pnpm.global-inventory",
+    )
+    matched_packages = pnpm_inventory["attributes"].get("matchedPackages", [])
+    if not any(
+        item.get("packageName") == "@angular/cli"
+        and item.get("manager") == "pnpm"
+        and item.get("version") == "22.1.8"
+        and item.get("pathKnown") is True
+        for item in matched_packages
+    ):
+        fail(
+            "standalone-node.json must preserve selected pnpm global package "
+            "metadata without exposing raw inventory."
         )
 
     nvm_managed = fixtures["nvm-managed-node.json"]
@@ -235,6 +290,33 @@ def validate_source_ownership() -> None:
             fail(
                 "JavaScriptToolchain.Provider.ps1 contains a forbidden "
                 f"mutation pattern: {pattern}"
+            )
+
+    expected_inventory_probes = (
+        r"-command\s+['\"]npm['\"][\s\S]*?"
+        r"-listarguments\s+@\(['\"]list['\"],\s*['\"]--global['\"],"
+        r"\s*['\"]--depth=0['\"],\s*['\"]--json['\"]\)",
+        r"-command\s+['\"]pnpm['\"][\s\S]*?"
+        r"-listarguments\s+@\(['\"]list['\"],\s*['\"]--global['\"],"
+        r"\s*['\"]--depth=0['\"],\s*['\"]--json['\"]\)",
+    )
+    for pattern in expected_inventory_probes:
+        if not re.search(pattern, provider_source):
+            fail(
+                "JavaScriptToolchain.Provider.ps1 must keep bounded read-only "
+                "global package inventory probes for npm and pnpm."
+            )
+
+    for evidence_suffix in ("global-inventory", "global-root"):
+        pattern = (
+            r"new-auditevidence\s+-evidenceid\s+"
+            rf"['\"]?\$evidenceprefix\.{evidence_suffix}['\"]?"
+            r"[\s\S]*?-sensitive"
+        )
+        if not re.search(pattern, provider_source):
+            fail(
+                "JavaScript global package/root evidence must remain redacted "
+                f"for {evidence_suffix}."
             )
 
     nvm_invocations = set(
