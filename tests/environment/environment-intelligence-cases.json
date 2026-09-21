@@ -1,0 +1,40 @@
+{
+  "cases": {
+    "aligned": {
+      "name": "JAVA_HOME",
+      "process": "C:\\Synthetic\\Java",
+      "user": "c:/synthetic/java/",
+      "machine": null
+    },
+    "drift": {
+      "name": "NVM_HOME",
+      "process": "C:\\Synthetic\\NvmA",
+      "user": "C:\\Synthetic\\NvmB",
+      "machine": null
+    },
+    "missing": {
+      "name": "FLUTTER_ROOT",
+      "process": "C:\\Synthetic\\DefinitelyMissingFlutter",
+      "user": null,
+      "machine": null
+    },
+    "emptyVsUnset": {
+      "name": "PNPM_HOME",
+      "process": "",
+      "user": null,
+      "machine": null
+    },
+    "unresolved": {
+      "name": "JAVA_HOME",
+      "process": "%WORKSTATION_UNAPPROVED_REF%\\jdk",
+      "user": null,
+      "machine": null
+    },
+    "gopath": {
+      "name": "GOPATH",
+      "process": "C:\\Synthetic\\GoOne;D:\\Synthetic\\GoTwo",
+      "user": null,
+      "machine": null
+    }
+  }
+}
