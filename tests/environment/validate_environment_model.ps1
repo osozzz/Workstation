@@ -141,8 +141,11 @@ try {
     if ($androidProcess.expanded -match 'MUST_NOT_BE_READ') {
         throw 'Unapproved environment-variable value leaked into approved evidence.'
     }
-    if (@($androidProcess.unresolvedVariables) -notcontains $secretName) {
-        throw 'Unapproved reference name should remain explicit as unresolved.'
+    if (@($androidProcess.unresolvedVariables).Count -ne 0) {
+        throw 'Unapproved reference names must not be promoted into structured evidence.'
+    }
+    if ($androidProcess.unapprovedReferenceCount -ne 1) {
+        throw 'Expected one unapproved reference count for ANDROID_HOME.'
     }
 
     $androidSdkModel = Get-VariableModel -Name 'ANDROID_SDK_ROOT'
@@ -152,6 +155,15 @@ try {
     $androidSdkProcess = @($androidSdkModel.scopes | Where-Object scope -eq 'process')[0]
     if ($androidSdkProcess.normalized -ne $androidSdk) {
         throw "Approved reference expansion mismatch: $($androidSdkProcess.normalized)"
+    }
+
+    $dotnetX86 = Get-VariableModel -Name 'DOTNET_ROOT_X86'
+    if ($dotnetX86.unresolvedScopeCount -ne 1 -or $dotnetX86.unapprovedReferenceCount -ne 0) {
+        throw 'Approved unresolved DOTNET_ROOT reference must remain distinct from unapproved references.'
+    }
+    $dotnetX86Process = @($dotnetX86.scopes | Where-Object scope -eq 'process')[0]
+    if (@($dotnetX86Process.unresolvedVariables) -notcontains 'DOTNET_ROOT') {
+        throw 'Approved unresolved reference name should remain explicit.'
     }
 
     $gopath = Get-VariableModel -Name 'GOPATH'
