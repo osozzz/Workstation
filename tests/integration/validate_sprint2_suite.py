@@ -34,12 +34,14 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "rust-go.toolchains",
     "developer.clis",
     "inventory.commands",
+    "path.precedence",
     "environment.baseline",
     "winget.baseline",
 }
 
 EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "inventory.commands",
+    "path.precedence",
     "environment.baseline",
 }
 
@@ -460,6 +462,50 @@ def validate_real_report(
                 "Developer CLI safety boundary must remain false for "
                 f"{key}."
             )
+
+    precedence = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "path.precedence"
+    )
+    if precedence["components"]:
+        fail(
+            "PATH precedence provider must remain derived and own no "
+            "components."
+        )
+
+    precedence_summary = next(
+        (
+            item
+            for item in precedence["evidence"]
+            if item["evidenceId"] == "path-precedence.summary"
+        ),
+        None,
+    )
+    if precedence_summary is None:
+        fail("Controlled audit is missing PATH precedence summary evidence.")
+
+    precedence_attributes = precedence_summary["attributes"]
+    if precedence_attributes.get("readOnly") is not True:
+        fail("PATH precedence analysis must remain explicitly read-only.")
+
+    if precedence_attributes.get("analyzedCommandCount", 0) < 1:
+        fail(
+            "Controlled audit must analyze prior command-resolution "
+            "evidence."
+        )
+
+    mapped_command_evidence = [
+        item
+        for item in precedence["evidence"]
+        if item["evidenceId"].startswith("path-precedence.command.")
+        and item["attributes"].get("mappedResolutionCount", 0) > 0
+    ]
+    if not mapped_command_evidence:
+        fail(
+            "Controlled audit must map at least one command resolution "
+            "to Process PATH."
+        )
 
     environment = next(
         provider
