@@ -574,9 +574,15 @@ $components.Add([pscustomobject][ordered]@{
 
 $rustToolchains = @()
 $toolchainListResult = $null
+$activeToolchainResult = $null
+$activeToolchainName = $null
 
-if ($rustupResult.Found) {
-    $toolchainListResult = Invoke-AuditCommand -Command 'rustup' -Arguments @('toolchain', 'list') -TimeoutSeconds 20
+if ($rustupResolutions.Count -gt 0 -and $rustupSafeInspection) {
+    $rustupSafetyEnvironment = @{
+        RUSTUP_AUTO_INSTALL = '0'
+    }
+
+    $toolchainListResult = Invoke-AuditCommand -Command 'rustup' -Arguments @('toolchain', 'list') -TimeoutSeconds 20 -EnvironmentOverrides $rustupSafetyEnvironment
 
     if ($toolchainListResult.Status -eq 'success') {
         $rustToolchains = @(Parse-RustupToolchains -Text $toolchainListResult.Captured)
@@ -586,8 +592,27 @@ if ($rustupResult.Found) {
         $warnings.Add((New-AuditIssue -Code 'RUSTUP_TOOLCHAIN_LIST_FAILED' -Message 'rustup is available, but installed toolchains could not be enumerated.' -Severity warning -ComponentId 'rust-toolchains' -EvidenceIds @('rust.toolchains')))
     }
 
-    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.toolchains' -Type command -Source 'rustup toolchain list' -ExitCode $toolchainListResult.ExitCode -Captured $toolchainListResult.Captured -Redacted:$toolchainListResult.Redacted -Attributes @{
+    $activeToolchainResult = Invoke-AuditCommand -Command 'rustup' -Arguments @('show', 'active-toolchain') -TimeoutSeconds 20 -EnvironmentOverrides $rustupSafetyEnvironment
+
+    if ($activeToolchainResult.Status -eq 'success') {
+        $activeToolchainName = Get-RustupActiveToolchainName -Text $activeToolchainResult.Captured
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($activeToolchainName)) {
+        foreach ($toolchain in $rustToolchains) {
+            if ([string]::Equals(
+                [string]$toolchain.name,
+                $activeToolchainName,
+                [StringComparison]::OrdinalIgnoreCase
+            )) {
+                $toolchain.active = $true
+            }
+        }
+    }
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.toolchains' -Type command -Source 'rustup toolchain list with RUSTUP_AUTO_INSTALL=0' -ExitCode $toolchainListResult.ExitCode -Captured $toolchainListResult.Captured -Redacted:$toolchainListResult.Redacted -Attributes @{
         status = $toolchainListResult.Status
+        autoInstallGuard = 'RUSTUP_AUTO_INSTALL=0'
         toolchainCount = $rustToolchains.Count
         toolchains = @(
             $rustToolchains |
@@ -596,12 +621,32 @@ if ($rustupResult.Found) {
                         name = $_.name
                         active = $_.active
                         default = $_.default
+                        override = $_.override
                         channel = $_.channel
                         version = $(if ($null -ne $_.version) { $_.version.normalized } else { $null })
                         path = $(if (-not [string]::IsNullOrWhiteSpace($rustupHome)) { Join-Path $rustupHome (Join-Path 'toolchains' $_.name) } else { $null })
                     }
                 }
         )
+    }))
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.active-toolchain' -Type command -Source 'rustup show active-toolchain with RUSTUP_AUTO_INSTALL=0' -ExitCode $activeToolchainResult.ExitCode -Captured $activeToolchainResult.Captured -Redacted:$activeToolchainResult.Redacted -Attributes @{
+        status = $activeToolchainResult.Status
+        activeToolchain = $activeToolchainName
+        autoInstallGuard = 'RUSTUP_AUTO_INSTALL=0'
+    }))
+}
+elseif ($rustupResolutions.Count -gt 0) {
+    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.toolchains' -Type derived -Source 'rustup managed-toolchain inspection skipped for legacy/unknown auto-install safety' -Captured $null -Attributes @{
+        status = 'safety-skipped'
+        toolchainCount = 0
+        toolchains = @()
+    }))
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.active-toolchain' -Type derived -Source 'active rustup toolchain inspection skipped for legacy/unknown auto-install safety' -Captured $null -Attributes @{
+        status = 'safety-skipped'
+        activeToolchain = $null
+        autoInstallGuard = $null
     }))
 }
 else {
@@ -610,25 +655,51 @@ else {
         toolchainCount = 0
         toolchains = @()
     }))
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.active-toolchain' -Type derived -Source 'rustup not detected; active managed toolchain unavailable' -Captured $null -Attributes @{
+        status = 'not-applicable'
+        activeToolchain = $null
+        autoInstallGuard = $null
+    }))
 }
 
 $activeManagedToolchains = @($rustToolchains | Where-Object active)
-$rustToolchainState = if (-not $rustupResult.Found) {
+$rustToolchainState = if ($rustupResolutions.Count -eq 0) {
     'missing'
 }
-elseif ($toolchainListResult.Status -ne 'success') {
+elseif (-not $rustupSafeInspection) {
+    'partial'
+}
+elseif ($null -eq $toolchainListResult -or $toolchainListResult.Status -ne 'success') {
     'partial'
 }
 elseif ($rustToolchains.Count -eq 0) {
+    'partial'
+}
+elseif ($activeManagedToolchains.Count -eq 0) {
     'partial'
 }
 else {
     'present'
 }
 
-if ($rustupResult.Found -and $toolchainListResult.Status -eq 'success' -and $rustToolchains.Count -eq 0) {
+if (
+    $rustupSafeInspection -and
+    $null -ne $toolchainListResult -and
+    $toolchainListResult.Status -eq 'success' -and
+    $rustToolchains.Count -eq 0
+) {
     $hasPartial = $true
     $warnings.Add((New-AuditIssue -Code 'RUSTUP_NO_INSTALLED_TOOLCHAINS' -Message 'rustup is installed, but no Rust toolchains were reported.' -Severity warning -ComponentId 'rust-toolchains' -EvidenceIds @('rust.toolchains')))
+}
+
+if (
+    $rustupSafeInspection -and
+    $rustToolchains.Count -gt 0 -and
+    $activeManagedToolchains.Count -eq 0
+) {
+    $hasPartial = $true
+    $warnings.Add((New-AuditIssue -Code 'RUSTUP_ACTIVE_TOOLCHAIN_UNPROVEN' -Message 'rustup toolchains are installed, but the active toolchain could not be proven safely for the current audit context.' -Severity warning -ComponentId 'rust-toolchains' -EvidenceIds @('rust.toolchains', 'rust.active-toolchain')))
 }
 
 $toolchainInstallations = New-Object System.Collections.Generic.List[object]
@@ -638,12 +709,17 @@ if (-not [string]::IsNullOrWhiteSpace($rustupHome)) {
     }
 }
 
+$activeToolchainVersion = $null
+if ($activeManagedToolchains.Count -gt 0) {
+    $activeToolchainVersion = $activeManagedToolchains[0].version
+}
+
 $components.Add([pscustomobject][ordered]@{
     componentId         = 'rust-toolchains'
     name                = 'Rust Toolchains'
     state               = $rustToolchainState
-    installed           = $(if ($rustToolchains.Count -gt 0) { $true } elseif ($rustupResult.Found) { $false } else { $false })
-    activeVersion       = $null
+    installed           = $(if ($rustToolchains.Count -gt 0) { $true } elseif ($rustupResolutions.Count -gt 0 -and $rustupSafeInspection) { $false } elseif ($rustupResolutions.Count -gt 0) { $null } else { $false })
+    activeVersion       = $activeToolchainVersion
     discoveredVersions  = @(
         $rustToolchains |
             Where-Object { $null -ne $_.version } |
