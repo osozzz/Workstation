@@ -36,6 +36,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "inventory.commands",
     "path.precedence",
     "javascript.precedence",
+    "jvm-mobile.precedence",
     "environment.baseline",
     "winget.baseline",
 }
@@ -44,6 +45,7 @@ EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "inventory.commands",
     "path.precedence",
     "javascript.precedence",
+    "jvm-mobile.precedence",
     "environment.baseline",
 }
 
@@ -554,6 +556,58 @@ def validate_real_report(
         if dependencies.get(dependency_name) is not True:
             fail(
                 "JavaScript precedence controlled audit is missing dependency "
+                f"evidence for {dependency_name}."
+            )
+
+    jvm_mobile_precedence = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "jvm-mobile.precedence"
+    )
+    if jvm_mobile_precedence["components"]:
+        fail(
+            "JVM/mobile precedence provider must remain derived and own no "
+            "components."
+        )
+
+    jvm_mobile_summary = next(
+        (
+            item
+            for item in jvm_mobile_precedence["evidence"]
+            if item["evidenceId"] == "jvm-mobile-precedence.summary"
+        ),
+        None,
+    )
+    if jvm_mobile_summary is None:
+        fail(
+            "Controlled audit is missing JVM/mobile precedence summary "
+            "evidence."
+        )
+
+    jvm_mobile_attributes = jvm_mobile_summary["attributes"]
+    if jvm_mobile_attributes.get("readOnly") is not True:
+        fail("JVM/mobile precedence analysis must remain explicitly read-only.")
+    for key in (
+        "duplicatedRuntimeDiscovery",
+        "directEnvironmentAccess",
+        "filesystemProbes",
+    ):
+        if jvm_mobile_attributes.get(key) is not False:
+            fail(
+                "JVM/mobile precedence analysis must preserve "
+                f"{key}=false."
+            )
+
+    jvm_mobile_dependencies = jvm_mobile_attributes.get("dependencies", {})
+    for dependency_name in (
+        "javaJvm",
+        "mobileFlutterAndroid",
+        "pathPrecedence",
+        "environmentBaseline",
+    ):
+        if jvm_mobile_dependencies.get(dependency_name) is not True:
+            fail(
+                "JVM/mobile precedence controlled audit is missing dependency "
                 f"evidence for {dependency_name}."
             )
 
