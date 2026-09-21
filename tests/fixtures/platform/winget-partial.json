@@ -83,8 +83,8 @@
       "type": "command",
       "source": "winget source list --disable-interactivity",
       "exitCode": 1,
-      "captured": "Synthetic source failure.",
-      "redacted": false,
+      "captured": null,
+      "redacted": true,
       "attributes": {
         "status": "non-zero"
       }
