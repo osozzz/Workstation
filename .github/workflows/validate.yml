@@ -503,7 +503,13 @@ jobs:
 
           $environmentIntelligenceEvidence = @(
               $environmentProvider.evidence |
-                  Where-Object { $_.evidenceId -match '^environment\.[a-z0-9_]+\.intelligence
+                  Where-Object { $_.evidenceId -match '^environment\.[a-z0-9_]+\.intelligence$' }
+          )
+          if ($environmentIntelligenceEvidence.Count -ne 16) {
+              throw "Expected one normalized intelligence record per approved environment variable."
+          }
+
+          $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
           }
