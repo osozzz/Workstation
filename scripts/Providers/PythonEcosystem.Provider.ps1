@@ -338,11 +338,7 @@ function Add-PyManagerJsonMappings {
         return
     }
 
-    if (
-        $InputObject -is [System.Collections.IEnumerable] -and
-        $InputObject -isnot [string] -and
-        $InputObject.PSObject.Properties.Count -eq 0
-    ) {
+    if ($InputObject -is [System.Array]) {
         foreach ($item in @($InputObject)) {
             Add-PyManagerJsonMappings -InputObject $item -List $List
         }
