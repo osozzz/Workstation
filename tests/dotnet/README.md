@@ -17,6 +17,6 @@ It covers:
 
 All committed fixtures are synthetic. They must not contain real workstation paths, usernames, credentials, tokens, machine names, or generated audit reports.
 
-The workload parser only normalizes the installed workload IDs. Any `updateAvailable` data emitted by the CLI is intentionally ignored because latest-version intelligence belongs to a later milestone.
+The workload parser only normalizes the installed workload IDs. On successful machine-readable inspection, the raw JSON is not retained, so any `updateAvailable` data emitted by the CLI is intentionally excluded because latest-version intelligence belongs to a later milestone.
 
 The workstation policy uses latest-stable for the global .NET toolchain while allowing projects to pin locally compatible SDK versions. Sprint 2 detects only the architecture represented by the active `dotnet` resolution; cross-architecture inventory can be expanded separately without changing this provider contract.
