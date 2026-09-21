@@ -578,7 +578,15 @@ if (-not $rustupResult.Found -and ($rustcComponent.state -in @('present', 'parti
 
 if (($rustcComponent.state -eq 'missing') -xor ($cargoComponent.state -eq 'missing')) {
     $hasPartial = $true
-    $warnings.Add((New-AuditIssue -Code 'RUST_TOOLCHAIN_PARTIAL' -Message 'Only one of rustc or Cargo is resolvable.' -Severity warning -ComponentId 'rust-toolchains' -EvidenceIds @('rust.rustc.version', 'rust.cargo.version')))
+    $partialEvidenceIds = @()
+    if ($rustcComponent.state -ne 'missing') {
+        $partialEvidenceIds += 'rust.rustc.version'
+    }
+    if ($cargoComponent.state -ne 'missing') {
+        $partialEvidenceIds += 'rust.cargo.version'
+    }
+
+    $warnings.Add((New-AuditIssue -Code 'RUST_TOOLCHAIN_PARTIAL' -Message 'Only one of rustc or Cargo is resolvable.' -Severity warning -ComponentId 'rust-toolchains' -EvidenceIds $partialEvidenceIds))
 }
 
 $goResult = Invoke-AuditCommand -Command 'go' -Arguments @('version') -TimeoutSeconds 20
