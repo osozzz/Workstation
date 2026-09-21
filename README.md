@@ -4,9 +4,9 @@ A Windows developer-workstation toolkit for auditing, comparing, and standardizi
 
 ## Current phase
 
-**v0.2.0 — Repository Foundation**
+**v0.3.0 — Audit Core**
 
-The repository is currently focused on governance, documentation, issue/PR conventions, release policy, and the architecture required for a complete read-only audit system.
+The repository now has a normalized read-only audit contract, shared audit runtime, deterministic provider orchestration, transitional providers, and contract-level validation. The next phase expands ecosystem-specific runtime and SDK detection.
 
 The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
 
@@ -31,9 +31,9 @@ Start with:
 
 The GitHub Wiki, when used, is a navigation/help layer only and must not override canonical repository documentation.
 
-## Current audit skeleton
+## Current audit system
 
-The current scripts are an early read-only foundation and are **not yet the complete baseline system**.
+The current scripts form a modular read-only audit foundation and are **not yet the complete baseline system**.
 
 Today the repository can inspect parts of:
 
@@ -53,7 +53,7 @@ Today the repository can inspect parts of:
 - WinGet
 - PATH and selected environment variables
 
-The complete detector system will expand this into modular providers with normalized output, version intelligence, local-project discovery, Git/worktree hygiene, and cross-PC comparison.
+The detector system will expand the current modular provider architecture with deeper runtime/SDK coverage, version intelligence, local-project discovery, Git/worktree hygiene, and cross-PC comparison.
 
 ## Roadmap
 
