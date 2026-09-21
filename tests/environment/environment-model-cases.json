@@ -1,0 +1,82 @@
+{
+  "expectedAllowedNames": [
+    "NVM_HOME",
+    "NVM_SYMLINK",
+    "PNPM_HOME",
+    "JAVA_HOME",
+    "ANDROID_HOME",
+    "ANDROID_SDK_ROOT",
+    "FLUTTER_ROOT",
+    "PUB_CACHE",
+    "CARGO_HOME",
+    "RUSTUP_HOME",
+    "GOPATH",
+    "GOROOT",
+    "PYENV_ROOT",
+    "DOTNET_ROOT",
+    "DOTNET_ROOT_X64",
+    "DOTNET_ROOT_X86"
+  ],
+  "placeholders": {
+    "existingA": "{{EXISTING_A}}",
+    "existingB": "{{EXISTING_B}}",
+    "existingAndroidSdk": "{{EXISTING_ANDROID_SDK}}",
+    "missing": "{{MISSING}}"
+  },
+  "snapshot": [
+    {
+      "name": "JAVA_HOME",
+      "process": "{{EXISTING_A}}",
+      "user": "{{EXISTING_A}}",
+      "machine": null
+    },
+    {
+      "name": "NVM_HOME",
+      "process": "{{EXISTING_A}}",
+      "user": "{{EXISTING_B}}",
+      "machine": null
+    },
+    {
+      "name": "FLUTTER_ROOT",
+      "process": "{{MISSING}}",
+      "user": null,
+      "machine": null
+    },
+    {
+      "name": "PYENV_ROOT",
+      "process": null,
+      "user": null,
+      "machine": null
+    },
+    {
+      "name": "PNPM_HOME",
+      "process": "",
+      "user": null,
+      "machine": null
+    },
+    {
+      "name": "ANDROID_HOME",
+      "process": "%WORKSTATION_SECRET_TEST%\\Android",
+      "user": null,
+      "machine": null
+    },
+    {
+      "name": "ANDROID_SDK_ROOT",
+      "process": "%JAVA_HOME%\\AndroidSdk",
+      "user": null,
+      "machine": null
+    },
+    {
+      "name": "GOPATH",
+      "process": "{{EXISTING_A}};{{MISSING}}",
+      "user": null,
+      "machine": null
+    },
+    {
+      "name": "CARGO_HOME",
+      "process": "   ",
+      "user": null,
+      "machine": null
+    }
+  ]
+}
