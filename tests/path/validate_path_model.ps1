@@ -89,8 +89,12 @@ try {
         throw 'Expected unresolved environment reference to remain explicit.'
     }
 
-    if (@($machine.entries[4].unresolvedVariables) -notcontains 'WORKSTATION_PATH_UNRESOLVED') {
-        throw 'Expected unresolved PATH variable name to remain explicit.'
+    if (@($machine.entries[4].unresolvedVariables).Count -ne 0) {
+        throw 'Unapproved PATH variable names must not be promoted into structured evidence.'
+    }
+
+    if ($machine.entries[4].unapprovedReferenceCount -ne 1) {
+        throw 'Expected one unresolved unapproved PATH reference.'
     }
 
     if ($null -ne $machine.entries[4].exists) {
