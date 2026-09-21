@@ -58,6 +58,37 @@ function Get-VersionRecordFromText {
     return New-AuditVersionRecord -Raw $match.Value -Normalized $match.Groups['version'].Value -Channel $null
 }
 
+function Get-VersionRecordFromPattern {
+    param(
+        [AllowNull()][string]$Text,
+        [Parameter(Mandatory)][string]$Pattern
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return $null
+    }
+
+    $match = [regex]::Match(
+        $Text,
+        $Pattern,
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
+        [System.Text.RegularExpressions.RegexOptions]::Multiline
+    )
+
+    if (-not $match.Success) {
+        return $null
+    }
+
+    $versionText = if ($match.Groups['version'].Success) {
+        $match.Groups['version'].Value
+    }
+    else {
+        $match.Value
+    }
+
+    return New-AuditVersionRecord -Raw $versionText -Normalized $versionText.TrimStart('v') -Channel $null
+}
+
 function Add-UniqueVersion {
     param(
         [Parameter(Mandatory)]
@@ -145,7 +176,8 @@ function New-VersionCommandComponent {
         [Parameter(Mandatory)][string]$Name,
         [Parameter(Mandatory)][string]$Command,
         [Parameter(Mandatory)][string[]]$Arguments,
-        [Parameter(Mandatory)][string]$EvidenceId
+        [Parameter(Mandatory)][string]$EvidenceId,
+        [AllowNull()][string]$VersionPattern
     )
 
     $result = Invoke-AuditCommand -Command $Command -Arguments $Arguments -TimeoutSeconds 20
@@ -165,7 +197,12 @@ function New-VersionCommandComponent {
     }
 
     $version = if ($result.Status -eq 'success') {
-        Get-VersionRecordFromText -Text $result.Captured
+        if (-not [string]::IsNullOrWhiteSpace($VersionPattern)) {
+            Get-VersionRecordFromPattern -Text $result.Captured -Pattern $VersionPattern
+        }
+        else {
+            Get-VersionRecordFromText -Text $result.Captured
+        }
     }
     else {
         $null
@@ -219,6 +256,7 @@ $specs = @(
         Command     = 'git'
         Arguments   = @('--version')
         EvidenceId  = 'developer.git.version'
+        VersionPattern = '^git version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
         ComponentId = 'github-cli'
@@ -226,6 +264,7 @@ $specs = @(
         Command     = 'gh'
         Arguments   = @('--version')
         EvidenceId  = 'developer.github-cli.version'
+        VersionPattern = '^gh version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
         ComponentId = 'docker'
@@ -233,6 +272,7 @@ $specs = @(
         Command     = 'docker'
         Arguments   = @('--version')
         EvidenceId  = 'developer.docker.version'
+        VersionPattern = '^Docker version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
         ComponentId = 'supabase-cli'
@@ -240,6 +280,163 @@ $specs = @(
         Command     = 'supabase'
         Arguments   = @('--version')
         EvidenceId  = 'developer.supabase.version'
+        VersionPattern = '^(?:Supabase CLI\s+)?v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)\s*
+    @{
+        ComponentId = 'vercel-cli'
+        Name        = 'Vercel CLI'
+        Command     = 'vercel'
+        Arguments   = @('--version')
+        EvidenceId  = 'developer.vercel.version'
+        VersionPattern = '^Vercel CLI (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+    },
+    @{
+        ComponentId = 'heroku-cli'
+        Name        = 'Heroku CLI'
+        Command     = 'heroku'
+        Arguments   = @('--version')
+        EvidenceId  = 'developer.heroku.version'
+        VersionPattern = '^heroku/(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+    }
+)
+
+foreach ($spec in $specs) {
+    $components.Add((New-VersionCommandComponent @spec))
+}
+
+$dockerComponent = @($components | Where-Object componentId -eq 'docker' | Select-Object -First 1)
+$dockerFound = ($dockerComponent.Count -gt 0 -and $dockerComponent[0].installed -eq $true)
+
+$composeResult = $null
+$composeVersion = $null
+if ($dockerFound) {
+    $composeResult = Invoke-AuditCommand -Command 'docker' -Arguments @('compose', 'version') -TimeoutSeconds 20
+    if ($composeResult.Status -eq 'success') {
+        $composeVersion = Get-VersionRecordFromPattern -Text $composeResult.Captured -Pattern '^Docker Compose version v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+    }
+}
+
+$legacyComposeResult = Invoke-AuditCommand -Command 'docker-compose' -Arguments @('--version') -TimeoutSeconds 20
+$legacyComposeVersion = if ($legacyComposeResult.Found -and $legacyComposeResult.Status -eq 'success') {
+    Get-VersionRecordFromPattern -Text $legacyComposeResult.Captured -Pattern '^docker-compose version v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+}
+else {
+    $null
+}
+
+$composeEvidenceIds = New-Object System.Collections.Generic.List[string]
+
+if ($null -ne $composeResult) {
+    $evidence.Add((New-AuditEvidence -EvidenceId 'developer.docker-compose.plugin' -Type command -Source 'docker compose version' -ExitCode $composeResult.ExitCode -Captured $composeResult.Captured -Redacted:$composeResult.Redacted -Attributes @{
+        status = $composeResult.Status
+        timedOut = $composeResult.TimedOut
+        mode = 'plugin'
+        resolutionCount = @($composeResult.Resolutions).Count
+    }))
+    $composeEvidenceIds.Add('developer.docker-compose.plugin')
+}
+
+if ($legacyComposeResult.Found) {
+    $evidence.Add((New-AuditEvidence -EvidenceId 'developer.docker-compose.legacy' -Type command -Source 'docker-compose --version' -ExitCode $legacyComposeResult.ExitCode -Captured $legacyComposeResult.Captured -Redacted:$legacyComposeResult.Redacted -Attributes @{
+        status = $legacyComposeResult.Status
+        timedOut = $legacyComposeResult.TimedOut
+        mode = 'legacy-command'
+        resolutionCount = @($legacyComposeResult.Resolutions).Count
+    }))
+    $composeEvidenceIds.Add('developer.docker-compose.legacy')
+}
+
+$composeVersions = New-Object System.Collections.Generic.List[object]
+Add-UniqueVersion -List $composeVersions -Version $composeVersion
+Add-UniqueVersion -List $composeVersions -Version $legacyComposeVersion
+
+$composeInstallations = New-Object System.Collections.Generic.List[object]
+$composeResolutions = New-Object System.Collections.Generic.List[object]
+
+if ($null -ne $composeResult -and $composeResult.Status -eq 'success') {
+    foreach ($resolution in @($composeResult.Resolutions)) {
+        Add-UniqueInstallation -List $composeInstallations -Path ([string]$resolution.path) -Version $(if ($resolution.active) { $composeVersion } else { $resolution.version }) -Active ([bool]$resolution.active) -Source command
+        $composeResolutions.Add($resolution)
+    }
+}
+
+if ($legacyComposeResult.Found) {
+    foreach ($resolution in @($legacyComposeResult.Resolutions)) {
+        Add-UniqueInstallation -List $composeInstallations -Path ([string]$resolution.path) -Version $(if ($resolution.active) { $legacyComposeVersion } else { $resolution.version }) -Active ([bool]$resolution.active) -Source command
+        $composeResolutions.Add($resolution)
+    }
+}
+
+$composeState = 'missing'
+$composeInstalled = $false
+$composeActiveVersion = $null
+
+if ($null -ne $composeResult -and $composeResult.Status -eq 'success' -and $null -ne $composeVersion) {
+    $composeState = 'present'
+    $composeInstalled = $true
+    $composeActiveVersion = $composeVersion
+}
+elseif ($legacyComposeResult.Found -and $legacyComposeResult.Status -eq 'success' -and $null -ne $legacyComposeVersion) {
+    $composeState = 'present'
+    $composeInstalled = $true
+    $composeActiveVersion = $legacyComposeVersion
+    $warnings.Add((New-AuditIssue -Code 'DOCKER_COMPOSE_LEGACY_ONLY' -Message 'Docker Compose is available only through the legacy docker-compose command; the modern docker compose plugin was not proven functional.' -Severity info -ComponentId 'docker-compose' -EvidenceIds $composeEvidenceIds.ToArray()))
+}
+elseif ($dockerFound -or $legacyComposeResult.Found) {
+    $composeState = 'partial'
+    $composeInstalled = $null
+    $hasPartial = $true
+    $warnings.Add((New-AuditIssue -Code 'DOCKER_COMPOSE_VERSION_INCOMPLETE' -Message 'Docker/Compose tooling is resolvable, but a functional Compose version could not be determined.' -Severity warning -ComponentId 'docker-compose' -EvidenceIds $composeEvidenceIds.ToArray()))
+}
+
+if (@($legacyComposeResult.Resolutions).Count -gt 1) {
+    $hasPartial = $true
+    $warnings.Add((New-AuditIssue -Code 'DOCKER_COMPOSE_LEGACY_COMMAND_COLLISION' -Message 'Multiple legacy docker-compose command resolutions were detected.' -Severity warning -ComponentId 'docker-compose' -EvidenceIds @('developer.docker-compose.legacy')))
+}
+
+$components.Add([pscustomobject][ordered]@{
+    componentId         = 'docker-compose'
+    name                = 'Docker Compose'
+    state               = $composeState
+    installed           = $composeInstalled
+    activeVersion       = $composeActiveVersion
+    discoveredVersions  = $composeVersions.ToArray()
+    installations       = $composeInstallations.ToArray()
+    commandResolutions  = $composeResolutions.ToArray()
+    versionIntelligence = New-NotApplicableVersionIntelligence
+})
+
+$evidence.Add((New-AuditEvidence -EvidenceId 'developer.safety-boundary' -Type derived -Source 'developer CLI audit boundary' -Captured $null -Attributes @{
+    authenticationStateCollected = $false
+    accountStateCollected = $false
+    gitConfigurationCollected = $false
+    dockerDaemonInspected = $false
+    dockerContextsCollected = $false
+    servicesStartedOrStopped = $false
+}))
+
+$anyPresent = @(
+    $components |
+        Where-Object { $_.state -in @('present', 'partial') }
+).Count -gt 0
+
+$status = if (-not $anyPresent) {
+    'unavailable'
+}
+else {
+    Get-AuditProviderStatus -Warnings $warnings.ToArray() -Errors $errors.ToArray() -Partial:$hasPartial
+}
+
+return [pscustomobject][ordered]@{
+    providerId = 'developer.clis'
+    category   = 'runtime'
+    status     = $status
+    observedAt = $Context.ObservedAt
+    components = $components.ToArray()
+    warnings   = $warnings.ToArray()
+    errors     = $errors.ToArray()
+    evidence   = $evidence.ToArray()
+}
+
     },
     @{
         ComponentId = 'vercel-cli'
