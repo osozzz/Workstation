@@ -288,6 +288,32 @@ def validate_transitional_inventory_is_empty() -> None:
     print("Validated empty transitional command inventory ownership.")
 
 
+def validate_provider_array_shape_guards() -> None:
+    bad_patterns: list[str] = []
+
+    for path in sorted(
+        (ROOT / "scripts" / "Providers").glob("*.Provider.ps1")
+    ):
+        source = path.read_text(encoding="utf-8")
+        if re.search(
+            r"discoveredVersions\s*=\s*\$\(if\s*\(",
+            source,
+            flags=re.IGNORECASE,
+        ):
+            bad_patterns.append(str(path.relative_to(ROOT)))
+
+    if bad_patterns:
+        fail(
+            "Provider source contains scalarizing discoveredVersions "
+            "subexpressions. Use an array subexpression @(if (...) { ... }) "
+            f"instead: {bad_patterns}"
+        )
+
+    print(
+        "Validated provider discoveredVersions array-shape guards."
+    )
+
+
 def expected_report_status(
     summary: dict[str, Any],
     report_error_count: int,
@@ -481,6 +507,7 @@ def main() -> int:
     validate_sprint2_fixture_suite(provider_validator)
     validate_environment_allowlist_sync()
     validate_transitional_inventory_is_empty()
+    validate_provider_array_shape_guards()
 
     if args.report is not None:
         validate_real_report(args.report, report_validator)
