@@ -1,0 +1,275 @@
+{
+  "providerId": "javascript.toolchain",
+  "category": "runtime",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "node",
+      "name": "Node.js",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "v24.13.0",
+        "normalized": "24.13.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "v24.13.0",
+          "normalized": "24.13.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Node\\node.exe",
+          "version": {
+            "raw": "v24.13.0",
+            "normalized": "24.13.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "node",
+          "path": "C:\\Synthetic\\Node\\node.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "npm",
+      "name": "npm",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "11.19.1",
+        "normalized": "11.19.1",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "11.19.1",
+          "normalized": "11.19.1",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Node\\npm.cmd",
+          "version": {
+            "raw": "11.19.1",
+            "normalized": "11.19.1",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "npm",
+          "path": "C:\\Synthetic\\Node\\npm.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "pnpm",
+      "name": "pnpm",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "12.4.2",
+        "normalized": "12.4.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "12.4.2",
+          "normalized": "12.4.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd",
+          "version": {
+            "raw": "12.4.2",
+            "normalized": "12.4.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "pnpm",
+          "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "corepack",
+      "name": "Corepack",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "nvm-windows",
+      "name": "NVM for Windows",
+      "state": "partial",
+      "installed": null,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "NVM_LEGACY_CONFIGURATION_DETECTED",
+      "message": "Legacy NVM_HOME/NVM_SYMLINK configuration exists but a current NVM for Windows v2 installation could not be confirmed.",
+      "severity": "warning",
+      "componentId": "nvm-windows",
+      "evidenceIds": [
+        "javascript.environment"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "javascript.environment",
+      "type": "environment",
+      "source": "PNPM_HOME plus legacy NVM_HOME/NVM_SYMLINK",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "NVM_HOME",
+            "process": "C:\\Synthetic\\MissingNvm",
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "NVM_SYMLINK",
+            "process": "C:\\Synthetic\\NvmSymlink",
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "PNPM_HOME",
+            "process": "C:\\Synthetic\\Pnpm",
+            "user": null,
+            "machine": null
+          }
+        ],
+        "pnpmHomeConfigured": true,
+        "legacyNvmEnvironmentConfigured": true
+      }
+    },
+    {
+      "evidenceId": "javascript.node.version",
+      "type": "command",
+      "source": "node --version",
+      "exitCode": 0,
+      "captured": "v24.13.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.npm.version",
+      "type": "command",
+      "source": "npm --version",
+      "exitCode": 0,
+      "captured": "11.19.1",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.pnpm.version",
+      "type": "command",
+      "source": "pnpm --version",
+      "exitCode": 0,
+      "captured": "12.4.2",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    }
+  ]
+}

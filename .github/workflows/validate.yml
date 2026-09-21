@@ -35,6 +35,11 @@ jobs:
         run: |
           python ./tests/platform/validate_platform_fixtures.py
 
+      - name: Validate JavaScript toolchain fixtures
+        shell: pwsh
+        run: |
+          python ./tests/javascript/validate_javascript_fixtures.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -150,11 +155,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 5) {
-              throw "Expected four built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 6) {
+              throw "Expected five built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -175,6 +180,44 @@ jobs:
           $windowsCimEvidence = $hostProvider.evidence | Where-Object evidenceId -eq 'host.windows.cim'
           if ($windowsCimEvidence -and $windowsCimEvidence.attributes.caption -and $windowsComponent.name -ne $windowsCimEvidence.attributes.caption) {
               throw "Expected the normalized Windows component name to preserve the CIM caption."
+          }
+
+          $javascriptProvider = $result.Report.providers | Where-Object providerId -eq 'javascript.toolchain'
+          if ($javascriptProvider.status -eq 'failed') {
+              $javascriptMessages = @($javascriptProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "JavaScript provider failed during smoke test: $javascriptMessages"
+          }
+
+          foreach ($componentId in @('node', 'npm', 'pnpm', 'corepack', 'nvm-windows')) {
+              if (-not ($javascriptProvider.components | Where-Object componentId -eq $componentId)) {
+                  throw "Expected JavaScript component '$componentId'."
+              }
+          }
+
+          $nodeComponent = $javascriptProvider.components | Where-Object componentId -eq 'node'
+          if ($nodeComponent.state -eq 'present' -and @($nodeComponent.commandResolutions).Count -lt 1) {
+              throw "Present Node.js state must preserve command resolution."
+          }
+
+          foreach ($managerId in @('npm', 'pnpm')) {
+              $managerComponent = $javascriptProvider.components | Where-Object componentId -eq $managerId
+              if ($managerComponent.state -in @('present', 'partial')) {
+                  $inventoryEvidenceId = "javascript.$managerId.global-inventory"
+                  $inventoryEvidence = $javascriptProvider.evidence | Where-Object evidenceId -eq $inventoryEvidenceId
+
+                  if (-not $inventoryEvidence) {
+                      throw "Expected redacted global inventory evidence for '$managerId'."
+                  }
+
+                  if ($null -ne $inventoryEvidence.captured -or -not $inventoryEvidence.redacted) {
+                      throw "Global package inventory for '$managerId' must remain redacted."
+                  }
+
+                  $rootEvidence = $javascriptProvider.evidence | Where-Object evidenceId -eq "javascript.$managerId.global-root"
+                  if ($rootEvidence -and ($null -ne $rootEvidence.captured -or -not $rootEvidence.redacted)) {
+                      throw "Global package root evidence for '$managerId' must remain redacted."
+                  }
+              }
           }
 
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
@@ -201,6 +244,28 @@ jobs:
               throw "Generic command inventory must not duplicate WinGet ownership."
           }
 
+          $javascriptOwnedIds = @(
+              'node',
+              'npm',
+              'pnpm',
+              'corepack',
+              'nvm-windows',
+              'angular-cli',
+              'typescript',
+              'prisma',
+              'nodemon',
+              'rimraf',
+              'zoho-extension-toolkit',
+              'zoho-catalyst-cli',
+              'redis-commander'
+          )
+
+          foreach ($componentId in $javascriptOwnedIds) {
+              if ($commandInventory.components | Where-Object componentId -eq $componentId) {
+                  throw "Generic command inventory must not duplicate JavaScript ownership for '$componentId'."
+              }
+          }
+
           $failedProvider = $result.Report.providers | Where-Object providerId -eq 'synthetic.failure'
           if ($failedProvider.status -ne 'failed') {
               throw "Expected the synthetic provider to be isolated as failed."
@@ -218,7 +283,7 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 4) {
+          if ($missingProviderResult.Report.summary.providerCount -ne 5) {
               throw "Expected built-in providers to continue after an additional provider path failure."
           }
 

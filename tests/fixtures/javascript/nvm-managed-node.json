@@ -1,0 +1,437 @@
+{
+  "providerId": "javascript.toolchain",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "node",
+      "name": "Node.js",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "v24.13.0",
+        "normalized": "24.13.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "v24.13.0",
+          "normalized": "24.13.0",
+          "channel": null
+        },
+        {
+          "raw": "v22.14.0",
+          "normalized": "22.14.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\NvmShim\\node.exe",
+          "version": {
+            "raw": "v24.13.0",
+            "normalized": "24.13.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\Nvm\\v24.13.0\\node.exe",
+          "version": {
+            "raw": "v24.13.0",
+            "normalized": "24.13.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "filesystem"
+        },
+        {
+          "path": "C:\\Synthetic\\Nvm\\v22.14.0\\node.exe",
+          "version": {
+            "raw": "v22.14.0",
+            "normalized": "22.14.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "filesystem"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "node",
+          "path": "C:\\Synthetic\\NvmShim\\node.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "npm",
+      "name": "npm",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "11.19.1",
+        "normalized": "11.19.1",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "11.19.1",
+          "normalized": "11.19.1",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\NvmShim\\npm.cmd",
+          "version": {
+            "raw": "11.19.1",
+            "normalized": "11.19.1",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "npm",
+          "path": "C:\\Synthetic\\NvmShim\\npm.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "pnpm",
+      "name": "pnpm",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "12.4.2",
+        "normalized": "12.4.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "12.4.2",
+          "normalized": "12.4.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd",
+          "version": {
+            "raw": "12.4.2",
+            "normalized": "12.4.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "pnpm",
+          "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "corepack",
+      "name": "Corepack",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "0.34.0",
+        "normalized": "0.34.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "0.34.0",
+          "normalized": "0.34.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\NvmShim\\corepack.cmd",
+          "version": {
+            "raw": "0.34.0",
+            "normalized": "0.34.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "corepack",
+          "path": "C:\\Synthetic\\NvmShim\\corepack.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "nvm-windows",
+      "name": "NVM for Windows",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "2.0.0",
+        "normalized": "2.0.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "2.0.0",
+          "normalized": "2.0.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Nvm2\\nvm.exe",
+          "version": {
+            "raw": "2.0.0",
+            "normalized": "2.0.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "nvm",
+          "path": "C:\\Synthetic\\Nvm2\\nvm.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "javascript.environment",
+      "type": "environment",
+      "source": "PNPM_HOME plus legacy NVM_HOME/NVM_SYMLINK",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "NVM_HOME",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "NVM_SYMLINK",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "PNPM_HOME",
+            "process": "C:\\Synthetic\\Pnpm",
+            "user": null,
+            "machine": null
+          }
+        ],
+        "pnpmHomeConfigured": true,
+        "legacyNvmEnvironmentConfigured": false
+      }
+    },
+    {
+      "evidenceId": "javascript.nvm-windows.version",
+      "type": "command",
+      "source": "nvm version",
+      "exitCode": 0,
+      "captured": "2.0.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "javascript.node.nvm-installations",
+      "type": "filesystem",
+      "source": "NVM v2 root version directories",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "rootConfigured": true,
+        "installationCount": 2
+      }
+    },
+    {
+      "evidenceId": "javascript.node.version",
+      "type": "command",
+      "source": "node --version",
+      "exitCode": 0,
+      "captured": "v24.13.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.npm.version",
+      "type": "command",
+      "source": "npm --version",
+      "exitCode": 0,
+      "captured": "11.19.1",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.pnpm.version",
+      "type": "command",
+      "source": "pnpm --version",
+      "exitCode": 0,
+      "captured": "12.4.2",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.corepack.version",
+      "type": "command",
+      "source": "corepack --version",
+      "exitCode": 0,
+      "captured": "0.34.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.nvm-windows.env-v2",
+      "type": "command",
+      "source": "nvm env --json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "parsed": true,
+        "mode": "shim",
+        "rootConfigured": true
+      }
+    },
+    {
+      "evidenceId": "javascript.nvm-windows.config-v2",
+      "type": "command",
+      "source": "nvm config list --json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "parsed": true,
+        "mode": "shim",
+        "rootConfigured": true
+      }
+    },
+    {
+      "evidenceId": "javascript.nvm-windows.default-v2",
+      "type": "command",
+      "source": "nvm default --json",
+      "exitCode": 0,
+      "captured": "{\"default\":\"24.13.0\"}",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "parsed": true
+      }
+    },
+    {
+      "evidenceId": "javascript.nvm-windows.list-v2",
+      "type": "command",
+      "source": "nvm list --json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "discoveredVersionCount": 2
+      }
+    }
+  ]
+}

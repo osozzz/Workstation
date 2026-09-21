@@ -1,0 +1,395 @@
+{
+  "providerId": "javascript.toolchain",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "node",
+      "name": "Node.js",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "v24.13.0",
+        "normalized": "24.13.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "v24.13.0",
+          "normalized": "24.13.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Node\\node.exe",
+          "version": {
+            "raw": "v24.13.0",
+            "normalized": "24.13.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "node",
+          "path": "C:\\Synthetic\\Node\\node.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "npm",
+      "name": "npm",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "11.19.1",
+        "normalized": "11.19.1",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "11.19.1",
+          "normalized": "11.19.1",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Node\\npm.cmd",
+          "version": {
+            "raw": "11.19.1",
+            "normalized": "11.19.1",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "npm",
+          "path": "C:\\Synthetic\\Node\\npm.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "pnpm",
+      "name": "pnpm",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "12.4.2",
+        "normalized": "12.4.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "12.4.2",
+          "normalized": "12.4.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd",
+          "version": {
+            "raw": "12.4.2",
+            "normalized": "12.4.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "pnpm",
+          "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "corepack",
+      "name": "Corepack",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "0.34.0",
+        "normalized": "0.34.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "0.34.0",
+          "normalized": "0.34.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Node\\corepack.cmd",
+          "version": {
+            "raw": "0.34.0",
+            "normalized": "0.34.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "corepack",
+          "path": "C:\\Synthetic\\Node\\corepack.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "nvm-windows",
+      "name": "NVM for Windows",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "angular-cli",
+      "name": "Angular CLI",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "Angular CLI: 22.1.8",
+        "normalized": "22.1.8",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "Angular CLI: 22.1.8",
+          "normalized": "22.1.8",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Pnpm\\ng.cmd",
+          "version": {
+            "raw": "Angular CLI: 22.1.8",
+            "normalized": "22.1.8",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\Pnpm\\global\\node_modules\\@angular\\cli",
+          "version": {
+            "raw": "22.1.8",
+            "normalized": "22.1.8",
+            "channel": null
+          },
+          "active": false,
+          "source": "package-manager"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "ng",
+          "path": "C:\\Synthetic\\Pnpm\\ng.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "javascript.environment",
+      "type": "environment",
+      "source": "NVM_HOME/NVM_SYMLINK/PNPM_HOME",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [],
+        "pnpmHomeConfigured": true
+      }
+    },
+    {
+      "evidenceId": "javascript.node.version",
+      "type": "command",
+      "source": "node --version",
+      "exitCode": 0,
+      "captured": "v24.13.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.npm.version",
+      "type": "command",
+      "source": "npm --version",
+      "exitCode": 0,
+      "captured": "11.19.1",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.pnpm.version",
+      "type": "command",
+      "source": "pnpm --version",
+      "exitCode": 0,
+      "captured": "12.4.2",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.corepack.version",
+      "type": "command",
+      "source": "corepack --version",
+      "exitCode": 0,
+      "captured": "0.34.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.cli.angular-cli.version",
+      "type": "command",
+      "source": "ng version",
+      "exitCode": 0,
+      "captured": "Angular CLI: 22.1.8",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.npm.global-inventory",
+      "type": "command",
+      "source": "npm list --global --depth=0 --json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "truncated": false,
+        "timedOut": false,
+        "parseSucceeded": true,
+        "matchedPackages": []
+      }
+    },
+    {
+      "evidenceId": "javascript.pnpm.global-inventory",
+      "type": "command",
+      "source": "pnpm list --global --depth=0 --json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "truncated": false,
+        "timedOut": false,
+        "parseSucceeded": true,
+        "matchedPackages": [
+          {
+            "packageName": "@angular/cli",
+            "manager": "pnpm",
+            "version": "22.1.8",
+            "pathKnown": true
+          }
+        ]
+      }
+    }
+  ]
+}
