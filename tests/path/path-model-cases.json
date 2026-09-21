@@ -1,0 +1,23 @@
+{
+  "environmentOverrides": {
+    "WORKSTATION_PATH_TEST_ROOT": "C:\\Synthetic\\EnvRoot\\"
+  },
+  "machinePath": "\"C:\\Tools\";c:/tools/;C:\\Missing\\;%WORKSTATION_PATH_TEST_ROOT%\\bin;%WORKSTATION_PATH_UNRESOLVED%\\bin",
+  "userPath": "C:\\TOOLS\\;D:\\UserTools\\\\",
+  "processPath": "C:\\Tools;D:/UserTools/;E:\\Session\\",
+  "expected": {
+    "machineEntryCount": 5,
+    "machineDuplicateCount": 1,
+    "userEntryCount": 2,
+    "processEntryCount": 3,
+    "crossScopeDuplicateCount": 1,
+    "normalizedFirstMachine": "C:\\Tools",
+    "normalizedSecondMachine": "c:\\tools",
+    "firstMachineComparisonKey": "c:\\tools",
+    "duplicateFirstEquivalentPosition": 0,
+    "normalizedEnvironmentExpansion": "C:\\Synthetic\\EnvRoot\\bin",
+    "unresolvedNormalized": "%WORKSTATION_PATH_UNRESOLVED%\\bin",
+    "userSecondNormalized": "D:\\UserTools",
+    "processSecondNormalized": "D:\\UserTools"
+  }
+}
