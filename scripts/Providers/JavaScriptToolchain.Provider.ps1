@@ -508,7 +508,21 @@ if (-not [string]::IsNullOrWhiteSpace($nvmRoot) -and (Test-Path -LiteralPath $nv
     }
     catch {
         $hasPartial = $true
-        $warnings.Add((New-AuditIssue -Code 'NVM_ROOT_ENUMERATION_FAILED' -Message 'NVM root version directories could not be enumerated completely.' -Severity warning -ComponentId 'node'))
+
+        foreach ($versionRecord in $nvmListedNodeVersions) {
+            $active = $false
+            if ($null -ne $nvmCurrentVersion -and $null -ne $versionRecord) {
+                $active = [string]::Equals(
+                    [string]$nvmCurrentVersion.normalized,
+                    [string]$versionRecord.normalized,
+                    [StringComparison]::OrdinalIgnoreCase
+                )
+            }
+
+            Add-UniqueInstallation -List $nodeAdditionalInstallations -Path $null -Version $versionRecord -Active $active -Source configuration
+        }
+
+        $warnings.Add((New-AuditIssue -Code 'NVM_ROOT_ENUMERATION_FAILED' -Message 'NVM root version directories could not be enumerated completely; nvm list evidence was retained.' -Severity warning -ComponentId 'node' -EvidenceIds @('javascript.nvm-windows.list')))
     }
 }
 
