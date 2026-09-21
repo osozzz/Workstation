@@ -35,6 +35,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "developer.clis",
     "inventory.commands",
     "path.precedence",
+    "javascript.precedence",
     "environment.baseline",
     "winget.baseline",
 }
@@ -42,6 +43,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
 EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "inventory.commands",
     "path.precedence",
+    "javascript.precedence",
     "environment.baseline",
 }
 
@@ -506,6 +508,54 @@ def validate_real_report(
             "Controlled audit must map at least one command resolution "
             "to Process PATH."
         )
+
+    javascript_precedence = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "javascript.precedence"
+    )
+    if javascript_precedence["components"]:
+        fail(
+            "JavaScript precedence provider must remain derived and own no "
+            "components."
+        )
+
+    javascript_summary = next(
+        (
+            item
+            for item in javascript_precedence["evidence"]
+            if item["evidenceId"] == "javascript-precedence.summary"
+        ),
+        None,
+    )
+    if javascript_summary is None:
+        fail(
+            "Controlled audit is missing JavaScript precedence summary "
+            "evidence."
+        )
+
+    javascript_attributes = javascript_summary["attributes"]
+    if javascript_attributes.get("readOnly") is not True:
+        fail(
+            "JavaScript precedence analysis must remain explicitly read-only."
+        )
+    if javascript_attributes.get("duplicatedRuntimeDiscovery") is not False:
+        fail(
+            "JavaScript precedence analysis must not duplicate runtime "
+            "discovery."
+        )
+
+    dependencies = javascript_attributes.get("dependencies", {})
+    for dependency_name in (
+        "javascriptToolchain",
+        "pathPrecedence",
+        "environmentBaseline",
+    ):
+        if dependencies.get(dependency_name) is not True:
+            fail(
+                "JavaScript precedence controlled audit is missing dependency "
+                f"evidence for {dependency_name}."
+            )
 
     environment = next(
         provider
