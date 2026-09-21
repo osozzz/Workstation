@@ -171,6 +171,12 @@ jobs:
               }
           }
 
+          $windowsComponent = $hostProvider.components | Where-Object componentId -eq 'windows'
+          $windowsCimEvidence = $hostProvider.evidence | Where-Object evidenceId -eq 'host.windows.cim'
+          if ($windowsCimEvidence -and $windowsCimEvidence.attributes.caption -and $windowsComponent.name -ne $windowsCimEvidence.attributes.caption) {
+              throw "Expected the normalized Windows component name to preserve the CIM caption."
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
@@ -183,6 +189,11 @@ jobs:
               if ($source -match '(?i)--accept-source-agreements') {
                   throw "WinGet platform detection must not accept source agreements."
               }
+          }
+
+          $wingetSourceEvidence = $wingetProvider.evidence | Where-Object evidenceId -eq 'winget.sources'
+          if ($wingetSourceEvidence -and ($null -ne $wingetSourceEvidence.captured -or -not $wingetSourceEvidence.redacted)) {
+              throw "WinGet source diagnostics must redact raw source details."
           }
 
           $commandInventory = $result.Report.providers | Where-Object providerId -eq 'inventory.commands'
