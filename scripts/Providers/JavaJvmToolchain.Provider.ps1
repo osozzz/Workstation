@@ -536,7 +536,8 @@ foreach ($registryPath in $registryPaths) {
                 continue
             }
 
-            $candidateHome = [string]$properties.JavaHome
+            $javaHomeProperty = $properties.PSObject.Properties['JavaHome']
+            $candidateHome = if ($null -ne $javaHomeProperty) { [string]$javaHomeProperty.Value } else { $null }
             if (-not [string]::IsNullOrWhiteSpace($candidateHome)) {
                 Add-JavaCandidate -List $candidates -Path $candidateHome -Source registry
                 $registryRootCount++
