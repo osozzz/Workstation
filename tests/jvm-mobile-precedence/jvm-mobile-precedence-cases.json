@@ -1,0 +1,365 @@
+{
+  "cases": {
+    "alignedJvmMobile": {
+      "processPath": "C:\\Synthetic\\Java\\Jdk\\bin;C:\\Synthetic\\Flutter\\bin;C:\\Synthetic\\Android\\Sdk\\platform-tools",
+      "environment": {
+        "JAVA_HOME": {
+          "value": "C:\\Synthetic\\Java\\Jdk",
+          "exists": true
+        },
+        "FLUTTER_ROOT": {
+          "value": "C:\\Synthetic\\Flutter",
+          "exists": true
+        },
+        "PUB_CACHE": {
+          "value": "C:\\Synthetic\\PubCache",
+          "exists": true
+        },
+        "ANDROID_HOME": {
+          "value": "C:\\Synthetic\\Android\\Sdk",
+          "exists": true
+        },
+        "ANDROID_SDK_ROOT": null
+      },
+      "components": {
+        "java": "present",
+        "javac": "present",
+        "flutter": "present",
+        "dart": "present",
+        "android-sdk": "present",
+        "adb": "present"
+      },
+      "resolutions": {
+        "java": [
+          {
+            "command": "java",
+            "path": "C:\\Synthetic\\Java\\Jdk\\bin\\java.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          }
+        ],
+        "javac": [
+          {
+            "command": "javac",
+            "path": "C:\\Synthetic\\Java\\Jdk\\bin\\javac.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          }
+        ],
+        "flutter": [
+          {
+            "command": "flutter",
+            "path": "C:\\Synthetic\\Flutter\\bin\\flutter.bat",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          }
+        ],
+        "dart": [
+          {
+            "command": "dart",
+            "path": "C:\\Synthetic\\Flutter\\bin\\dart.bat",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          }
+        ],
+        "adb": [
+          {
+            "command": "adb",
+            "path": "C:\\Synthetic\\Android\\Sdk\\platform-tools\\adb.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          }
+        ]
+      },
+      "dartRelationship": {
+        "activeSource": "flutter-bundled",
+        "activeBundledFlutterRoot": "C:\\Synthetic\\Flutter",
+        "bundledInstallationCount": 2
+      },
+      "expectedWarningCodes": []
+    },
+    "javaHomeMismatch": {
+      "processPath": "C:\\Synthetic\\Java\\Direct\\bin;C:\\Synthetic\\Java\\Jdk\\bin",
+      "environment": {
+        "JAVA_HOME": {
+          "value": "C:\\Synthetic\\Java\\Jdk",
+          "exists": true
+        },
+        "FLUTTER_ROOT": null,
+        "PUB_CACHE": null,
+        "ANDROID_HOME": null,
+        "ANDROID_SDK_ROOT": null
+      },
+      "components": {
+        "java": "present",
+        "javac": "present",
+        "flutter": "missing",
+        "dart": "missing",
+        "android-sdk": "missing",
+        "adb": "missing"
+      },
+      "resolutions": {
+        "java": [
+          {
+            "command": "java",
+            "path": "C:\\Synthetic\\Java\\Direct\\bin\\java.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          },
+          {
+            "command": "java",
+            "path": "C:\\Synthetic\\Java\\Jdk\\bin\\java.exe",
+            "commandType": "Application",
+            "precedence": 1,
+            "active": false
+          }
+        ],
+        "javac": [
+          {
+            "command": "javac",
+            "path": "C:\\Synthetic\\Java\\Direct\\bin\\javac.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          },
+          {
+            "command": "javac",
+            "path": "C:\\Synthetic\\Java\\Jdk\\bin\\javac.exe",
+            "commandType": "Application",
+            "precedence": 1,
+            "active": false
+          }
+        ]
+      },
+      "dartRelationship": null,
+      "expectedWarningCodes": [
+        "JAVA_HOME_JAVA_PRECEDENCE_MISMATCH",
+        "JAVA_HOME_JAVAC_PRECEDENCE_MISMATCH",
+        "JAVA_PATH_COLLISION",
+        "JAVAC_PATH_COLLISION"
+      ]
+    },
+    "flutterRootMismatch": {
+      "processPath": "C:\\Synthetic\\FlutterDirect\\bin;C:\\Synthetic\\Flutter\\bin",
+      "environment": {
+        "JAVA_HOME": null,
+        "FLUTTER_ROOT": {
+          "value": "C:\\Synthetic\\Flutter",
+          "exists": true
+        },
+        "PUB_CACHE": null,
+        "ANDROID_HOME": null,
+        "ANDROID_SDK_ROOT": null
+      },
+      "components": {
+        "java": "missing",
+        "javac": "missing",
+        "flutter": "present",
+        "dart": "missing",
+        "android-sdk": "missing",
+        "adb": "missing"
+      },
+      "resolutions": {
+        "flutter": [
+          {
+            "command": "flutter",
+            "path": "C:\\Synthetic\\FlutterDirect\\bin\\flutter.bat",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          },
+          {
+            "command": "flutter",
+            "path": "C:\\Synthetic\\Flutter\\bin\\flutter.bat",
+            "commandType": "Application",
+            "precedence": 1,
+            "active": false
+          }
+        ]
+      },
+      "dartRelationship": null,
+      "expectedWarningCodes": [
+        "FLUTTER_ROOT_PRECEDENCE_MISMATCH",
+        "FLUTTER_PATH_COLLISION"
+      ]
+    },
+    "standaloneDartShadowing": {
+      "processPath": "C:\\Synthetic\\StandaloneDart\\bin;C:\\Synthetic\\Flutter\\bin",
+      "environment": {
+        "JAVA_HOME": null,
+        "FLUTTER_ROOT": {
+          "value": "C:\\Synthetic\\Flutter",
+          "exists": true
+        },
+        "PUB_CACHE": {
+          "value": "C:\\Synthetic\\PubCache",
+          "exists": true
+        },
+        "ANDROID_HOME": null,
+        "ANDROID_SDK_ROOT": null
+      },
+      "components": {
+        "java": "missing",
+        "javac": "missing",
+        "flutter": "present",
+        "dart": "partial",
+        "android-sdk": "missing",
+        "adb": "missing"
+      },
+      "resolutions": {
+        "flutter": [
+          {
+            "command": "flutter",
+            "path": "C:\\Synthetic\\Flutter\\bin\\flutter.bat",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          }
+        ],
+        "dart": [
+          {
+            "command": "dart",
+            "path": "C:\\Synthetic\\StandaloneDart\\bin\\dart.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          },
+          {
+            "command": "dart",
+            "path": "C:\\Synthetic\\Flutter\\bin\\dart.bat",
+            "commandType": "Application",
+            "precedence": 1,
+            "active": false
+          }
+        ]
+      },
+      "dartRelationship": {
+        "activeSource": "standalone",
+        "activeBundledFlutterRoot": null,
+        "bundledInstallationCount": 2
+      },
+      "expectedWarningCodes": [
+        "DART_PATH_COLLISION",
+        "DART_STANDALONE_SHADOWS_FLUTTER"
+      ]
+    },
+    "androidRootDisagreement": {
+      "processPath": "C:\\Synthetic\\Android\\SdkA\\platform-tools;C:\\Synthetic\\Android\\SdkB\\platform-tools",
+      "environment": {
+        "JAVA_HOME": null,
+        "FLUTTER_ROOT": null,
+        "PUB_CACHE": null,
+        "ANDROID_HOME": {
+          "value": "C:\\Synthetic\\Android\\SdkA",
+          "exists": true
+        },
+        "ANDROID_SDK_ROOT": {
+          "value": "C:\\Synthetic\\Android\\SdkB",
+          "exists": true
+        }
+      },
+      "components": {
+        "java": "missing",
+        "javac": "missing",
+        "flutter": "missing",
+        "dart": "missing",
+        "android-sdk": "present",
+        "adb": "present"
+      },
+      "resolutions": {
+        "adb": [
+          {
+            "command": "adb",
+            "path": "C:\\Synthetic\\Android\\SdkA\\platform-tools\\adb.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          },
+          {
+            "command": "adb",
+            "path": "C:\\Synthetic\\Android\\SdkB\\platform-tools\\adb.exe",
+            "commandType": "Application",
+            "precedence": 1,
+            "active": false
+          }
+        ]
+      },
+      "dartRelationship": null,
+      "expectedWarningCodes": [
+        "ADB_PATH_COLLISION",
+        "ANDROID_SDK_ROOT_DISAGREEMENT"
+      ]
+    },
+    "adbOutsideConfiguredRoot": {
+      "processPath": "C:\\Synthetic\\Android\\Other\\platform-tools;C:\\Synthetic\\Android\\Sdk\\platform-tools",
+      "environment": {
+        "JAVA_HOME": null,
+        "FLUTTER_ROOT": null,
+        "PUB_CACHE": null,
+        "ANDROID_HOME": {
+          "value": "C:\\Synthetic\\Android\\Sdk",
+          "exists": true
+        },
+        "ANDROID_SDK_ROOT": null
+      },
+      "components": {
+        "java": "missing",
+        "javac": "missing",
+        "flutter": "missing",
+        "dart": "missing",
+        "android-sdk": "present",
+        "adb": "present"
+      },
+      "resolutions": {
+        "adb": [
+          {
+            "command": "adb",
+            "path": "C:\\Synthetic\\Android\\Other\\platform-tools\\adb.exe",
+            "commandType": "Application",
+            "precedence": 0,
+            "active": true
+          },
+          {
+            "command": "adb",
+            "path": "C:\\Synthetic\\Android\\Sdk\\platform-tools\\adb.exe",
+            "commandType": "Application",
+            "precedence": 1,
+            "active": false
+          }
+        ]
+      },
+      "dartRelationship": null,
+      "expectedWarningCodes": [
+        "ADB_PATH_COLLISION",
+        "ADB_SDK_ROOT_PRECEDENCE_MISMATCH"
+      ]
+    },
+    "missingOptionalTooling": {
+      "processPath": "C:\\Synthetic\\Tools",
+      "environment": {
+        "JAVA_HOME": null,
+        "FLUTTER_ROOT": null,
+        "PUB_CACHE": null,
+        "ANDROID_HOME": null,
+        "ANDROID_SDK_ROOT": null
+      },
+      "components": {
+        "java": "missing",
+        "javac": "missing",
+        "flutter": "missing",
+        "dart": "missing",
+        "android-sdk": "missing",
+        "adb": "missing"
+      },
+      "resolutions": {},
+      "dartRelationship": null,
+      "expectedWarningCodes": []
+    }
+  }
+}
