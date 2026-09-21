@@ -72,7 +72,7 @@
       ],
       "installations": [
         {
-          "path": "C:\\Synthetic\\Flutter\\bin\\cache\\dart-sdk\\bin\\dart.exe",
+          "path": "C:\\Synthetic\\Flutter\\bin\\dart.bat",
           "version": {
             "raw": "3.10.0",
             "normalized": "3.10.0",
@@ -80,12 +80,22 @@
           },
           "active": true,
           "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\Flutter\\bin\\cache\\dart-sdk\\bin\\dart.exe",
+          "version": {
+            "raw": "3.10.0",
+            "normalized": "3.10.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "filesystem"
         }
       ],
       "commandResolutions": [
         {
           "command": "dart",
-          "path": "C:\\Synthetic\\Flutter\\bin\\cache\\dart-sdk\\bin\\dart.exe",
+          "path": "C:\\Synthetic\\Flutter\\bin\\dart.bat",
           "commandType": "Application",
           "version": null,
           "precedence": 0,
@@ -292,7 +302,7 @@
       "attributes": {
         "activeSource": "flutter-bundled",
         "activeBundledFlutterRoot": "C:\\Synthetic\\Flutter",
-        "bundledInstallationCount": 1
+        "bundledInstallationCount": 2
       }
     },
     {
