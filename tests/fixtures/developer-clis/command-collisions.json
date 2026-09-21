@@ -1,0 +1,305 @@
+{
+  "providerId": "developer.clis",
+  "category": "runtime",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "git",
+      "name": "Git",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "2.55.0.windows.1",
+        "normalized": "2.55.0.windows.1",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "2.55.0.windows.1",
+          "normalized": "2.55.0.windows.1",
+          "channel": null
+        },
+        {
+          "raw": "2.54.0.windows.1",
+          "normalized": "2.54.0.windows.1",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\GitA\\cmd\\git.exe",
+          "version": {
+            "raw": "2.55.0.windows.1",
+            "normalized": "2.55.0.windows.1",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\GitB\\cmd\\git.exe",
+          "version": {
+            "raw": "2.54.0.windows.1",
+            "normalized": "2.54.0.windows.1",
+            "channel": null
+          },
+          "active": false,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "git",
+          "path": "C:\\Synthetic\\GitA\\cmd\\git.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        },
+        {
+          "command": "git",
+          "path": "C:\\Synthetic\\GitB\\cmd\\git.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 1,
+          "active": false
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "github-cli",
+      "name": "GitHub CLI",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "2.80.0",
+        "normalized": "2.80.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "2.80.0",
+          "normalized": "2.80.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\GhA\\gh.exe",
+          "version": {
+            "raw": "2.80.0",
+            "normalized": "2.80.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\GhB\\gh.exe",
+          "version": null,
+          "active": false,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "gh",
+          "path": "C:\\Synthetic\\GhA\\gh.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        },
+        {
+          "command": "gh",
+          "path": "C:\\Synthetic\\GhB\\gh.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 1,
+          "active": false
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "docker",
+      "name": "Docker CLI",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "supabase-cli",
+      "name": "Supabase CLI",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "vercel-cli",
+      "name": "Vercel CLI",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "heroku-cli",
+      "name": "Heroku CLI",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "docker-compose",
+      "name": "Docker Compose",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "GIT_COMMAND_COLLISION",
+      "message": "Multiple 'git' command resolutions were detected. Precedence is preserved instead of silently collapsing them.",
+      "severity": "warning",
+      "componentId": "git",
+      "evidenceIds": [
+        "developer.git.version"
+      ]
+    },
+    {
+      "code": "GITHUB_CLI_COMMAND_COLLISION",
+      "message": "Multiple 'gh' command resolutions were detected. Precedence is preserved instead of silently collapsing them.",
+      "severity": "warning",
+      "componentId": "github-cli",
+      "evidenceIds": [
+        "developer.github-cli.version"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "developer.git.version",
+      "type": "command",
+      "source": "git --version",
+      "exitCode": 0,
+      "captured": "git version 2.55.0.windows.1",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 2
+      }
+    },
+    {
+      "evidenceId": "developer.github-cli.version",
+      "type": "command",
+      "source": "gh --version",
+      "exitCode": 0,
+      "captured": "gh version 2.80.0 (2026-09-01)",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 2
+      }
+    },
+    {
+      "evidenceId": "developer.safety-boundary",
+      "type": "derived",
+      "source": "developer CLI audit boundary",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "authenticationStateCollected": false,
+        "accountStateCollected": false,
+        "gitConfigurationCollected": false,
+        "dockerDaemonInspected": false,
+        "dockerContextsCollected": false,
+        "servicesStartedOrStopped": false
+      }
+    }
+  ]
+}
