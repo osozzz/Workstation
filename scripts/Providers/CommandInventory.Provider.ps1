@@ -51,11 +51,6 @@ function Get-FirstOutputLine {
 
 $toolSpecs = @(
     @{ Id='heroku-cli'; Label='Heroku CLI'; Command='heroku'; Args=@('--version') },
-    @{ Id='python'; Label='Python'; Command='python'; Args=@('--version') },
-    @{ Id='python-launcher'; Label='Python Launcher'; Command='py'; Args=@('--version') },
-    @{ Id='pip'; Label='pip'; Command='pip'; Args=@('--version') },
-    @{ Id='pipx'; Label='pipx'; Command='pipx'; Args=@('--version') },
-    @{ Id='uv'; Label='uv'; Command='uv'; Args=@('--version') },
     @{ Id='dotnet-sdk'; Label='.NET SDK'; Command='dotnet'; Args=@('--version') },
     @{ Id='rust'; Label='Rust'; Command='rustc'; Args=@('--version') },
     @{ Id='cargo'; Label='Cargo'; Command='cargo'; Args=@('--version') },
