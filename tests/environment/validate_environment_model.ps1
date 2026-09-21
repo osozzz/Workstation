@@ -77,6 +77,14 @@ try {
         throw 'Unapproved environment-variable snapshot request must fail.'
     }
 
+    $directResolution = Resolve-AuditEnvironmentReferences -Value '%WORKSTATION_SECRET_TEST%\Direct' -ReferenceValues @{ WORKSTATION_SECRET_TEST = 'MUST_NOT_BE_READ' }
+    if ($directResolution.expanded -match 'MUST_NOT_BE_READ') {
+        throw 'Resolver must ignore unapproved dictionary values even when explicitly supplied.'
+    }
+    if ($directResolution.unapprovedReferenceCount -ne 1 -or @($directResolution.unresolvedVariables).Count -ne 0) {
+        throw 'Direct unapproved resolver classification is incorrect.'
+    }
+
     $model = Get-AuditEnvironmentModel -Snapshot $snapshot
     if ($model.variableCount -ne @($fixture.snapshot).Count) {
         throw "Unexpected environment model variable count: $($model.variableCount)"
