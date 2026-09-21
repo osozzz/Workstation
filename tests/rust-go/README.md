@@ -21,3 +21,5 @@ All committed fixtures are synthetic. They must not contain real workstation pat
 The provider does not infer toolchain ownership unless local command/path evidence proves it. A standalone `rustc`/Cargo installation is reported as standalone rather than being attributed to rustup.
 
 The workstation policy keeps Rust on stable/latest-stable and Go on latest-stable globally while allowing repositories to pin compatible local toolchain versions. Actual latest-version lookup and upgrade recommendations remain in the later version-intelligence milestone.
+
+Rustup 1.28.0 is the minimum safe-inspection baseline for this provider. Modern rustup probes disable automatic installation in the isolated child process; older or unverifiable rustup binaries remain visible as partial state but are not executed.
