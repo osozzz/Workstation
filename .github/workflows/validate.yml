@@ -140,6 +140,24 @@ jobs:
             throw "Expected non-allowlisted environment variable access to be rejected."
           }
 
+          $testOverrideName = 'WORKSTATION_AUDIT_CHILD_OVERRIDE'
+          $previousOverride = [Environment]::GetEnvironmentVariable($testOverrideName, 'Process')
+          [Environment]::SetEnvironmentVariable($testOverrideName, 'parent-value', 'Process')
+          try {
+            $overridden = Invoke-AuditCommand -Command 'cmd.exe' -Arguments @('/d', '/c', 'echo %WORKSTATION_AUDIT_CHILD_OVERRIDE%') -TimeoutSeconds 10 -EnvironmentOverrides @{ WORKSTATION_AUDIT_CHILD_OVERRIDE = 'child-value' }
+            if ($overridden.Status -ne 'success' -or $overridden.Captured.Trim() -ne 'child-value') {
+              throw "Expected isolated child-process environment override."
+            }
+
+            $parentValue = [Environment]::GetEnvironmentVariable($testOverrideName, 'Process')
+            if ($parentValue -ne 'parent-value') {
+              throw "Child-process environment override must not mutate the parent process."
+            }
+          }
+          finally {
+            [Environment]::SetEnvironmentVariable($testOverrideName, $previousOverride, 'Process')
+          }
+
       - name: Smoke-test provider orchestrator
         shell: pwsh
         run: |
@@ -401,6 +419,10 @@ jobs:
           }
           if ($goEnvironmentEvidence.attributes.rawOutputRetained) {
               throw "Raw go env JSON must not be retained."
+          }
+
+          if ($goEnvironmentEvidence.attributes.GOTOOLCHAIN -ne 'local') {
+              throw "Go probes must force GOTOOLCHAIN=local."
           }
 
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
