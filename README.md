@@ -4,9 +4,9 @@ A Windows developer-workstation toolkit for auditing, comparing, and standardizi
 
 ## Current phase
 
-**v0.3.0 — Audit Core**
+**v0.5.0 — PATH & Environment Intelligence**
 
-The repository now has a normalized read-only audit contract, shared audit runtime, deterministic provider orchestration, transitional providers, and contract-level validation. The next phase expands ecosystem-specific runtime and SDK detection.
+`v0.4.0 — Runtime & SDK Detection` is complete and published. The repository is now extending the read-only audit with normalized PATH and environment intelligence, command-to-PATH precedence analysis, and ecosystem-specific conflict detection.
 
 The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
 
