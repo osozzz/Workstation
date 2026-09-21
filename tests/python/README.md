@@ -10,7 +10,7 @@ It covers:
 - explicit protection against executing WindowsApps/Python Install Manager aliases that could trigger automatic runtime installation;
 - pip detection through both the direct command and the active interpreter's `-m pip --version` probe;
 - independent pipx and uv detection;
-- conservative pyenv-win detection through `PYENV_ROOT`, `pyenv --version`, and `pyenv versions --bare`;
+- conservative pyenv-win detection through `PYENV_ROOT`, `pyenv --version`, and `pyenv versions`;
 - command collisions, launcher-only state, missing pip, and partial configurations;
 - migration of Python-specific ownership out of the transitional command inventory;
 - source-level guards against package installation, environment creation, runtime installation, shim switching, and premature latest-version intelligence.
