@@ -693,6 +693,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
             missingPathCount      = 0
             hasUnresolvedVariable = $false
             unresolvedVariables   = @()
+            unapprovedReferenceCount = 0
             isConfigured          = $true
             isInvalid             = $true
         }
