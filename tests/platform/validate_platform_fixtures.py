@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -164,6 +165,13 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
     ):
         fail("winget-present.json must represent healthy WinGet detection.")
 
+    winget_sources = evidence(winget_present, "winget.sources")
+    if winget_sources["captured"] is not None or winget_sources["redacted"] is not True:
+        fail(
+            "winget-present.json must redact raw source details while preserving "
+            "the command status."
+        )
+
     winget_unavailable = fixtures["winget-unavailable.json"]
     if winget_unavailable["status"] != "unavailable":
         fail("winget-unavailable.json must use provider status unavailable.")
@@ -175,6 +183,13 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
         fail("winget-partial.json must use provider status partial.")
     if component(winget_partial, "winget")["state"] != "partial":
         fail("winget-partial.json must represent partial WinGet state.")
+
+    winget_partial_sources = evidence(winget_partial, "winget.sources")
+    if (
+        winget_partial_sources["captured"] is not None
+        or winget_partial_sources["redacted"] is not True
+    ):
+        fail("winget-partial.json must redact raw source details.")
 
     for name in (
         "winget-present.json",
@@ -218,7 +233,7 @@ def validate_source_ownership() -> None:
             "during a read-only audit."
         )
 
-    if "id='winget'" in command_source or 'id="winget"' in command_source:
+    if re.search(r"\bid\s*=\s*['\"]winget['\"]", command_source):
         fail(
             "CommandInventory.Provider.ps1 must not duplicate WinGet "
             "ownership after specialized detection exists."
