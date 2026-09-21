@@ -805,7 +805,7 @@ function ConvertTo-AuditEnvironmentPathValue {
                 continue
             }
 
-            $pathValues.Add((ConvertTo-AuditPathEntry -Scope process -Position $pathValues.Count -Entry ([string]$segment) -AllowedEnvironmentReferenceNames $script:AuditEnvironmentAllowList))
+            $pathValues.Add((ConvertTo-AuditPathEntry -Scope $Scope -Position $pathValues.Count -Entry ([string]$segment) -AllowedEnvironmentReferenceNames $script:AuditEnvironmentAllowList))
         }
     }
 
