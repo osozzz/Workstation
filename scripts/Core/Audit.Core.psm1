@@ -520,8 +520,41 @@ function ConvertTo-AuditPathEntry {
         $entryValue = $entryValue.Substring(1, $entryValue.Length - 2).Trim()
     }
 
-    $expanded = [Environment]::ExpandEnvironmentVariables($entryValue)
-    $hasUnresolvedVariable = ($expanded -match '%[^%]+%')
+    $expanded = $entryValue
+    $unresolvedVariables = [System.Collections.Generic.List[string]]::new()
+
+    for ($pass = 0; $pass -lt 8; $pass++) {
+        $matches = @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))
+        if ($matches.Count -eq 0) {
+            break
+        }
+
+        $changed = $false
+
+        foreach ($match in $matches) {
+            $name = [string]$match.Groups['name'].Value
+            $value = [Environment]::GetEnvironmentVariable($name, 'Process')
+
+            if ([string]::IsNullOrEmpty($value)) {
+                if (-not $unresolvedVariables.Contains($name)) {
+                    $unresolvedVariables.Add($name)
+                }
+                continue
+            }
+
+            $expanded = $expanded.Replace($match.Value, $value)
+            $changed = $true
+        }
+
+        if (-not $changed) {
+            break
+        }
+    }
+
+    $hasUnresolvedVariable = (
+        $unresolvedVariables.Count -gt 0 -or
+        $expanded -match '%[^%]+%'
+    )
 
     $normalized = $expanded.Trim()
     if (
@@ -599,6 +632,7 @@ function ConvertTo-AuditPathEntry {
         duplicateWithinScope    = $false
         firstEquivalentPosition = $null
         hasUnresolvedVariable   = $hasUnresolvedVariable
+        unresolvedVariables     = $unresolvedVariables.ToArray()
     }
 }
 
