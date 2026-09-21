@@ -315,18 +315,7 @@
           "channel": null
         }
       ],
-      "installations": [
-        {
-          "path": "C:\\Synthetic\\Docker\\docker.exe",
-          "version": {
-            "raw": "5.0.0",
-            "normalized": "5.0.0",
-            "channel": null
-          },
-          "active": true,
-          "source": "command"
-        }
-      ],
+      "installations": [],
       "commandResolutions": [
         {
           "command": "docker",
