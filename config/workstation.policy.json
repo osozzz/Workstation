@@ -82,5 +82,13 @@
     "defaultTrack": "latest-stable",
     "projectsMustUseLocalCompatibleVersion": true,
     "inspectEnvironmentReadOnly": true
+  },
+  "developerClis": {
+    "defaultTrack": "latest-stable",
+    "inspectAuthenticationState": false,
+    "inspectAccountState": false,
+    "inspectGitConfiguration": false,
+    "inspectDockerDaemon": false,
+    "inspectDockerContexts": false
   }
 }
