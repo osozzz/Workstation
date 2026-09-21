@@ -18,6 +18,7 @@ CORE_PATH = ROOT / "scripts" / "Core" / "Audit.Core.psm1"
 EXPECTED_FIXTURES = {
     "multiple-sdks-runtimes.json",
     "missing-workloads.json",
+    "no-workloads-installed.json",
     "runtime-only-host.json",
     "unavailable-cli.json",
 }
@@ -174,6 +175,36 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
             "Successful workload raw output must be explicitly discarded."
         )
 
+    no_workloads = fixtures["no-workloads-installed.json"]
+    if no_workloads["status"] != "success":
+        fail(
+            "no-workloads-installed.json must remain a successful provider "
+            "result when workload inspection succeeds with an empty list."
+        )
+    no_workloads_component = component(
+        no_workloads, "dotnet-workloads"
+    )
+    if (
+        no_workloads_component["state"] != "missing"
+        or no_workloads_component["installed"] is not False
+    ):
+        fail(
+            "Successful empty workload inventory must normalize to "
+            "state=missing and installed=false."
+        )
+    no_workloads_evidence = evidence(
+        no_workloads, "dotnet.workloads"
+    )["attributes"]
+    if (
+        no_workloads_evidence.get("status") != "success"
+        or no_workloads_evidence.get("installed") != []
+        or no_workloads_evidence.get("installedCount") != 0
+    ):
+        fail(
+            "Empty workload evidence must preserve successful inspection "
+            "with an empty installed set."
+        )
+
     missing_workloads = fixtures["missing-workloads.json"]
     if missing_workloads["status"] != "partial":
         fail("missing-workloads.json must use provider status partial.")
@@ -297,6 +328,12 @@ def validate_source_ownership() -> None:
         fail(
             "The workload parser must tolerate pre-.NET 9 machine-readable "
             "wrapper markers."
+        )
+
+    if "$workloadids.count -gt 0" not in provider_source:
+        fail(
+            "Successful empty workload inventories must be distinguished "
+            "from installed workload state."
         )
 
     if "updatemetadataignored = $true" not in provider_source:
