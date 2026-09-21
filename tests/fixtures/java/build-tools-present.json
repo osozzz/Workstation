@@ -1,0 +1,319 @@
+{
+  "providerId": "java.jvm",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "java",
+      "name": "Java Runtime",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "25.0.2",
+        "normalized": "25.0.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "25.0.2",
+          "normalized": "25.0.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Java\\jdk-25",
+          "version": {
+            "raw": "25.0.2",
+            "normalized": "25.0.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "java",
+          "path": "C:\\Synthetic\\Java\\jdk-25\\bin\\java.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "javac",
+      "name": "Java Compiler",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "25.0.2",
+        "normalized": "25.0.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "25.0.2",
+          "normalized": "25.0.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Java\\jdk-25\\bin\\javac.exe",
+          "version": {
+            "raw": "25.0.2",
+            "normalized": "25.0.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "filesystem"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "javac",
+          "path": "C:\\Synthetic\\Java\\jdk-25\\bin\\javac.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "maven",
+      "name": "Apache Maven",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "3.9.11",
+        "normalized": "3.9.11",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "3.9.11",
+          "normalized": "3.9.11",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Maven\\bin\\mvn.cmd",
+          "version": {
+            "raw": "3.9.11",
+            "normalized": "3.9.11",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "mvn",
+          "path": "C:\\Synthetic\\Maven\\bin\\mvn.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "gradle",
+      "name": "Gradle",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "9.1.0",
+        "normalized": "9.1.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "9.1.0",
+          "normalized": "9.1.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Gradle\\bin\\gradle.bat",
+          "version": {
+            "raw": "9.1.0",
+            "normalized": "9.1.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "gradle",
+          "path": "C:\\Synthetic\\Gradle\\bin\\gradle.bat",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "java.environment",
+      "type": "environment",
+      "source": "JAVA_HOME",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "configured": true,
+        "variables": []
+      }
+    },
+    {
+      "evidenceId": "java.runtime.properties",
+      "type": "command",
+      "source": "java -XshowSettings:properties -version",
+      "exitCode": 0,
+      "captured": "java.version = 25.0.2",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "javaVersion": "25.0.2",
+        "javaHomeKnown": true,
+        "vendor": "Eclipse Adoptium",
+        "runtimeName": "OpenJDK Runtime Environment",
+        "vmName": "OpenJDK 64-Bit Server VM",
+        "architecture": "amd64"
+      }
+    },
+    {
+      "evidenceId": "java.javac.version",
+      "type": "command",
+      "source": "javac -version",
+      "exitCode": 0,
+      "captured": "javac 25.0.2",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "java.registry",
+      "type": "registry",
+      "source": "JavaSoft JDK/JRE registry keys",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "inspectedKeyCount": 8,
+        "discoveredRootCount": 0
+      }
+    },
+    {
+      "evidenceId": "java.filesystem",
+      "type": "filesystem",
+      "source": "bounded known Java installation roots",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "inspectedRootCount": 9,
+        "discoveredCandidateCount": 1
+      }
+    },
+    {
+      "evidenceId": "java.installations",
+      "type": "derived",
+      "source": "normalized Java installation metadata",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "installations": [
+          {
+            "path": "C:\\Synthetic\\Java\\jdk-25",
+            "version": "25.0.2",
+            "majorVersion": 25,
+            "vendor": "Eclipse Adoptium",
+            "distribution": "Temurin",
+            "kind": "jdk",
+            "architecture": "amd64",
+            "sources": [
+              "command",
+              "environment"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "java.maven.version",
+      "type": "command",
+      "source": "mvn -version",
+      "exitCode": 0,
+      "captured": "Apache Maven 3.9.11",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "java.gradle.version",
+      "type": "command",
+      "source": "gradle --version",
+      "exitCode": 0,
+      "captured": "Gradle 9.1.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    }
+  ]
+}

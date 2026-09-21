@@ -43,5 +43,9 @@
     "globalDefaultTrack": "latest-stable",
     "prereleasePolicy": "explicit-opt-in-only",
     "projectCompatibilityOverridesGlobal": true
+  },
+  "java": {
+    "defaultTrack": "latest-stable",
+    "projectsMustUseLocalCompatibleVersion": true
   }
 }
