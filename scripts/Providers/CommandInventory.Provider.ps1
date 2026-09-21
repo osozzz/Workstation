@@ -14,7 +14,7 @@ if ($Describe) {
     return [pscustomobject][ordered]@{
         providerId = 'inventory.commands'
         category   = 'runtime'
-        order      = 27
+        order      = 28
     }
 }
 
@@ -49,15 +49,7 @@ function Get-FirstOutputLine {
     return (($Text -split [Environment]::NewLine) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1).Trim()
 }
 
-$toolSpecs = @(
-    @{ Id='heroku-cli'; Label='Heroku CLI'; Command='heroku'; Args=@('--version') },
-    @{ Id='git'; Label='Git'; Command='git'; Args=@('--version') },
-    @{ Id='github-cli'; Label='GitHub CLI'; Command='gh'; Args=@('--version') },
-    @{ Id='docker'; Label='Docker'; Command='docker'; Args=@('--version') },
-    @{ Id='docker-compose'; Label='Docker Compose'; Command='docker'; Args=@('compose','version') },
-    @{ Id='supabase-cli'; Label='Supabase CLI'; Command='supabase'; Args=@('--version') },
-    @{ Id='vercel-cli'; Label='Vercel CLI'; Command='vercel'; Args=@('--version') }
-)
+$toolSpecs = @()
 
 foreach ($spec in $toolSpecs) {
     $result = Invoke-AuditCommand -Command $spec.Command -Arguments $spec.Args -TimeoutSeconds 15
