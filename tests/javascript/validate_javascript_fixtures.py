@@ -26,6 +26,7 @@ SPECIALIZED_COMPONENT_IDS = {
     "node",
     "npm",
     "pnpm",
+    "corepack",
     "nvm-windows",
     "angular-cli",
     "typescript",
