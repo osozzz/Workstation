@@ -65,6 +65,11 @@ jobs:
         run: |
           python ./tests/rust-go/validate_rust_go_fixtures.py
 
+      - name: Validate developer CLI fixtures
+        shell: pwsh
+        run: |
+          python ./tests/developer-clis/validate_developer_cli_fixtures.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -198,11 +203,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 11) {
-              throw "Expected ten built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 12) {
+              throw "Expected eleven built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -425,6 +430,43 @@ jobs:
               throw "Go probes must force GOTOOLCHAIN=local."
           }
 
+          $developerCliProvider = $result.Report.providers | Where-Object providerId -eq 'developer.clis'
+          if ($developerCliProvider.status -eq 'failed') {
+              $developerCliMessages = @($developerCliProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "Developer CLI provider failed during smoke test: $developerCliMessages"
+          }
+
+          foreach ($componentId in @('git', 'github-cli', 'docker', 'docker-compose', 'supabase-cli', 'vercel-cli', 'heroku-cli')) {
+              if (-not ($developerCliProvider.components | Where-Object componentId -eq $componentId)) {
+                  throw "Expected developer CLI component '$componentId'."
+              }
+          }
+
+          foreach ($componentId in @('git', 'github-cli', 'docker', 'supabase-cli', 'vercel-cli', 'heroku-cli')) {
+              $component = $developerCliProvider.components | Where-Object componentId -eq $componentId
+              if ($component.state -eq 'present' -and @($component.commandResolutions).Count -lt 1) {
+                  throw "Present developer CLI component '$componentId' must preserve command resolution."
+              }
+          }
+
+          $developerSafetyEvidence = $developerCliProvider.evidence | Where-Object evidenceId -eq 'developer.safety-boundary'
+          if (-not $developerSafetyEvidence) {
+              throw "Expected explicit developer CLI safety-boundary evidence."
+          }
+
+          foreach ($attributeName in @(
+              'authenticationStateCollected',
+              'accountStateCollected',
+              'gitConfigurationCollected',
+              'dockerDaemonInspected',
+              'dockerContextsCollected',
+              'servicesStartedOrStopped'
+          )) {
+              if ($developerSafetyEvidence.attributes.$attributeName -ne $false) {
+                  throw "Developer CLI safety boundary must preserve $attributeName=false."
+              }
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
@@ -502,6 +544,16 @@ jobs:
               }
           }
 
+          foreach ($componentId in @('git', 'github-cli', 'docker', 'docker-compose', 'supabase-cli', 'vercel-cli', 'heroku-cli')) {
+              if ($commandInventory.components | Where-Object componentId -eq $componentId) {
+                  throw "Generic command inventory must not duplicate developer CLI ownership for '$componentId'."
+              }
+          }
+
+          if (@($commandInventory.components).Count -ne 0) {
+              throw "Transitional command inventory should be empty after all Sprint 2 ownership migrations."
+          }
+
           $failedProvider = $result.Report.providers | Where-Object providerId -eq 'synthetic.failure'
           if ($failedProvider.status -ne 'failed') {
               throw "Expected the synthetic provider to be isolated as failed."
@@ -519,7 +571,7 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 10) {
+          if ($missingProviderResult.Report.summary.providerCount -ne 11) {
               throw "Expected built-in providers to continue after an additional provider path failure."
           }
 
