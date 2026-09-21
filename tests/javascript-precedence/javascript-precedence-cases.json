@@ -1,0 +1,138 @@
+{
+  "cases": {
+    "intendedNvmLayout": {
+      "processPath": "C:\\Synthetic\\Nvm;C:\\Synthetic\\NvmShim;C:\\Synthetic\\Pnpm",
+      "environment": {
+        "NVM_HOME": { "value": "C:\\Synthetic\\Nvm", "exists": true },
+        "NVM_SYMLINK": { "value": "C:\\Synthetic\\NvmShim", "exists": true },
+        "PNPM_HOME": { "value": "C:\\Synthetic\\Pnpm", "exists": true }
+      },
+      "components": {
+        "nvm-windows": "present",
+        "node": "present",
+        "npm": "present",
+        "pnpm": "present"
+      },
+      "resolutions": {
+        "node": [
+          { "command": "node", "path": "C:\\Synthetic\\NvmShim\\node.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "npm": [
+          { "command": "npm", "path": "C:\\Synthetic\\NvmShim\\npm.cmd", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "pnpm": [
+          { "command": "pnpm", "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd", "commandType": "Application", "precedence": 0, "active": true }
+        ]
+      },
+      "expectedWarningCodes": []
+    },
+    "staleNvmRoots": {
+      "processPath": "C:\\Synthetic\\DirectNode",
+      "environment": {
+        "NVM_HOME": { "value": "C:\\Synthetic\\MissingNvm", "exists": false },
+        "NVM_SYMLINK": { "value": "C:\\Synthetic\\MissingNvmShim", "exists": false },
+        "PNPM_HOME": null
+      },
+      "components": {
+        "nvm-windows": "present",
+        "node": "present",
+        "npm": "present",
+        "pnpm": "missing"
+      },
+      "resolutions": {
+        "node": [
+          { "command": "node", "path": "C:\\Synthetic\\DirectNode\\node.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "npm": [
+          { "command": "npm", "path": "C:\\Synthetic\\DirectNode\\npm.cmd", "commandType": "Application", "precedence": 0, "active": true }
+        ]
+      },
+      "expectedWarningCodes": [
+        "NVM_HOME_STALE_PATH",
+        "NVM_SYMLINK_STALE_PATH"
+      ]
+    },
+    "directNodeShadowing": {
+      "processPath": "C:\\Synthetic\\DirectNode;C:\\Synthetic\\Nvm;C:\\Synthetic\\NvmShim",
+      "environment": {
+        "NVM_HOME": { "value": "C:\\Synthetic\\Nvm", "exists": true },
+        "NVM_SYMLINK": { "value": "C:\\Synthetic\\NvmShim", "exists": true },
+        "PNPM_HOME": null
+      },
+      "components": {
+        "nvm-windows": "present",
+        "node": "present",
+        "npm": "present",
+        "pnpm": "missing"
+      },
+      "resolutions": {
+        "node": [
+          { "command": "node", "path": "C:\\Synthetic\\DirectNode\\node.exe", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "node", "path": "C:\\Synthetic\\NvmShim\\node.exe", "commandType": "Application", "precedence": 1, "active": false }
+        ],
+        "npm": [
+          { "command": "npm", "path": "C:\\Synthetic\\DirectNode\\npm.cmd", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "npm", "path": "C:\\Synthetic\\NvmShim\\npm.cmd", "commandType": "Application", "precedence": 1, "active": false }
+        ]
+      },
+      "expectedWarningCodes": [
+        "NODE_BYPASSES_NVM_SYMLINK",
+        "NODE_PATH_COLLISION",
+        "NPM_PATH_COLLISION"
+      ]
+    },
+    "pnpmConflict": {
+      "processPath": "C:\\Synthetic\\OtherPnpm;C:\\Synthetic\\Pnpm;C:\\Synthetic\\Node",
+      "environment": {
+        "NVM_HOME": null,
+        "NVM_SYMLINK": null,
+        "PNPM_HOME": { "value": "C:\\Synthetic\\Pnpm", "exists": true }
+      },
+      "components": {
+        "nvm-windows": "missing",
+        "node": "present",
+        "npm": "present",
+        "pnpm": "present"
+      },
+      "resolutions": {
+        "node": [
+          { "command": "node", "path": "C:\\Synthetic\\Node\\node.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "npm": [
+          { "command": "npm", "path": "C:\\Synthetic\\Node\\npm.cmd", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "pnpm": [
+          { "command": "pnpm", "path": "C:\\Synthetic\\OtherPnpm\\pnpm.cmd", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "pnpm", "path": "C:\\Synthetic\\Pnpm\\pnpm.cmd", "commandType": "Application", "precedence": 1, "active": false }
+        ]
+      },
+      "expectedWarningCodes": [
+        "PNPM_HOME_PRECEDENCE_MISMATCH",
+        "PNPM_PATH_COLLISION"
+      ]
+    },
+    "missingOptionalTooling": {
+      "processPath": "C:\\Synthetic\\Node",
+      "environment": {
+        "NVM_HOME": null,
+        "NVM_SYMLINK": null,
+        "PNPM_HOME": null
+      },
+      "components": {
+        "nvm-windows": "missing",
+        "node": "present",
+        "npm": "present",
+        "pnpm": "missing"
+      },
+      "resolutions": {
+        "node": [
+          { "command": "node", "path": "C:\\Synthetic\\Node\\node.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "npm": [
+          { "command": "npm", "path": "C:\\Synthetic\\Node\\npm.cmd", "commandType": "Application", "precedence": 0, "active": true }
+        ]
+      },
+      "expectedWarningCodes": []
+    }
+  }
+}
