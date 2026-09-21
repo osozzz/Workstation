@@ -622,11 +622,7 @@ function Get-AuditPathScopeModel {
     $entries = New-Object System.Collections.Generic.List[object]
     $seen = @{}
 
-    foreach ($rawIndex in 0..([Math]::Max($rawEntries.Count - 1, -1))) {
-        if ($rawIndex -lt 0) {
-            break
-        }
-
+    for ($rawIndex = 0; $rawIndex -lt $rawEntries.Count; $rawIndex++) {
         $rawEntry = [string]$rawEntries[$rawIndex]
         if ([string]::IsNullOrWhiteSpace($rawEntry)) {
             continue
