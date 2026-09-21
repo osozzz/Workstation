@@ -14,7 +14,7 @@ if ($Describe) {
     return [pscustomobject][ordered]@{
         providerId = 'inventory.commands'
         category   = 'runtime'
-        order      = 20
+        order      = 25
     }
 }
 
@@ -50,19 +50,7 @@ function Get-FirstOutputLine {
 }
 
 $toolSpecs = @(
-    @{ Id='node'; Label='Node.js'; Command='node'; Args=@('--version') },
-    @{ Id='npm'; Label='npm'; Command='npm'; Args=@('--version') },
-    @{ Id='pnpm'; Label='pnpm'; Command='pnpm'; Args=@('--version') },
-    @{ Id='nvm-windows'; Label='NVM for Windows'; Command='nvm'; Args=@('--version') },
-    @{ Id='angular-cli'; Label='Angular CLI'; Command='ng'; Args=@('version') },
-    @{ Id='typescript'; Label='TypeScript'; Command='tsc'; Args=@('--version') },
-    @{ Id='prisma'; Label='Prisma'; Command='prisma'; Args=@('--version') },
-    @{ Id='nodemon'; Label='Nodemon'; Command='nodemon'; Args=@('--version') },
-    @{ Id='rimraf'; Label='Rimraf'; Command='rimraf'; Args=@('--version') },
-    @{ Id='zoho-extension-toolkit'; Label='Zoho Extension Toolkit'; Command='zet'; Args=@('-v') },
-    @{ Id='zoho-catalyst-cli'; Label='Zoho Catalyst CLI'; Command='catalyst'; Args=@('--version') },
     @{ Id='heroku-cli'; Label='Heroku CLI'; Command='heroku'; Args=@('--version') },
-    @{ Id='redis-commander'; Label='Redis Commander'; Command='redis-commander'; Args=@('--version') },
     @{ Id='flutter'; Label='Flutter'; Command='flutter'; Args=@('--version') },
     @{ Id='dart'; Label='Dart'; Command='dart'; Args=@('--version') },
     @{ Id='python'; Label='Python'; Command='python'; Args=@('--version') },
