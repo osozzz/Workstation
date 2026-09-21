@@ -149,6 +149,8 @@ function Invoke-AuditCommand {
         [ValidateRange(1, 1048576)]
         [int]$MaximumCaptureLength = 32768,
 
+        [System.Collections.IDictionary]$EnvironmentOverrides = @{},
+
         [switch]$SensitiveOutput
     )
 
@@ -176,10 +178,23 @@ function Invoke-AuditCommand {
     $target = Get-AuditCommandTarget -CommandInfo $resolved
     $execution = $null
 
-    if ($TimeoutSeconds -gt 0) {
+    $useIsolatedJob = ($TimeoutSeconds -gt 0 -or $EnvironmentOverrides.Count -gt 0)
+
+    if ($useIsolatedJob) {
+        $environmentPairs = @(
+            $EnvironmentOverrides.GetEnumerator() |
+                ForEach-Object {
+                    [pscustomobject]@{
+                        Name  = [string]$_.Key
+                        Value = $(if ($null -eq $_.Value) { $null } else { [string]$_.Value })
+                    }
+                }
+        )
+
         $jobInput = [pscustomobject]@{
-            Target    = $target
-            Arguments = @($Arguments)
+            Target           = $target
+            Arguments        = @($Arguments)
+            EnvironmentPairs = $environmentPairs
         }
 
         $job = $null
@@ -190,6 +205,14 @@ function Invoke-AuditCommand {
                 $global:LASTEXITCODE = 0
 
                 try {
+                    foreach ($pair in @($Invocation.EnvironmentPairs)) {
+                        [Environment]::SetEnvironmentVariable(
+                            [string]$pair.Name,
+                            $pair.Value,
+                            'Process'
+                        )
+                    }
+
                     $text = (& $Invocation.Target @($Invocation.Arguments) 2>&1 | Out-String).Trim()
                     $exitCode = $LASTEXITCODE
                     if ($null -eq $exitCode) {
@@ -213,7 +236,13 @@ function Invoke-AuditCommand {
                 }
             } -ArgumentList $jobInput
 
-            $completedJob = Wait-Job -Job $job -Timeout $TimeoutSeconds
+            $completedJob = if ($TimeoutSeconds -gt 0) {
+                Wait-Job -Job $job -Timeout $TimeoutSeconds
+            }
+            else {
+                Wait-Job -Job $job
+            }
+
             if (-not $completedJob) {
                 Stop-Job -Job $job -ErrorAction SilentlyContinue | Out-Null
                 return [pscustomobject][ordered]@{
