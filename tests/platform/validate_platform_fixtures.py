@@ -87,6 +87,20 @@ def component(provider: dict[str, Any], component_id: str) -> dict[str, Any]:
     return matches[0]
 
 
+def evidence(provider: dict[str, Any], evidence_id: str) -> dict[str, Any]:
+    matches = [
+        item
+        for item in provider["evidence"]
+        if item["evidenceId"] == evidence_id
+    ]
+    if len(matches) != 1:
+        fail(
+            f"{provider['providerId']}: expected exactly one "
+            f"evidence '{evidence_id}', found {len(matches)}."
+        )
+    return matches[0]
+
+
 def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
     full = fixtures["host-full.json"]
     if full["providerId"] != "host.system" or full["status"] != "success":
@@ -98,6 +112,23 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
 
     if windows["state"] != "present" or windows["installed"] is not True:
         fail("host-full.json must contain present Windows state.")
+
+    cim = evidence(full, "host.windows.cim")
+    registry = evidence(full, "host.windows.registry")
+    cim_caption = cim["attributes"].get("caption")
+    registry_product_name = registry["attributes"].get("productName")
+
+    if windows["name"] != cim_caption:
+        fail(
+            "host-full.json must preserve the CIM Windows caption as the "
+            "normalized component name."
+        )
+    if not registry_product_name or registry_product_name == cim_caption:
+        fail(
+            "host-full.json must exercise a registry ProductName compatibility "
+            "string that differs from the CIM caption."
+        )
+
     if windows_ps["state"] != "present":
         fail("host-full.json must contain Windows PowerShell.")
     if core_ps["state"] != "present":
@@ -168,6 +199,12 @@ def validate_source_ownership() -> None:
                 "Host.Provider.ps1 must own both Windows PowerShell "
                 "and PowerShell Core detection."
             )
+
+    if "$oscaption = [string]$windowsregistry.productname" in host_source:
+        fail(
+            "Host.Provider.ps1 must not let the registry ProductName "
+            "override the CIM Windows caption."
+        )
 
     if "winget upgrade" in winget_source:
         fail(
