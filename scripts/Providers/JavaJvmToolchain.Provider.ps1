@@ -750,6 +750,10 @@ if ($javacResult.Found -and ($javacResult.Status -ne 'success' -or $null -eq $ac
     $hasPartial = $true
     $warnings.Add((New-AuditIssue -Code 'JAVAC_VERSION_INCOMPLETE' -Message 'javac is resolvable, but its version could not be determined reliably.' -Severity warning -ComponentId 'javac' -EvidenceIds @('java.javac.version')))
 }
+elseif (-not $javacResult.Found -and $jdkMetadata.Count -gt 0) {
+    $hasPartial = $true
+    $warnings.Add((New-AuditIssue -Code 'JAVAC_COMMAND_UNRESOLVED' -Message 'JDK installations were discovered, but javac is not resolvable from the active command path.' -Severity warning -ComponentId 'javac' -EvidenceIds @('java.installations')))
+}
 elseif (-not $javacResult.Found -and $javaResult.Found) {
     $hasPartial = $true
     $warnings.Add((New-AuditIssue -Code 'JAVAC_COMMAND_MISSING' -Message 'Java runtime is available, but javac is not resolvable. A complete developer JDK toolchain is not active.' -Severity warning -ComponentId 'javac' -EvidenceIds @('java.installations')))
