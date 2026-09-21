@@ -287,7 +287,7 @@ def validate_source_ownership() -> None:
                 f"read-only probe: {probe}"
             )
 
-    if "microsoft\\windowsapps" not in provider_source:
+    if r"\\microsoft\\windowsapps\\" not in provider_source:
         fail(
             "Python provider must guard WindowsApps aliases before executing "
             "python."
