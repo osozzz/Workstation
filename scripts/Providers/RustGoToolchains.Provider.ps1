@@ -736,25 +736,27 @@ $cargoResolutions = @(Get-AuditCommandResolution -Command 'cargo')
 $rustcPath = Get-ActiveResolutionPath -Resolutions $rustcResolutions
 $cargoPath = Get-ActiveResolutionPath -Resolutions $cargoResolutions
 
-$rustcIsRustupProxy = $rustupResult.Found -and (Test-SameCommandDirectory -Left $rustupPath -Right $rustcPath)
-$cargoIsRustupProxy = $rustupResult.Found -and (Test-SameCommandDirectory -Left $rustupPath -Right $cargoPath)
+$rustupDetected = ($rustupResolutions.Count -gt 0)
+$rustcIsRustupProxy = $rustupDetected -and (Test-SameCommandDirectory -Left $rustupPath -Right $rustcPath)
+$cargoIsRustupProxy = $rustupDetected -and (Test-SameCommandDirectory -Left $rustupPath -Right $cargoPath)
 $managedToolchainActive = ($activeManagedToolchains.Count -gt 0)
 
-$allowRustcExecution = -not $rustcIsRustupProxy -or $managedToolchainActive
-$allowCargoExecution = -not $cargoIsRustupProxy -or $managedToolchainActive
+$allowRustcExecution = -not $rustcIsRustupProxy -or ($rustupSafeInspection -and $managedToolchainActive)
+$allowCargoExecution = -not $cargoIsRustupProxy -or ($rustupSafeInspection -and $managedToolchainActive)
 
-$rustcComponent = New-CommandVersionComponent -ComponentId 'rustc' -Name 'Rust Compiler' -Command 'rustc' -Arguments @('--version') -EvidenceId 'rust.rustc.version' -AllowExecute:$allowRustcExecution -BlockedWarningCode 'RUSTC_PROXY_NOT_EXECUTED' -BlockedWarningMessage 'rustc resolves through rustup, but no active installed toolchain was proven. Version execution was skipped to avoid rustup auto-install side effects.'
-$cargoComponent = New-CommandVersionComponent -ComponentId 'cargo' -Name 'Cargo' -Command 'cargo' -Arguments @('--version') -EvidenceId 'rust.cargo.version' -AllowExecute:$allowCargoExecution -BlockedWarningCode 'CARGO_PROXY_NOT_EXECUTED' -BlockedWarningMessage 'cargo resolves through rustup, but no active installed toolchain was proven. Version execution was skipped to avoid rustup auto-install side effects.'
+$rustProxyEnvironment = @{
+    RUSTUP_AUTO_INSTALL = '0'
+}
+$rustcEnvironment = if ($rustcIsRustupProxy) { $rustProxyEnvironment } else { @{} }
+$cargoEnvironment = if ($cargoIsRustupProxy) { $rustProxyEnvironment } else { @{} }
+
+$rustcComponent = New-CommandVersionComponent -ComponentId 'rustc' -Name 'Rust Compiler' -Command 'rustc' -Arguments @('--version') -EvidenceId 'rust.rustc.version' -AllowExecute:$allowRustcExecution -BlockedWarningCode 'RUSTC_PROXY_NOT_EXECUTED' -BlockedWarningMessage 'rustc resolves through rustup, but a safely inspectable active installed toolchain was not proven. Version execution was skipped to avoid rustup auto-install side effects.' -EnvironmentOverrides $rustcEnvironment
+$cargoComponent = New-CommandVersionComponent -ComponentId 'cargo' -Name 'Cargo' -Command 'cargo' -Arguments @('--version') -EvidenceId 'rust.cargo.version' -AllowExecute:$allowCargoExecution -BlockedWarningCode 'CARGO_PROXY_NOT_EXECUTED' -BlockedWarningMessage 'cargo resolves through rustup, but a safely inspectable active installed toolchain was not proven. Version execution was skipped to avoid rustup auto-install side effects.' -EnvironmentOverrides $cargoEnvironment
 
 $components.Add($rustcComponent)
 $components.Add($cargoComponent)
 
-if ($rustupResult.Found -and $rustToolchains.Count -gt 0 -and $activeManagedToolchains.Count -eq 0) {
-    $hasPartial = $true
-    $warnings.Add((New-AuditIssue -Code 'RUSTUP_ACTIVE_TOOLCHAIN_UNPROVEN' -Message 'rustup toolchains are installed, but none was marked active for the current audit context.' -Severity warning -ComponentId 'rust-toolchains' -EvidenceIds @('rust.toolchains')))
-}
-
-if (-not $rustupResult.Found -and ($rustcComponent.state -in @('present', 'partial') -or $cargoComponent.state -in @('present', 'partial'))) {
+if (-not $rustupDetected -and ($rustcComponent.state -in @('present', 'partial') -or $cargoComponent.state -in @('present', 'partial'))) {
     $warnings.Add((New-AuditIssue -Code 'RUST_STANDALONE_WITHOUT_RUSTUP' -Message 'Rust tooling is available without a detected rustup manager. Ownership is left unclassified rather than inferred.' -Severity info -ComponentId 'rustup' -EvidenceIds @('rust.toolchains')))
 }
 
