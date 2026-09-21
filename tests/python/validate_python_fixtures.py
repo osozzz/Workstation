@@ -311,6 +311,12 @@ def validate_source_ownership() -> None:
             "when available."
         )
 
+    if "$inputobject -is [system.array]" not in provider_source:
+        fail(
+            "Modern Python install manager JSON arrays must be traversed "
+            "explicitly rather than through generic object properties."
+        )
+
     if "py list --online" in provider_source:
         fail(
             "Python detection must never query online runtime inventory in "
