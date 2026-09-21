@@ -19,6 +19,25 @@ $script:AuditEnvironmentAllowList = @(
     'DOTNET_ROOT_X86'
 )
 
+$script:AuditEnvironmentVariableDefinitions = @{
+    'NVM_HOME'         = @{ kind = 'path'; filesystem = $true }
+    'NVM_SYMLINK'      = @{ kind = 'path'; filesystem = $true }
+    'PNPM_HOME'        = @{ kind = 'path'; filesystem = $true }
+    'JAVA_HOME'        = @{ kind = 'path'; filesystem = $true }
+    'ANDROID_HOME'     = @{ kind = 'path'; filesystem = $true }
+    'ANDROID_SDK_ROOT' = @{ kind = 'path'; filesystem = $true }
+    'FLUTTER_ROOT'     = @{ kind = 'path'; filesystem = $true }
+    'PUB_CACHE'        = @{ kind = 'path'; filesystem = $true }
+    'CARGO_HOME'       = @{ kind = 'path'; filesystem = $true }
+    'RUSTUP_HOME'      = @{ kind = 'path'; filesystem = $true }
+    'GOPATH'           = @{ kind = 'path-list'; filesystem = $true }
+    'GOROOT'           = @{ kind = 'path'; filesystem = $true }
+    'PYENV_ROOT'       = @{ kind = 'path'; filesystem = $true }
+    'DOTNET_ROOT'      = @{ kind = 'path'; filesystem = $true }
+    'DOTNET_ROOT_X64'  = @{ kind = 'path'; filesystem = $true }
+    'DOTNET_ROOT_X86'  = @{ kind = 'path'; filesystem = $true }
+}
+
 
 function Get-AuditCommandTarget {
     [CmdletBinding()]
@@ -493,6 +512,377 @@ function Get-AuditEnvironmentSnapshot {
 
 
 
+function Get-AuditEnvironmentVariableDefinition {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name
+    )
+
+    if ($script:AuditEnvironmentAllowList -notcontains $Name) {
+        throw "Environment variable '$Name' is not in the audit allowlist."
+    }
+
+    $definition = $script:AuditEnvironmentVariableDefinitions[$Name]
+    if ($null -eq $definition) {
+        throw "Environment variable '$Name' does not have an audit definition."
+    }
+
+    return [pscustomobject][ordered]@{
+        name       = $Name
+        kind       = [string]$definition.kind
+        filesystem = [bool]$definition.filesystem
+    }
+}
+
+
+function Resolve-AuditEnvironmentReferences {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [object]$Value,
+
+        [System.Collections.IDictionary]$ReferenceValues = @{}
+    )
+
+    if ($null -eq $Value) {
+        return [pscustomobject][ordered]@{
+            expanded            = $null
+            hasUnresolved       = $false
+            unresolvedVariables = @()
+            unapprovedReferenceCount = 0
+        }
+    }
+
+    $expanded = [string]$Value
+    $unresolved = [System.Collections.Generic.List[string]]::new()
+    $unapprovedReferences = [System.Collections.Generic.List[string]]::new()
+
+    for ($pass = 0; $pass -lt 8; $pass++) {
+        $matches = @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))
+        if ($matches.Count -eq 0) {
+            break
+        }
+
+        $changed = $false
+
+        foreach ($match in $matches) {
+            $referenceName = [string]$match.Groups['name'].Value
+
+            if ($script:AuditEnvironmentAllowList -notcontains $referenceName) {
+                $unapprovedKey = $referenceName.ToLowerInvariant()
+                if (-not $unapprovedReferences.Contains($unapprovedKey)) {
+                    $unapprovedReferences.Add($unapprovedKey)
+                }
+                continue
+            }
+
+            $foundReference = $false
+            $referenceValue = $null
+
+            foreach ($key in @($ReferenceValues.Keys)) {
+                if ([string]::Equals([string]$key, $referenceName, [StringComparison]::OrdinalIgnoreCase)) {
+                    $foundReference = $true
+                    $referenceValue = $ReferenceValues[$key]
+                    break
+                }
+            }
+
+            if (-not $foundReference) {
+                if (-not $unresolved.Contains($referenceName)) {
+                    $unresolved.Add($referenceName)
+                }
+                continue
+            }
+
+            if ($null -eq $referenceValue -or [string]::IsNullOrEmpty([string]$referenceValue)) {
+                if (-not $unresolved.Contains($referenceName)) {
+                    $unresolved.Add($referenceName)
+                }
+                continue
+            }
+
+            $replacement = [string]$referenceValue
+            $next = $expanded.Replace($match.Value, $replacement)
+            if ($next -ne $expanded) {
+                $expanded = $next
+                $changed = $true
+            }
+        }
+
+        if (-not $changed) {
+            break
+        }
+    }
+
+    foreach ($match in @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))) {
+        $referenceName = [string]$match.Groups['name'].Value
+
+        if ($script:AuditEnvironmentAllowList -contains $referenceName) {
+            if (-not $unresolved.Contains($referenceName)) {
+                $unresolved.Add($referenceName)
+            }
+        }
+        else {
+            $unapprovedKey = $referenceName.ToLowerInvariant()
+            if (-not $unapprovedReferences.Contains($unapprovedKey)) {
+                $unapprovedReferences.Add($unapprovedKey)
+            }
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        expanded                 = $expanded
+        hasUnresolved            = ($unresolved.Count -gt 0 -or $unapprovedReferences.Count -gt 0)
+        unresolvedVariables      = $unresolved.ToArray()
+        unapprovedReferenceCount = $unapprovedReferences.Count
+    }
+}
+
+
+function ConvertTo-AuditEnvironmentScopeValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('process', 'user', 'machine')]
+        [string]$Scope,
+
+        [AllowNull()]
+        [object]$Value,
+
+        [System.Collections.IDictionary]$ReferenceValues = @{}
+    )
+
+    $definition = Get-AuditEnvironmentVariableDefinition -Name $Name
+
+    if ($null -eq $Value) {
+        return [pscustomobject][ordered]@{
+            scope                 = $Scope
+            state                 = 'unset'
+            raw                   = $null
+            expanded              = $null
+            normalized            = $null
+            comparisonKey         = $null
+            exists                = $null
+            pathItems             = @()
+            missingPathCount      = 0
+            hasUnresolvedVariable = $false
+            unresolvedVariables   = @()
+            unapprovedReferenceCount = 0
+            isConfigured          = $false
+            isInvalid             = $false
+        }
+    }
+
+    $textValue = [string]$Value
+
+    if ($textValue.Length -eq 0) {
+        return [pscustomobject][ordered]@{
+            scope                 = $Scope
+            state                 = 'empty'
+            raw                   = ''
+            expanded              = ''
+            normalized            = ''
+            comparisonKey         = $null
+            exists                = $null
+            pathItems             = @()
+            missingPathCount      = 0
+            hasUnresolvedVariable = $false
+            unresolvedVariables   = @()
+            unapprovedReferenceCount = 0
+            isConfigured          = $true
+            isInvalid             = $true
+        }
+    }
+
+    $pathItems = [System.Collections.Generic.List[object]]::new()
+
+    if ($definition.kind -eq 'path-list') {
+        $segments = @($textValue -split ';')
+        foreach ($segment in $segments) {
+            if ([string]::IsNullOrWhiteSpace([string]$segment)) {
+                continue
+            }
+
+            $pathItems.Add((ConvertTo-AuditPathEntry -Scope $Scope -Position $pathItems.Count -Entry ([string]$segment) -EnvironmentValues $ReferenceValues))
+        }
+    }
+    else {
+        $pathItems.Add((ConvertTo-AuditPathEntry -Scope $Scope -Position 0 -Entry $textValue -EnvironmentValues $ReferenceValues))
+    }
+
+    $normalizedParts = @(
+        $pathItems |
+            ForEach-Object { $_.normalized } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }
+    )
+    $expandedParts = @($pathItems | ForEach-Object { $_.expanded })
+    $unresolvedVariables = @(
+        $pathItems |
+            ForEach-Object { @($_.unresolvedVariables) } |
+            Select-Object -Unique
+    )
+    $missingPathCount = @($pathItems | Where-Object { $_.exists -eq $false }).Count
+    $unapprovedReferenceCount = 0
+    foreach ($pathItem in @($pathItems)) {
+        $unapprovedReferenceCount += [int]$pathItem.unapprovedReferenceCount
+    }
+    $hasUnresolvedVariable = @(
+        $pathItems |
+            Where-Object { $_.hasUnresolvedVariable }
+    ).Count -gt 0
+
+    $normalized = if ($definition.kind -eq 'path-list') {
+        $normalizedParts -join ';'
+    }
+    elseif ($normalizedParts.Count -gt 0) {
+        [string]$normalizedParts[0]
+    }
+    else {
+        ''
+    }
+
+    $expanded = if ($definition.kind -eq 'path-list') {
+        $expandedParts -join ';'
+    }
+    elseif ($expandedParts.Count -gt 0) {
+        [string]$expandedParts[0]
+    }
+    else {
+        ''
+    }
+
+    $comparisonKey = if ([string]::IsNullOrWhiteSpace($normalized)) {
+        $null
+    }
+    else {
+        $normalized.ToLowerInvariant()
+    }
+
+    $exists = if ($definition.kind -eq 'path' -and $pathItems.Count -eq 1) {
+        $pathItems[0].exists
+    }
+    else {
+        $null
+    }
+
+    $isInvalid = ($pathItems.Count -eq 0 -or [string]::IsNullOrWhiteSpace($normalized))
+
+    return [pscustomobject][ordered]@{
+        scope                 = $Scope
+        state                 = 'value'
+        raw                   = $textValue
+        expanded              = $expanded
+        normalized            = $normalized
+        comparisonKey         = $comparisonKey
+        exists                = $exists
+        pathItems             = $pathItems.ToArray()
+        missingPathCount      = $missingPathCount
+        hasUnresolvedVariable = $hasUnresolvedVariable
+        unresolvedVariables   = @($unresolvedVariables)
+        unapprovedReferenceCount = $unapprovedReferenceCount
+        isConfigured          = $true
+        isInvalid             = $isInvalid
+    }
+}
+
+
+function Get-AuditEnvironmentModel {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object[]]$Snapshot
+    )
+
+    $items = @($Snapshot)
+    $seenNames = @{}
+    $scopeMaps = @{
+        process = @{}
+        user    = @{}
+        machine = @{}
+    }
+
+    foreach ($item in $items) {
+        if ($null -eq $item.PSObject.Properties['name']) {
+            throw 'Environment snapshot item is missing name.'
+        }
+
+        $name = [string]$item.name
+        Get-AuditEnvironmentVariableDefinition -Name $name | Out-Null
+
+        $key = $name.ToUpperInvariant()
+        if ($seenNames.ContainsKey($key)) {
+            throw "Environment snapshot contains duplicate variable '$name'."
+        }
+        $seenNames[$key] = $true
+
+        foreach ($scope in @('process', 'user', 'machine')) {
+            $property = $item.PSObject.Properties[$scope]
+            $scopeMaps[$scope][$name] = $(if ($property) { $property.Value } else { $null })
+        }
+    }
+
+    $variables = [System.Collections.Generic.List[object]]::new()
+
+    foreach ($item in $items) {
+        $name = [string]$item.name
+        $definition = Get-AuditEnvironmentVariableDefinition -Name $name
+        $scopeValues = [System.Collections.Generic.List[object]]::new()
+
+        foreach ($scope in @('process', 'user', 'machine')) {
+            $property = $item.PSObject.Properties[$scope]
+            $value = $(if ($property) { $property.Value } else { $null })
+            $scopeValues.Add((ConvertTo-AuditEnvironmentScopeValue -Name $name -Scope $scope -Value $value -ReferenceValues $scopeMaps[$scope]))
+        }
+
+        $configuredScopes = @($scopeValues | Where-Object { $_.isConfigured })
+        $valueScopes = @($scopeValues | Where-Object { $_.state -eq 'value' })
+        $distinctValues = @(
+            $valueScopes |
+                ForEach-Object { $_.comparisonKey } |
+                Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
+                Select-Object -Unique
+        )
+        $emptyScopeCount = @($scopeValues | Where-Object { $_.state -eq 'empty' }).Count
+        $invalidScopeCount = @($scopeValues | Where-Object { $_.isInvalid }).Count
+        $missingMeasure = @($scopeValues | Measure-Object -Property missingPathCount -Sum)
+        $missingPathCount = if ($missingMeasure.Count -gt 0 -and $null -ne $missingMeasure[0].Sum) { [int]$missingMeasure[0].Sum } else { 0 }
+        $unresolvedScopeCount = @($scopeValues | Where-Object { $_.hasUnresolvedVariable }).Count
+        $unapprovedReferenceCount = 0
+        foreach ($scopeValue in @($scopeValues)) {
+            $unapprovedReferenceCount += [int]$scopeValue.unapprovedReferenceCount
+        }
+
+        $variables.Add([pscustomobject][ordered]@{
+            name                 = $name
+            kind                 = $definition.kind
+            filesystem           = $definition.filesystem
+            configuredScopeCount = $configuredScopes.Count
+            valueScopeCount      = $valueScopes.Count
+            distinctValueCount   = $distinctValues.Count
+            scopeConflict        = ($distinctValues.Count -gt 1)
+            emptyScopeCount      = $emptyScopeCount
+            invalidScopeCount    = $invalidScopeCount
+            missingPathCount     = $missingPathCount
+            unresolvedScopeCount = $unresolvedScopeCount
+            unapprovedReferenceCount = $unapprovedReferenceCount
+            scopes               = $scopeValues.ToArray()
+        })
+    }
+
+    return [pscustomobject][ordered]@{
+        variableCount = $variables.Count
+        variables     = $variables.ToArray()
+    }
+}
+
+
+
 function ConvertTo-AuditPathEntry {
     [CmdletBinding()]
     param(
@@ -506,7 +896,10 @@ function ConvertTo-AuditPathEntry {
 
         [Parameter(Mandatory)]
         [AllowEmptyString()]
-        [string]$Entry
+        [string]$Entry,
+
+        [AllowNull()]
+        [System.Collections.IDictionary]$EnvironmentValues
     )
 
     $original = $Entry
@@ -520,41 +913,20 @@ function ConvertTo-AuditPathEntry {
         $entryValue = $entryValue.Substring(1, $entryValue.Length - 2).Trim()
     }
 
-    $expanded = $entryValue
-    $unresolvedVariables = [System.Collections.Generic.List[string]]::new()
-
-    for ($pass = 0; $pass -lt 8; $pass++) {
-        $matches = @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))
-        if ($matches.Count -eq 0) {
-            break
-        }
-
-        $changed = $false
-
-        foreach ($match in $matches) {
-            $name = [string]$match.Groups['name'].Value
-            $value = [Environment]::GetEnvironmentVariable($name, 'Process')
-
-            if ([string]::IsNullOrEmpty($value)) {
-                if (-not $unresolvedVariables.Contains($name)) {
-                    $unresolvedVariables.Add($name)
-                }
-                continue
-            }
-
-            $expanded = $expanded.Replace($match.Value, $value)
-            $changed = $true
-        }
-
-        if (-not $changed) {
-            break
+    $referenceValues = $EnvironmentValues
+    if ($null -eq $referenceValues) {
+        $referenceValues = @{}
+        foreach ($allowedName in $script:AuditEnvironmentAllowList) {
+            $referenceValues[$allowedName] = [Environment]::GetEnvironmentVariable($allowedName, 'Process')
         }
     }
 
-    $hasUnresolvedVariable = (
-        $unresolvedVariables.Count -gt 0 -or
-        $expanded -match '%[^%]+%'
-    )
+    $referenceResolution = Resolve-AuditEnvironmentReferences -Value $entryValue -ReferenceValues $referenceValues
+
+    $expanded = $referenceResolution.expanded
+    $unresolvedVariables = @($referenceResolution.unresolvedVariables)
+    $unapprovedReferenceCount = [int]$referenceResolution.unapprovedReferenceCount
+    $hasUnresolvedVariable = [bool]$referenceResolution.hasUnresolved
 
     $normalized = $expanded.Trim()
     if (
@@ -632,7 +1004,8 @@ function ConvertTo-AuditPathEntry {
         duplicateWithinScope    = $false
         firstEquivalentPosition = $null
         hasUnresolvedVariable   = $hasUnresolvedVariable
-        unresolvedVariables     = $unresolvedVariables.ToArray()
+        unresolvedVariables     = @($unresolvedVariables)
+        unapprovedReferenceCount = $unapprovedReferenceCount
     }
 }
 
@@ -755,6 +1128,10 @@ Export-ModuleMember -Function @(
     'New-AuditIssue',
     'Get-AuditProviderStatus',
     'Get-AuditEnvironmentSnapshot',
+    'Get-AuditEnvironmentVariableDefinition',
+    'Resolve-AuditEnvironmentReferences',
+    'ConvertTo-AuditEnvironmentScopeValue',
+    'Get-AuditEnvironmentModel',
     'ConvertTo-AuditPathEntry',
     'Get-AuditPathScopeModel',
     'Get-AuditPathModel'

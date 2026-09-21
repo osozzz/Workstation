@@ -1,8 +1,8 @@
 {
   "environmentOverrides": {
-    "WORKSTATION_PATH_TEST_ROOT": "C:\\Synthetic\\EnvRoot\\"
+    "PNPM_HOME": "C:\\Synthetic\\EnvRoot\\"
   },
-  "machinePath": "\"C:\\Tools\";c:/tools/;C:\\Missing\\;%WORKSTATION_PATH_TEST_ROOT%\\bin;%WORKSTATION_PATH_UNRESOLVED%\\bin",
+  "machinePath": "\"C:\\Tools\";c:/tools/;C:\\Missing\\;%PNPM_HOME%\\bin;%WORKSTATION_PATH_UNRESOLVED%\\bin",
   "userPath": "C:\\TOOLS\\;D:\\UserTools\\\\",
   "processPath": "C:\\Tools;D:/UserTools/;E:\\Session\\",
   "expected": {
