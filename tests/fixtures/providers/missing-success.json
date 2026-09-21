@@ -1,0 +1,30 @@
+{
+  "providerId": "runtime.synthetic-missing",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "synthetic-missing",
+      "name": "Synthetic Missing Runtime",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": []
+}
