@@ -12,6 +12,9 @@ Import-Module $corePath -Force
 $fixture = Get-Content -LiteralPath $fixturePath -Raw | ConvertFrom-Json
 
 $previousValues = @{}
+$unresolvedName = 'WORKSTATION_PATH_UNRESOLVED'
+$previousValues[$unresolvedName] = [Environment]::GetEnvironmentVariable($unresolvedName, 'Process')
+[Environment]::SetEnvironmentVariable($unresolvedName, $null, 'Process')
 
 try {
     foreach ($property in $fixture.environmentOverrides.PSObject.Properties) {
@@ -48,6 +51,10 @@ try {
 
     if ($model.crossScopeDuplicateCount -ne [int]$fixture.expected.crossScopeDuplicateCount) {
         throw "Unexpected persistent cross-scope duplicate count: $($model.crossScopeDuplicateCount)"
+    }
+
+    if ($machine.entries[0].original -ne '"C:\Tools"') {
+        throw "Original PATH evidence was not preserved: $($machine.entries[0].original)"
     }
 
     if ($machine.entries[0].normalized -ne [string]$fixture.expected.normalizedFirstMachine) {
