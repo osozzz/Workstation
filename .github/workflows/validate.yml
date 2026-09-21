@@ -17,16 +17,59 @@ jobs:
         shell: pwsh
         run: |
           $failed = $false
-          Get-ChildItem -Path scripts -Filter *.ps1 -Recurse | ForEach-Object {
-            $tokens = $null
-            $errors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
-            if ($errors.Count -gt 0) {
-              $failed = $true
-              Write-Error "Syntax errors in $($_.FullName): $($errors -join '; ')"
+          Get-ChildItem -Path scripts -Recurse -File |
+            Where-Object { $_.Extension -in @('.ps1', '.psm1') } |
+            ForEach-Object {
+              $tokens = $null
+              $errors = $null
+              [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+              if ($errors.Count -gt 0) {
+                $failed = $true
+                Write-Error "Syntax errors in $($_.FullName): $($errors -join '; ')"
+              }
             }
-          }
           if ($failed) { exit 1 }
+
+      - name: Smoke-test audit core runtime
+        shell: pwsh
+        run: |
+          Import-Module ./scripts/Core/Audit.Core.psm1 -Force
+
+          $success = Invoke-AuditCommand -Command 'cmd.exe' -Arguments @('/d', '/c', 'exit 0')
+          if ($success.Status -ne 'success' -or $success.ExitCode -ne 0) {
+            throw "Expected successful command execution."
+          }
+
+          $missing = Invoke-AuditCommand -Command '__workstation_missing_command__'
+          if ($missing.Status -ne 'not-found' -or $missing.Found) {
+            throw "Expected missing command to return not-found."
+          }
+
+          $nonZero = Invoke-AuditCommand -Command 'cmd.exe' -Arguments @('/d', '/c', 'exit 7')
+          if ($nonZero.Status -ne 'non-zero' -or $nonZero.ExitCode -ne 7) {
+            throw "Expected non-zero command execution to preserve exit code."
+          }
+
+          $failed = Invoke-AuditCommand -Command 'Get-Date' -Arguments @('-DefinitelyNotAParameter')
+          if ($failed.Status -ne 'failed') {
+            throw "Expected invocation failure to return failed."
+          }
+
+          $timedOut = Invoke-AuditCommand -Command 'cmd.exe' -Arguments @('/d', '/c', 'ping 127.0.0.1 -n 5 >nul') -TimeoutSeconds 1
+          if ($timedOut.Status -ne 'timed-out' -or -not $timedOut.TimedOut) {
+            throw "Expected timed command to return timed-out."
+          }
+
+          $evidence = New-AuditEvidence -EvidenceId 'synthetic.secret' -Type command -Source 'synthetic command' -Captured 'sensitive-value' -Sensitive
+          if (-not $evidence.Redacted -or $null -ne $evidence.Captured) {
+            throw "Expected sensitive evidence to be redacted."
+          }
+
+          $warning = New-AuditIssue -Code 'SYNTHETIC_WARNING' -Message 'Synthetic warning.' -Severity warning
+          $providerStatus = Get-AuditProviderStatus -Warnings @($warning)
+          if ($providerStatus -ne 'warning') {
+            throw "Expected provider status warning."
+          }
 
       - name: Validate JSON configuration
         shell: pwsh
