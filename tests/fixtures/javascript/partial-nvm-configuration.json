@@ -192,8 +192,8 @@
   ],
   "warnings": [
     {
-      "code": "NVM_CONFIGURATION_PARTIAL",
-      "message": "NVM environment configuration exists but an NVM installation could not be confirmed.",
+      "code": "NVM_LEGACY_CONFIGURATION_DETECTED",
+      "message": "Legacy NVM_HOME/NVM_SYMLINK configuration exists but a current NVM for Windows v2 installation could not be confirmed.",
       "severity": "warning",
       "componentId": "nvm-windows",
       "evidenceIds": [
@@ -206,7 +206,7 @@
     {
       "evidenceId": "javascript.environment",
       "type": "environment",
-      "source": "NVM_HOME/NVM_SYMLINK/PNPM_HOME",
+      "source": "PNPM_HOME plus legacy NVM_HOME/NVM_SYMLINK",
       "exitCode": null,
       "captured": null,
       "redacted": false,
@@ -231,7 +231,8 @@
             "machine": null
           }
         ],
-        "pnpmHomeConfigured": true
+        "pnpmHomeConfigured": true,
+        "legacyNvmEnvironmentConfigured": true
       }
     },
     {
