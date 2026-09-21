@@ -1,0 +1,289 @@
+{
+  "providerId": "rust-go.toolchains",
+  "category": "runtime",
+  "status": "warning",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "rustup",
+      "name": "rustup",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "rust-toolchains",
+      "name": "Rust Toolchains",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "rustc",
+      "name": "Rust Compiler",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "1.88.0",
+        "normalized": "1.88.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "1.88.0",
+          "normalized": "1.88.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\StandaloneRust\\bin\\rustc.exe",
+          "version": {
+            "raw": "1.88.0",
+            "normalized": "1.88.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "rustc",
+          "path": "C:\\Synthetic\\StandaloneRust\\bin\\rustc.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "cargo",
+      "name": "Cargo",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "1.88.0",
+        "normalized": "1.88.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "1.88.0",
+          "normalized": "1.88.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\StandaloneRust\\bin\\cargo.exe",
+          "version": {
+            "raw": "1.88.0",
+            "normalized": "1.88.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "cargo",
+          "path": "C:\\Synthetic\\StandaloneRust\\bin\\cargo.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "go",
+      "name": "Go",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "RUST_STANDALONE_WITHOUT_RUSTUP",
+      "message": "Rust tooling is available without a detected rustup manager. Ownership is left unclassified rather than inferred.",
+      "severity": "info",
+      "componentId": "rustup",
+      "evidenceIds": [
+        "rust.toolchains"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "rust-go.environment",
+      "type": "environment",
+      "source": "RUSTUP_HOME/CARGO_HOME/GOROOT/GOPATH",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "RUSTUP_HOME",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "CARGO_HOME",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "GOROOT",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "GOPATH",
+            "process": null,
+            "user": null,
+            "machine": null
+          }
+        ],
+        "rustupHomeConfigured": false,
+        "cargoHomeConfigured": false,
+        "gorootConfigured": false,
+        "gopathConfigured": false
+      }
+    },
+    {
+      "evidenceId": "rust.toolchains",
+      "type": "derived",
+      "source": "rustup not detected; managed toolchain enumeration unavailable",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "status": "not-applicable",
+        "toolchainCount": 0,
+        "toolchains": []
+      }
+    },
+    {
+      "evidenceId": "rust.active-toolchain",
+      "type": "derived",
+      "source": "rustup not detected; active managed toolchain unavailable",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "status": "not-applicable",
+        "activeToolchain": null,
+        "autoInstallGuard": null
+      }
+    },
+    {
+      "evidenceId": "rust.rustc.version",
+      "type": "command",
+      "source": "rustc --version",
+      "exitCode": 0,
+      "captured": "rustc 1.88.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1,
+        "executionSkipped": false,
+        "rustupAutoInstallGuard": false
+      }
+    },
+    {
+      "evidenceId": "rust.cargo.version",
+      "type": "command",
+      "source": "cargo --version",
+      "exitCode": 0,
+      "captured": "cargo 1.88.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1,
+        "executionSkipped": false,
+        "rustupAutoInstallGuard": false
+      }
+    },
+    {
+      "evidenceId": "go.environment",
+      "type": "derived",
+      "source": "Go CLI not detected; GOROOT/GOPATH command inspection unavailable",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "status": "not-applicable",
+        "GOROOT": null,
+        "GOPATH": null,
+        "rawOutputRetained": false
+      }
+    }
+  ]
+}

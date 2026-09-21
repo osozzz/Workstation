@@ -67,5 +67,20 @@
     "projectsMustUseLocalCompatibleVersion": true,
     "workloadsTrack": "latest-stable",
     "inspectWorkloadsReadOnly": true
+  },
+  "rust": {
+    "manager": "rustup",
+    "defaultChannel": "stable",
+    "defaultTrack": "latest-stable",
+    "managerTrack": "latest-stable",
+    "projectsMayPinToolchain": true,
+    "autoInstallDuringAudit": false,
+    "minimumSafeInspectionVersion": "1.28.0",
+    "legacyManagerPolicy": "detect-without-execution"
+  },
+  "go": {
+    "defaultTrack": "latest-stable",
+    "projectsMustUseLocalCompatibleVersion": true,
+    "inspectEnvironmentReadOnly": true
   }
 }
