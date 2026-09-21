@@ -90,6 +90,11 @@ jobs:
         run: |
           ./tests/path-precedence/validate_command_path_precedence.ps1
 
+      - name: Validate JavaScript precedence intelligence
+        shell: pwsh
+        run: |
+          ./tests/javascript-precedence/validate_javascript_precedence.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -521,6 +526,35 @@ jobs:
               throw "Expected at least one real command resolution to map to Process PATH."
           }
 
+          $javascriptPrecedenceProvider = $result.Report.providers | Where-Object providerId -eq 'javascript.precedence'
+          if ($javascriptPrecedenceProvider.status -eq 'failed') {
+              $javascriptPrecedenceMessages = @($javascriptPrecedenceProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "JavaScript precedence provider failed during smoke test: $javascriptPrecedenceMessages"
+          }
+
+          if (@($javascriptPrecedenceProvider.components).Count -ne 0) {
+              throw "JavaScript precedence provider must remain derived and own no components."
+          }
+
+          $javascriptPrecedenceSummary = $javascriptPrecedenceProvider.evidence | Where-Object evidenceId -eq 'javascript-precedence.summary'
+          if (-not $javascriptPrecedenceSummary) {
+              throw "Expected JavaScript precedence summary evidence."
+          }
+
+          if ($javascriptPrecedenceSummary.attributes.readOnly -ne $true) {
+              throw "JavaScript precedence analysis must remain explicitly read-only."
+          }
+
+          if ($javascriptPrecedenceSummary.attributes.duplicatedRuntimeDiscovery -ne $false) {
+              throw "JavaScript precedence analysis must not duplicate runtime discovery."
+          }
+
+          foreach ($dependencyName in @('javascriptToolchain', 'pathPrecedence', 'environmentBaseline')) {
+              if ($javascriptPrecedenceSummary.attributes.dependencies.$dependencyName -ne $true) {
+                  throw "JavaScript precedence dependency '$dependencyName' was not available during smoke test."
+              }
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
@@ -625,8 +659,8 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 12) {
-              throw "Expected built-in providers to continue after an additional provider path failure."
+          if ($missingProviderResult.Report.summary.providerCount -ne 13) {
+              throw "Expected all 13 built-in providers to continue after an additional provider path failure."
           }
 
       - name: Run controlled Sprint 2 integration audit
