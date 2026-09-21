@@ -187,7 +187,9 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
     nvm_component = component(nvm_managed, "nvm-windows")
 
     if nvm_component["state"] != "present":
-        fail("nvm-managed-node.json must contain NVM for Windows.")
+        fail("nvm-managed-node.json must contain a healthy NVM for Windows v2 installation.")
+    if nvm_component["activeVersion"]["normalized"] != "2.0.0":
+        fail("nvm-managed-node.json must model NVM for Windows v2 as the healthy baseline.")
     if len(nvm_node["discoveredVersions"]) < 2:
         fail("nvm-managed-node.json must preserve multiple Node versions.")
     if len(nvm_node["installations"]) < 3:
@@ -241,12 +243,15 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
             "partial-nvm-configuration.json must represent partial NVM state."
         )
     if not any(
-        item["code"] == "NVM_CONFIGURATION_PARTIAL"
+        item["code"] in {
+            "NVM_LEGACY_VERSION",
+            "NVM_LEGACY_CONFIGURATION_DETECTED",
+            "NVM_LEGACY_COMMAND_UNRESOLVED",
+        }
         for item in partial["warnings"]
     ):
         fail(
-            "partial-nvm-configuration.json must preserve the partial "
-            "NVM configuration warning."
+            "partial-nvm-configuration.json must preserve an explicit legacy NVM warning."
         )
 
 
@@ -319,23 +324,34 @@ def validate_source_ownership() -> None:
                 f"for {evidence_suffix}."
             )
 
-    nvm_invocations = set(
-        re.findall(
-            r"invoke-auditcommand\s+-command\s+['\"]nvm['\"]"
-            r"\s+-arguments\s+@\(['\"]([^'\"]+)['\"]\)",
-            provider_source,
-        )
+    required_v2_probes = (
+        "nvm' -arguments @('env', '--json')",
+        "nvm' -arguments @('config', 'list', '--json')",
+        "nvm' -arguments @('default', '--json')",
+        "nvm' -arguments @('list', '--json')",
     )
-    allowed_nvm_invocations = {"version", "current", "list", "root"}
-    if nvm_invocations - allowed_nvm_invocations:
+    for probe in required_v2_probes:
+        if probe not in provider_source:
+            fail(
+                "JavaScriptToolchain.Provider.ps1 must target the NVM for "
+                f"Windows v2 read-only interface: missing {probe}"
+            )
+
+    required_legacy_detection_probes = (
+        "nvm' -arguments @('current')",
+        "nvm' -arguments @('list')",
+        "nvm' -arguments @('root')",
+    )
+    for probe in required_legacy_detection_probes:
+        if probe not in provider_source:
+            fail(
+                "JavaScriptToolchain.Provider.ps1 must retain read-only legacy "
+                f"detection for migration diagnostics: missing {probe}"
+            )
+
+    if "nvm_legacy_version" not in provider_source:
         fail(
-            "JavaScriptToolchain.Provider.ps1 uses unexpected NVM "
-            f"subcommands: {sorted(nvm_invocations - allowed_nvm_invocations)}"
-        )
-    if nvm_invocations != allowed_nvm_invocations:
-        fail(
-            "JavaScriptToolchain.Provider.ps1 must keep the expected "
-            f"read-only NVM probes: {sorted(allowed_nvm_invocations)}"
+            "NVM for Windows 1.x must be normalized as an explicit legacy warning."
         )
 
     if re.search(r"\bnpm\s+outdated\b", provider_source):
