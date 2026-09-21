@@ -93,4 +93,70 @@ if ($equivalent.hasPathOrderConflict) {
     throw 'Duplicate equivalent PATH entries do not represent distinct command origins.'
 }
 
+
+$providerPath = Join-Path $root 'scripts\Providers\PathPrecedence.Provider.ps1'
+$providerSource = Get-Content -LiteralPath $providerPath -Raw
+if ($providerSource -match '(?i)\bGet-Command\b') {
+    throw 'Derived PATH precedence provider must not rediscover commands with Get-Command.'
+}
+
+$previousProcessPath = [Environment]::GetEnvironmentVariable('Path', 'Process')
+try {
+    [Environment]::SetEnvironmentVariable('Path', 'C:\Primary;C:\Secondary', 'Process')
+
+    $syntheticProvider = [pscustomobject][ordered]@{
+        providerId = 'synthetic.runtime'
+        category = 'runtime'
+        status = 'success'
+        observedAt = '2026-09-21T00:00:00Z'
+        components = @(
+            [pscustomobject][ordered]@{
+                componentId = 'synthetic-command'
+                commandResolutions = @(
+                    [pscustomobject][ordered]@{ command='demo'; path='C:\Primary\demo.exe'; commandType='Application'; version=$null; precedence=0; active=$true },
+                    [pscustomobject][ordered]@{ command='demo'; path='C:\Secondary\demo.exe'; commandType='Application'; version=$null; precedence=1; active=$false }
+                )
+            }
+        )
+        warnings = @()
+        errors = @()
+        evidence = @()
+    }
+
+    $context = [pscustomobject][ordered]@{
+        ObservedAt = '2026-09-21T00:00:00Z'
+        PreviousProviderResults = @($syntheticProvider)
+    }
+
+    $providerResult = & $providerPath -Context $context
+
+    if ($providerResult.providerId -ne 'path.precedence' -or $providerResult.status -ne 'warning') {
+        throw "Synthetic precedence provider result was unexpected: $($providerResult.status)"
+    }
+
+    if (@($providerResult.components).Count -ne 0) {
+        throw 'Derived PATH precedence provider must not own components.'
+    }
+
+    $conflict = @($providerResult.warnings | Where-Object code -eq 'COMMAND_PATH_PRECEDENCE_CONFLICT')
+    if ($conflict.Count -ne 1) {
+        throw 'Synthetic PATH collision must emit exactly one precedence conflict finding.'
+    }
+
+    if ($conflict[0].message -notmatch 'C:\\Primary\\demo\.exe' -or
+        $conflict[0].message -notmatch 'PATH\[0\]' -or
+        $conflict[0].message -notmatch 'C:\\Secondary\\demo\.exe' -or
+        $conflict[0].message -notmatch 'PATH\[1\]') {
+        throw "PATH conflict finding does not explain active/shadowed positions: $($conflict[0].message)"
+    }
+
+    $summary = @($providerResult.evidence | Where-Object evidenceId -eq 'path-precedence.summary')
+    if ($summary.Count -ne 1 -or [int]$summary[0].attributes.analyzedCommandCount -ne 1) {
+        throw 'Synthetic provider summary must report one analyzed command.'
+    }
+}
+finally {
+    [Environment]::SetEnvironmentVariable('Path', $previousProcessPath, 'Process')
+}
+
 Write-Host 'Command-to-PATH precedence validation passed.'
