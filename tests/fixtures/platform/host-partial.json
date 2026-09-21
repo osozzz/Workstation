@@ -1,0 +1,127 @@
+{
+  "providerId": "host.system",
+  "category": "host",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "windows",
+      "name": "Windows 11 Pro",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "10.0.26100",
+        "normalized": "10.0.26100",
+        "channel": "24H2"
+      },
+      "discoveredVersions": [
+        {
+          "raw": "10.0.26100",
+          "normalized": "10.0.26100",
+          "channel": "24H2"
+        }
+      ],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "powershell.windows",
+      "name": "Windows PowerShell",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "5.1.26100.7019",
+        "normalized": "5.1.26100.7019",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "5.1.26100.7019",
+          "normalized": "5.1.26100.7019",
+          "channel": null
+        }
+      ],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "powershell.core",
+      "name": "PowerShell",
+      "state": "partial",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [
+        {
+          "raw": "7.6.6",
+          "normalized": "7.6.6",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\PowerShell\\7\\pwsh.exe",
+          "version": {
+            "raw": "7.6.6",
+            "normalized": "7.6.6",
+            "channel": null
+          },
+          "active": false,
+          "source": "registry"
+        }
+      ],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "POWERSHELL_COMMAND_UNRESOLVED",
+      "message": "PowerShell installation evidence was found but pwsh.exe was not resolvable.",
+      "severity": "warning",
+      "componentId": "powershell.core",
+      "evidenceIds": [
+        "host.powershell.core.registry"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "host.powershell.core.registry",
+      "type": "registry",
+      "source": "PowerShell Core InstalledVersions registry",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "fixture": true
+      }
+    }
+  ]
+}
