@@ -100,6 +100,11 @@ jobs:
         run: |
           ./tests/jvm-mobile-precedence/validate_jvm_mobile_precedence.ps1
 
+      - name: Validate Python .NET Rust and Go precedence intelligence
+        shell: pwsh
+        run: |
+          ./tests/runtime-precedence/validate_runtime_precedence.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -233,11 +238,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 15) {
-              throw "Expected fourteen built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 16) {
+              throw "Expected fifteen built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'python-dotnet-rust-go.precedence', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -593,6 +598,51 @@ jobs:
               }
           }
 
+          $runtimePrecedenceProvider = $result.Report.providers | Where-Object providerId -eq 'python-dotnet-rust-go.precedence'
+          if ($runtimePrecedenceProvider.status -eq 'failed') {
+              $runtimePrecedenceMessages = @($runtimePrecedenceProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "Python/.NET/Rust/Go precedence provider failed during smoke test: $runtimePrecedenceMessages"
+          }
+
+          if (@($runtimePrecedenceProvider.components).Count -ne 0) {
+              throw "Python/.NET/Rust/Go precedence provider must remain derived and own no components."
+          }
+
+          $runtimePrecedenceSummary = $runtimePrecedenceProvider.evidence | Where-Object evidenceId -eq 'python-dotnet-rust-go-precedence.summary'
+          if (-not $runtimePrecedenceSummary) {
+              throw "Expected Python/.NET/Rust/Go precedence summary evidence."
+          }
+
+          if ($runtimePrecedenceSummary.attributes.readOnly -ne $true) {
+              throw "Python/.NET/Rust/Go precedence analysis must remain explicitly read-only."
+          }
+
+          foreach ($attributeName in @(
+              'duplicatedRuntimeDiscovery',
+              'directEnvironmentAccess',
+              'filesystemProbes',
+              'dotnetArchitectureAssumed',
+              'goToolchainAutoDownloadAllowed'
+          )) {
+              if ($runtimePrecedenceSummary.attributes.$attributeName -ne $false) {
+                  throw "Python/.NET/Rust/Go precedence analysis must preserve $attributeName=false."
+              }
+          }
+
+          foreach ($dependencyName in @('pythonEcosystem', 'dotnetToolchain', 'rustGoToolchains', 'pathPrecedence', 'environmentBaseline')) {
+              if ($runtimePrecedenceSummary.attributes.dependencies.$dependencyName -ne $true) {
+                  throw "Python/.NET/Rust/Go precedence dependency '$dependencyName' was not available during smoke test."
+              }
+          }
+
+          $runtimeGoEvidence = $runtimePrecedenceProvider.evidence | Where-Object evidenceId -eq 'python-dotnet-rust-go-precedence.go'
+          if ($runtimeGoEvidence -and $runtimeGoEvidence.attributes.GOTOOLCHAIN -and $runtimeGoEvidence.attributes.GOTOOLCHAIN -ne 'local') {
+              throw "Python/.NET/Rust/Go precedence must preserve GOTOOLCHAIN=local evidence when Go environment data is available."
+          }
+          if ($runtimeGoEvidence -and $runtimeGoEvidence.attributes.autoDownloadAllowed -ne $false) {
+              throw "Python/.NET/Rust/Go precedence must never allow Go toolchain auto-download."
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
@@ -697,8 +747,8 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 14) {
-              throw "Expected all 14 built-in providers to continue after an additional provider path failure."
+          if ($missingProviderResult.Report.summary.providerCount -ne 15) {
+              throw "Expected all 15 built-in providers to continue after an additional provider path failure."
           }
 
       - name: Run controlled Sprint 2 integration audit
