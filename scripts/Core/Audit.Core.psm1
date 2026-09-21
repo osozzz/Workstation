@@ -541,7 +541,7 @@ function Resolve-AuditEnvironmentReferences {
     [CmdletBinding()]
     param(
         [AllowNull()]
-        [string]$Value,
+        [object]$Value,
 
         [System.Collections.IDictionary]$ReferenceValues = @{}
     )
@@ -555,7 +555,7 @@ function Resolve-AuditEnvironmentReferences {
         }
     }
 
-    $expanded = $Value
+    $expanded = [string]$Value
     $unresolved = [System.Collections.Generic.List[string]]::new()
     $unapprovedReferences = [System.Collections.Generic.List[string]]::new()
 
@@ -569,6 +569,15 @@ function Resolve-AuditEnvironmentReferences {
 
         foreach ($match in $matches) {
             $referenceName = [string]$match.Groups['name'].Value
+
+            if ($script:AuditEnvironmentAllowList -notcontains $referenceName) {
+                $unapprovedKey = $referenceName.ToLowerInvariant()
+                if (-not $unapprovedReferences.Contains($unapprovedKey)) {
+                    $unapprovedReferences.Add($unapprovedKey)
+                }
+                continue
+            }
+
             $foundReference = $false
             $referenceValue = $null
 
@@ -581,16 +590,8 @@ function Resolve-AuditEnvironmentReferences {
             }
 
             if (-not $foundReference) {
-                if ($script:AuditEnvironmentAllowList -contains $referenceName) {
-                    if (-not $unresolved.Contains($referenceName)) {
-                        $unresolved.Add($referenceName)
-                    }
-                }
-                else {
-                    $unapprovedKey = $referenceName.ToLowerInvariant()
-                    if (-not $unapprovedReferences.Contains($unapprovedKey)) {
-                        $unapprovedReferences.Add($unapprovedKey)
-                    }
+                if (-not $unresolved.Contains($referenceName)) {
+                    $unresolved.Add($referenceName)
                 }
                 continue
             }
