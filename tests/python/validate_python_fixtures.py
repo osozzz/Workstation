@@ -278,7 +278,7 @@ def validate_source_ownership() -> None:
         "pipx' -arguments @('--version')",
         "uv' -arguments @('--version')",
         "pyenv' -arguments @('--version')",
-        "pyenv' -arguments @('versions', '--bare')",
+        "pyenv' -arguments @('versions')",
     )
     for probe in required_read_only_probes:
         if probe not in provider_source:
