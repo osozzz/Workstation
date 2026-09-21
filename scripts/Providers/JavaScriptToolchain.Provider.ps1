@@ -81,6 +81,7 @@ function Get-VersionRecordFromText {
 function Add-UniqueVersion {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [System.Collections.Generic.List[object]]$List,
 
         [AllowNull()]
@@ -141,6 +142,7 @@ function Test-PathEquals {
 function Add-UniqueInstallation {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [System.Collections.Generic.List[object]]$List,
 
         [AllowNull()]
