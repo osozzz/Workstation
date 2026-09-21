@@ -773,17 +773,19 @@ function ConvertTo-AuditEnvironmentPathValue {
         [string]$Scope,
 
         [AllowNull()]
-        [string]$Value
+        [object]$Value
     )
 
     if ($script:AuditEnvironmentAllowList -notcontains $Name) {
         throw "Environment variable '$Name' is not in the audit allowlist."
     }
 
-    $state = if ($null -eq $Value) {
+    $rawValue = if ($null -eq $Value) { $null } else { [string]$Value }
+
+    $state = if ($null -eq $rawValue) {
         'unset'
     }
-    elseif ($Value.Length -eq 0) {
+    elseif ($rawValue.Length -eq 0) {
         'empty'
     }
     else {
@@ -794,10 +796,10 @@ function ConvertTo-AuditEnvironmentPathValue {
 
     if ($state -eq 'present') {
         $segments = if ($Name -eq 'GOPATH') {
-            @($Value -split [regex]::Escape([IO.Path]::PathSeparator.ToString()))
+            @($rawValue -split [regex]::Escape([IO.Path]::PathSeparator.ToString()))
         }
         else {
-            @($Value)
+            @($rawValue)
         }
 
         foreach ($segment in $segments) {
@@ -844,7 +846,7 @@ function ConvertTo-AuditEnvironmentPathValue {
         name                    = $Name
         scope                   = $Scope
         state                   = $state
-        original                = $Value
+        original                = $rawValue
         normalized              = $normalizedValue
         comparisonKey           = $comparisonKey
         pathCount               = $pathValues.Count
@@ -862,9 +864,9 @@ function Get-AuditEnvironmentVariableModel {
         [ValidateNotNullOrEmpty()]
         [string]$Name,
 
-        [AllowNull()][string]$ProcessValue,
-        [AllowNull()][string]$UserValue,
-        [AllowNull()][string]$MachineValue
+        [AllowNull()][object]$ProcessValue,
+        [AllowNull()][object]$UserValue,
+        [AllowNull()][object]$MachineValue
     )
 
     if ($script:AuditEnvironmentAllowList -notcontains $Name) {
