@@ -105,7 +105,7 @@ function Get-AuditCommandResolution {
     )
 
     $items = @(Get-Command $Command -All -ErrorAction SilentlyContinue)
-    $results = New-Object System.Collections.Generic.List[object]
+    $results = [System.Collections.Generic.List[object]]::new()
 
     for ($index = 0; $index -lt $items.Count; $index++) {
         $item = $items[$index]
@@ -477,7 +477,7 @@ function Get-AuditEnvironmentSnapshot {
         }
     }
 
-    $results = New-Object System.Collections.Generic.List[object]
+    $results = [System.Collections.Generic.List[object]]::new()
 
     foreach ($name in $requestedNames) {
         $results.Add([pscustomobject][ordered]@{
@@ -621,7 +621,7 @@ function Get-AuditPathScopeModel {
         @($RawPath -split ';')
     }
 
-    $entries = New-Object System.Collections.Generic.List[object]
+    $entries = [System.Collections.Generic.List[object]]::new()
     $seen = @{}
 
     for ($rawIndex = 0; $rawIndex -lt $rawEntries.Count; $rawIndex++) {
@@ -680,7 +680,7 @@ function Get-AuditPathModel {
             }
 
             if (-not $persistentOccurrences.ContainsKey($key)) {
-                $persistentOccurrences[$key] = New-Object System.Collections.Generic.List[object]
+                $persistentOccurrences[$key] = [System.Collections.Generic.List[object]]::new()
             }
 
             $persistentOccurrences[$key].Add([pscustomobject][ordered]@{
@@ -691,7 +691,7 @@ function Get-AuditPathModel {
         }
     }
 
-    $crossScopeDuplicates = New-Object System.Collections.Generic.List[object]
+    $crossScopeDuplicates = [System.Collections.Generic.List[object]]::new()
     foreach ($key in @($persistentOccurrences.Keys | Sort-Object)) {
         $occurrences = @($persistentOccurrences[$key])
         $distinctScopes = @($occurrences | Select-Object -ExpandProperty scope -Unique)
