@@ -14,7 +14,7 @@ if ($Describe) {
     return [pscustomobject][ordered]@{
         providerId = 'inventory.commands'
         category   = 'runtime'
-        order      = 26
+        order      = 27
     }
 }
 
@@ -51,10 +51,6 @@ function Get-FirstOutputLine {
 
 $toolSpecs = @(
     @{ Id='heroku-cli'; Label='Heroku CLI'; Command='heroku'; Args=@('--version') },
-    @{ Id='rust'; Label='Rust'; Command='rustc'; Args=@('--version') },
-    @{ Id='cargo'; Label='Cargo'; Command='cargo'; Args=@('--version') },
-    @{ Id='rustup'; Label='Rustup'; Command='rustup'; Args=@('--version') },
-    @{ Id='go'; Label='Go'; Command='go'; Args=@('version') },
     @{ Id='git'; Label='Git'; Command='git'; Args=@('--version') },
     @{ Id='github-cli'; Label='GitHub CLI'; Command='gh'; Args=@('--version') },
     @{ Id='docker'; Label='Docker'; Command='docker'; Args=@('--version') },
