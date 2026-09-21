@@ -274,7 +274,7 @@ The orchestrator discovers provider files, reads their descriptions, and execute
 
 Provider execution is isolated. If one provider throws, returns an invalid envelope, or cannot complete its work, the orchestrator converts that failure into a normalized failed-provider result and continues with the remaining providers.
 
-The shared context currently includes the audit timestamp, Workstation tool version, approved environment-variable names, and compatibility options such as `IncludeWingetInventory`. Providers must not use the context as authority to mutate the workstation.
+The shared context currently includes the audit timestamp, Workstation tool version, approved environment-variable names, and compatibility options such as `IncludeWingetInventory`. The transitional `winget.baseline` provider preserves the existing WinGet upgrade diagnostics and, when that switch is enabled, the WinGet inventory capture used by `Run-Audit.cmd`. Providers must not use the context as authority to mutate the workstation.
 
 This protocol keeps provider discovery separate from provider result semantics: the description controls orchestration, while the provider-result schema controls audit data.
 
