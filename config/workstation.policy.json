@@ -61,5 +61,11 @@
     "projectsMustUseLocalCompatibleVersion": true,
     "virtualEnvironments": "per-project",
     "packageToolsTrack": "latest-stable"
+  },
+  "dotnet": {
+    "defaultTrack": "latest-stable",
+    "projectsMustUseLocalCompatibleVersion": true,
+    "workloadsTrack": "latest-stable",
+    "inspectWorkloadsReadOnly": true
   }
 }
