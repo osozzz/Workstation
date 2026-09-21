@@ -367,7 +367,8 @@
       "redacted": false,
       "attributes": {
         "status": "success",
-        "resolutionCount": 1
+        "resolutionCount": 1,
+        "GOTOOLCHAIN": "local"
       }
     },
     {
@@ -381,7 +382,8 @@
         "status": "success",
         "GOROOT": "C:\\Synthetic\\Go",
         "GOPATH": "C:\\Synthetic\\GoPath",
-        "rawOutputRetained": false
+        "rawOutputRetained": false,
+        "GOTOOLCHAIN": "local"
       }
     }
   ]
