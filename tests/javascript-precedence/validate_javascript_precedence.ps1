@@ -292,21 +292,21 @@ foreach ($caseProperty in @($fixture.cases.PSObject.Properties)) {
     }
 
     if (@($result.components).Count -ne 0) {
-        throw "$caseName: derived JavaScript precedence provider must own zero components."
+        throw "${caseName}: derived JavaScript precedence provider must own zero components."
     }
 
     $summary = Get-EvidenceById -ProviderResult $result -EvidenceId 'javascript-precedence.summary'
     if ($null -eq $summary) {
-        throw "$caseName: missing JavaScript precedence summary evidence."
+        throw "${caseName}: missing JavaScript precedence summary evidence."
     }
 
     if ($summary.attributes.readOnly -ne $true -or $summary.attributes.duplicatedRuntimeDiscovery -ne $false) {
-        throw "$caseName: summary must preserve the read-only/no-rediscovery boundary."
+        throw "${caseName}: summary must preserve the read-only/no-rediscovery boundary."
     }
 
     foreach ($dependencyName in @('javascriptToolchain', 'pathPrecedence', 'environmentBaseline')) {
         if ($summary.attributes.dependencies.$dependencyName -ne $true) {
-            throw "$caseName: expected dependency '$dependencyName' to be available."
+            throw "${caseName}: expected dependency '$dependencyName' to be available."
         }
     }
 
