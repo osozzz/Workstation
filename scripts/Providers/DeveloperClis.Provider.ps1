@@ -256,7 +256,7 @@ $specs = @(
         Command     = 'git'
         Arguments   = @('--version')
         EvidenceId  = 'developer.git.version'
-        VersionPattern = '^git version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+        VersionPattern = 'git version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
         ComponentId = 'github-cli'
@@ -264,7 +264,7 @@ $specs = @(
         Command     = 'gh'
         Arguments   = @('--version')
         EvidenceId  = 'developer.github-cli.version'
-        VersionPattern = '^gh version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+        VersionPattern = 'gh version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
         ComponentId = 'docker'
@@ -272,7 +272,7 @@ $specs = @(
         Command     = 'docker'
         Arguments   = @('--version')
         EvidenceId  = 'developer.docker.version'
-        VersionPattern = '^Docker version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+        VersionPattern = 'Docker version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
         ComponentId = 'supabase-cli'
@@ -287,7 +287,7 @@ $specs = @(
         Command     = 'vercel'
         Arguments   = @('--version')
         EvidenceId  = 'developer.vercel.version'
-        VersionPattern = '^Vercel CLI (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+        VersionPattern = 'Vercel CLI (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
         ComponentId = 'heroku-cli'
@@ -295,7 +295,7 @@ $specs = @(
         Command     = 'heroku'
         Arguments   = @('--version')
         EvidenceId  = 'developer.heroku.version'
-        VersionPattern = '^heroku/(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+        VersionPattern = 'heroku/(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     }
 )
 
@@ -311,13 +311,13 @@ $composeVersion = $null
 if ($dockerFound) {
     $composeResult = Invoke-AuditCommand -Command 'docker' -Arguments @('compose', 'version') -TimeoutSeconds 20
     if ($composeResult.Status -eq 'success') {
-        $composeVersion = Get-VersionRecordFromPattern -Text $composeResult.Captured -Pattern '^Docker Compose version v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+        $composeVersion = Get-VersionRecordFromPattern -Text $composeResult.Captured -Pattern 'Docker Compose version v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     }
 }
 
 $legacyComposeResult = Invoke-AuditCommand -Command 'docker-compose' -Arguments @('--version') -TimeoutSeconds 20
 $legacyComposeVersion = if ($legacyComposeResult.Found -and $legacyComposeResult.Status -eq 'success') {
-    Get-VersionRecordFromPattern -Text $legacyComposeResult.Captured -Pattern '^docker-compose version v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
+    Get-VersionRecordFromPattern -Text $legacyComposeResult.Captured -Pattern '(?:docker-compose|Docker Compose) version v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
 }
 else {
     $null
@@ -354,7 +354,6 @@ $composeResolutions = New-Object System.Collections.Generic.List[object]
 
 if ($null -ne $composeResult -and $composeResult.Status -eq 'success') {
     foreach ($resolution in @($composeResult.Resolutions)) {
-        Add-UniqueInstallation -List $composeInstallations -Path ([string]$resolution.path) -Version $(if ($resolution.active) { $composeVersion } else { $resolution.version }) -Active ([bool]$resolution.active) -Source command
         $composeResolutions.Add($resolution)
     }
 }
