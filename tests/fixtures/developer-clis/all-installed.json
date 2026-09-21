@@ -1,0 +1,469 @@
+{
+  "providerId": "developer.clis",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "git",
+      "name": "Git",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "2.55.0.windows.1",
+        "normalized": "2.55.0.windows.1",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "2.55.0.windows.1",
+          "normalized": "2.55.0.windows.1",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Git\\cmd\\git.exe",
+          "version": {
+            "raw": "2.55.0.windows.1",
+            "normalized": "2.55.0.windows.1",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "git",
+          "path": "C:\\Synthetic\\Git\\cmd\\git.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "github-cli",
+      "name": "GitHub CLI",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "2.80.0",
+        "normalized": "2.80.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "2.80.0",
+          "normalized": "2.80.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\GitHubCLI\\gh.exe",
+          "version": {
+            "raw": "2.80.0",
+            "normalized": "2.80.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "gh",
+          "path": "C:\\Synthetic\\GitHubCLI\\gh.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "docker",
+      "name": "Docker CLI",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "28.4.0",
+        "normalized": "28.4.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "28.4.0",
+          "normalized": "28.4.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Docker\\docker.exe",
+          "version": {
+            "raw": "28.4.0",
+            "normalized": "28.4.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "docker",
+          "path": "C:\\Synthetic\\Docker\\docker.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "supabase-cli",
+      "name": "Supabase CLI",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "2.45.4",
+        "normalized": "2.45.4",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "2.45.4",
+          "normalized": "2.45.4",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Tools\\supabase.exe",
+          "version": {
+            "raw": "2.45.4",
+            "normalized": "2.45.4",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "supabase",
+          "path": "C:\\Synthetic\\Tools\\supabase.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "vercel-cli",
+      "name": "Vercel CLI",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "59.1.4",
+        "normalized": "59.1.4",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "59.1.4",
+          "normalized": "59.1.4",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Tools\\vercel.cmd",
+          "version": {
+            "raw": "59.1.4",
+            "normalized": "59.1.4",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "vercel",
+          "path": "C:\\Synthetic\\Tools\\vercel.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "heroku-cli",
+      "name": "Heroku CLI",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "10.13.2",
+        "normalized": "10.13.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "10.13.2",
+          "normalized": "10.13.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Tools\\heroku.cmd",
+          "version": {
+            "raw": "10.13.2",
+            "normalized": "10.13.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "heroku",
+          "path": "C:\\Synthetic\\Tools\\heroku.cmd",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "docker-compose",
+      "name": "Docker Compose",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "5.0.0",
+        "normalized": "5.0.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "5.0.0",
+          "normalized": "5.0.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Docker\\docker.exe",
+          "version": {
+            "raw": "5.0.0",
+            "normalized": "5.0.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "docker",
+          "path": "C:\\Synthetic\\Docker\\docker.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "developer.git.version",
+      "type": "command",
+      "source": "git --version",
+      "exitCode": 0,
+      "captured": "git version 2.55.0.windows.1",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "developer.github-cli.version",
+      "type": "command",
+      "source": "gh --version",
+      "exitCode": 0,
+      "captured": "gh version 2.80.0 (2026-09-01)",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "developer.docker.version",
+      "type": "command",
+      "source": "docker --version",
+      "exitCode": 0,
+      "captured": "Docker version 28.4.0, build synthetic",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "developer.supabase.version",
+      "type": "command",
+      "source": "supabase --version",
+      "exitCode": 0,
+      "captured": "2.45.4",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "developer.vercel.version",
+      "type": "command",
+      "source": "vercel --version",
+      "exitCode": 0,
+      "captured": "Update available 60.0.0\nVercel CLI 59.1.4",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "developer.heroku.version",
+      "type": "command",
+      "source": "heroku --version",
+      "exitCode": 0,
+      "captured": "heroku/10.13.2 win32-x64 node-v24.0.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "developer.docker-compose.plugin",
+      "type": "command",
+      "source": "docker compose version",
+      "exitCode": 0,
+      "captured": "Docker Compose version v5.0.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "mode": "plugin",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "developer.safety-boundary",
+      "type": "derived",
+      "source": "developer CLI audit boundary",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "authenticationStateCollected": false,
+        "accountStateCollected": false,
+        "gitConfigurationCollected": false,
+        "dockerDaemonInspected": false,
+        "dockerContextsCollected": false,
+        "servicesStartedOrStopped": false
+      }
+    }
+  ]
+}
