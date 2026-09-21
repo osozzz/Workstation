@@ -292,7 +292,7 @@
       "type": "command",
       "source": "dotnet workload list --machine-readable",
       "exitCode": 0,
-      "captured": "{\"installed\":[\"maui-windows\",\"wasm-tools\"],\"updateAvailable\":[{\"workloadId\":\"maui-windows\"}]}",
+      "captured": null,
       "redacted": false,
       "attributes": {
         "status": "success",
@@ -301,7 +301,8 @@
           "wasm-tools"
         ],
         "installedCount": 2,
-        "updateMetadataIgnored": true
+        "updateMetadataIgnored": true,
+        "rawOutputRetained": false
       }
     }
   ]
