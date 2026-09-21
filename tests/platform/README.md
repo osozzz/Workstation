@@ -13,7 +13,8 @@ Synthetic fixtures validate:
 - multiple PowerShell Core installations and command resolutions;
 - partial PowerShell discovery when installation evidence exists without a
   resolvable command;
-- WinGet present, unavailable, and partial source-diagnostic states.
+- WinGet present, unavailable, and partial source-diagnostic states;
+- raw WinGet source details are redacted while source-query health is retained.
 
 All fixtures are synthetic and deterministic. They must not contain real
 workstation names, user-profile paths, tokens, credentials, or generated
