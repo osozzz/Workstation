@@ -1,0 +1,122 @@
+{
+  "providerId": "host.system",
+  "category": "host",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "windows",
+      "name": "Windows 11 Enterprise",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "10.0.26100",
+        "normalized": "10.0.26100",
+        "channel": "24H2"
+      },
+      "discoveredVersions": [
+        {
+          "raw": "10.0.26100",
+          "normalized": "10.0.26100",
+          "channel": "24H2"
+        }
+      ],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "powershell.windows",
+      "name": "Windows PowerShell",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "5.1.26100.7019",
+        "normalized": "5.1.26100.7019",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "5.1.26100.7019",
+          "normalized": "5.1.26100.7019",
+          "channel": null
+        }
+      ],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "powershell.core",
+      "name": "PowerShell",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "host.windows.cim",
+      "type": "derived",
+      "source": "Win32_OperatingSystem",
+      "exitCode": null,
+      "captured": "10.0.26100",
+      "redacted": false,
+      "attributes": {
+        "fixture": true
+      }
+    },
+    {
+      "evidenceId": "host.powershell.current",
+      "type": "derived",
+      "source": "$PSVersionTable",
+      "exitCode": null,
+      "captured": "5.1.26100.7019",
+      "redacted": false,
+      "attributes": {
+        "edition": "Desktop"
+      }
+    },
+    {
+      "evidenceId": "host.powershell.windows.version",
+      "type": "command",
+      "source": "powershell.exe version probe",
+      "exitCode": 0,
+      "captured": "5.1.26100.7019",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    }
+  ]
+}
