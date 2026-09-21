@@ -73,8 +73,8 @@
       "type": "command",
       "source": "winget source list --disable-interactivity",
       "exitCode": 0,
-      "captured": "Name  Argument",
-      "redacted": false,
+      "captured": null,
+      "redacted": true,
       "attributes": {
         "status": "success"
       }
