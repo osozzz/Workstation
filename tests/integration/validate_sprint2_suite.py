@@ -475,11 +475,11 @@ def validate_real_report(
         "DOTNET_ROOT_X64",
         "DOTNET_ROOT_X86",
     ):
-        expected_id = f"environment.{env_name.lower()}"
+        expected_id = f"environment.{env_name.lower()}.intelligence"
         if expected_id not in environment_evidence_ids:
             fail(
                 "Environment baseline is missing approved .NET root "
-                f"evidence: {expected_id}"
+                f"intelligence evidence: {expected_id}"
             )
 
     print(
