@@ -80,6 +80,11 @@ jobs:
         run: |
           ./tests/path/validate_path_model.ps1
 
+      - name: Validate safe environment intelligence
+        shell: pwsh
+        run: |
+          ./tests/environment/validate_environment_model.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
