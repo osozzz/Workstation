@@ -1,0 +1,388 @@
+{
+  "providerId": "rust-go.toolchains",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "rustup",
+      "name": "rustup",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "1.28.2",
+        "normalized": "1.28.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "1.28.2",
+          "normalized": "1.28.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Cargo\\bin\\rustup.exe",
+          "version": {
+            "raw": "1.28.2",
+            "normalized": "1.28.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "rustup",
+          "path": "C:\\Synthetic\\Cargo\\bin\\rustup.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "rust-toolchains",
+      "name": "Rust Toolchains",
+      "state": "present",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [
+        {
+          "raw": "1.89.0",
+          "normalized": "1.89.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Rustup\\toolchains\\stable-x86_64-pc-windows-msvc",
+          "version": null,
+          "active": true,
+          "source": "environment"
+        },
+        {
+          "path": "C:\\Synthetic\\Rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc",
+          "version": {
+            "raw": "1.89.0",
+            "normalized": "1.89.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "environment"
+        }
+      ],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "rustc",
+      "name": "Rust Compiler",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "1.90.0",
+        "normalized": "1.90.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "1.90.0",
+          "normalized": "1.90.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Cargo\\bin\\rustc.exe",
+          "version": {
+            "raw": "1.90.0",
+            "normalized": "1.90.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "rustc",
+          "path": "C:\\Synthetic\\Cargo\\bin\\rustc.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "cargo",
+      "name": "Cargo",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "1.90.0",
+        "normalized": "1.90.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "1.90.0",
+          "normalized": "1.90.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Cargo\\bin\\cargo.exe",
+          "version": {
+            "raw": "1.90.0",
+            "normalized": "1.90.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "cargo",
+          "path": "C:\\Synthetic\\Cargo\\bin\\cargo.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "go",
+      "name": "Go",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "1.26.1",
+        "normalized": "1.26.1",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "1.26.1",
+          "normalized": "1.26.1",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Go\\bin\\go.exe",
+          "version": {
+            "raw": "1.26.1",
+            "normalized": "1.26.1",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "go",
+          "path": "C:\\Synthetic\\Go\\bin\\go.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "rust-go.environment",
+      "type": "environment",
+      "source": "RUSTUP_HOME/CARGO_HOME/GOROOT/GOPATH",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "RUSTUP_HOME",
+            "process": "C:\\Synthetic\\Rustup",
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "CARGO_HOME",
+            "process": "C:\\Synthetic\\Cargo",
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "GOROOT",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "GOPATH",
+            "process": null,
+            "user": null,
+            "machine": null
+          }
+        ],
+        "rustupHomeConfigured": true,
+        "cargoHomeConfigured": true,
+        "gorootConfigured": false,
+        "gopathConfigured": false
+      }
+    },
+    {
+      "evidenceId": "rust.rustup.version",
+      "type": "command",
+      "source": "rustup --version",
+      "exitCode": 0,
+      "captured": "rustup 1.28.2",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "rust.toolchains",
+      "type": "command",
+      "source": "rustup toolchain list",
+      "exitCode": 0,
+      "captured": "stable-x86_64-pc-windows-msvc (active, default)\n1.89.0-x86_64-pc-windows-msvc",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "toolchainCount": 2,
+        "toolchains": [
+          {
+            "name": "stable-x86_64-pc-windows-msvc",
+            "active": true,
+            "default": true,
+            "channel": "stable",
+            "version": null,
+            "path": "C:\\Synthetic\\Rustup\\toolchains\\stable-x86_64-pc-windows-msvc"
+          },
+          {
+            "name": "1.89.0-x86_64-pc-windows-msvc",
+            "active": false,
+            "default": false,
+            "channel": null,
+            "version": "1.89.0",
+            "path": "C:\\Synthetic\\Rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc"
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "rust.rustc.version",
+      "type": "command",
+      "source": "rustc --version",
+      "exitCode": 0,
+      "captured": "rustc 1.90.0 (synthetic 2026-01-01)",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1,
+        "executionSkipped": false
+      }
+    },
+    {
+      "evidenceId": "rust.cargo.version",
+      "type": "command",
+      "source": "cargo --version",
+      "exitCode": 0,
+      "captured": "cargo 1.90.0 (synthetic 2026-01-01)",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false,
+        "resolutionCount": 1,
+        "executionSkipped": false
+      }
+    },
+    {
+      "evidenceId": "go.version",
+      "type": "command",
+      "source": "go version",
+      "exitCode": 0,
+      "captured": "go version go1.26.1 windows/amd64",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "go.environment",
+      "type": "command",
+      "source": "go env -json GOROOT GOPATH",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "GOROOT": "C:\\Synthetic\\Go",
+        "GOPATH": "C:\\Synthetic\\GoPath",
+        "rawOutputRetained": false
+      }
+    }
+  ]
+}
