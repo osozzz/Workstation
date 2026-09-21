@@ -13,7 +13,10 @@ $script:AuditEnvironmentAllowList = @(
     'RUSTUP_HOME',
     'GOPATH',
     'GOROOT',
-    'PYENV_ROOT'
+    'PYENV_ROOT',
+    'DOTNET_ROOT',
+    'DOTNET_ROOT_X64',
+    'DOTNET_ROOT_X86'
 )
 
 
