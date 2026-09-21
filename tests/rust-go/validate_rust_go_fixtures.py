@@ -25,6 +25,7 @@ EXPECTED_FIXTURES = {
     "rustup-no-active-toolchain.json",
     "go-present-rust-missing.json",
     "conflicting-resolutions.json",
+    "legacy-rustup-skipped.json",
 }
 
 SPECIALIZED_COMPONENT_IDS = {
@@ -157,6 +158,22 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
             "toolchain."
         )
 
+    active_toolchain = evidence(
+        managed, "rust.active-toolchain"
+    )["attributes"]
+    if active_toolchain.get("activeToolchain") != (
+        "stable-x86_64-pc-windows-msvc"
+    ):
+        fail(
+            "Managed Rust fixture must prove the active toolchain through "
+            "rustup show active-toolchain."
+        )
+    if active_toolchain.get("autoInstallGuard") != "RUSTUP_AUTO_INSTALL=0":
+        fail(
+            "Modern rustup active-toolchain inspection must disable "
+            "automatic installation."
+        )
+
     go_env = evidence(managed, "go.environment")["attributes"]
     if go_env.get("GOROOT") != r"C:\Synthetic\Go":
         fail("Go evidence must preserve observed GOROOT.")
@@ -204,6 +221,14 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
                 f"was skipped: {evidence_id}"
             )
 
+    blocked_active = evidence(
+        blocked, "rust.active-toolchain"
+    )["attributes"]
+    if blocked_active.get("activeToolchain") is not None:
+        fail(
+            "Blocked Rust fixture must not invent an active toolchain."
+        )
+
     go_only = fixtures["go-present-rust-missing.json"]
     if go_only["status"] != "success":
         fail("Go-only fixture must remain successful.")
@@ -225,6 +250,35 @@ def validate_domain_cases(fixtures: dict[str, dict[str, Any]]) -> None:
         fail("Rust collision finding is missing.")
     if "GO_COMMAND_COLLISION" not in conflict_codes:
         fail("Go collision finding is missing.")
+
+
+    legacy = fixtures["legacy-rustup-skipped.json"]
+    if legacy["status"] != "partial":
+        fail("legacy-rustup-skipped.json must use partial status.")
+    if component(legacy, "rustup")["state"] != "partial":
+        fail("Legacy rustup must remain a partial manager state.")
+    legacy_version = evidence(
+        legacy, "rust.rustup.version"
+    )["attributes"]
+    if legacy_version.get("executionSkipped") is not True:
+        fail("Legacy rustup CLI execution must be skipped.")
+    if legacy_version.get("minimumSafeInspectionVersion") != "1.28.0":
+        fail("Legacy rustup safety threshold must remain explicit.")
+    if evidence(
+        legacy, "rust.toolchains"
+    )["attributes"].get("status") != "safety-skipped":
+        fail("Legacy managed-toolchain inspection must be safety-skipped.")
+    legacy_codes = {item["code"] for item in legacy["warnings"]}
+    if "RUSTUP_LEGACY_EXECUTION_SKIPPED" not in legacy_codes:
+        fail("Legacy rustup fixture must preserve the execution-skip finding.")
+    for evidence_id in ("rust.rustc.version", "rust.cargo.version"):
+        if evidence(
+            legacy, evidence_id
+        )["attributes"].get("executionSkipped") is not True:
+            fail(
+                "Legacy rustup proxy execution must remain skipped: "
+                f"{evidence_id}"
+            )
 
 
 def validate_source_ownership() -> None:
@@ -277,6 +331,7 @@ def validate_source_ownership() -> None:
     required_probes = (
         "rustup' -arguments @('--version')",
         "rustup' -arguments @('toolchain', 'list')",
+        "rustup' -arguments @('show', 'active-toolchain')",
         "rustc' -arguments @('--version')",
         "cargo' -arguments @('--version')",
         "go' -arguments @('version')",
@@ -290,6 +345,34 @@ def validate_source_ownership() -> None:
         fail(
             "Rust provider must classify rustup proxies before executing "
             "rustc/Cargo."
+        )
+
+    if "flags -contains 'active'" in provider_source:
+        fail(
+            "rustup toolchain list flags must not be treated as the source "
+            "of active-toolchain truth."
+        )
+
+    if "get-rustupactivetoolchainname" not in provider_source:
+        fail(
+            "Rust provider must parse rustup show active-toolchain explicitly."
+        )
+
+    if "get-executableversionrecord" not in provider_source:
+        fail(
+            "Rustup safety gating must inspect executable metadata before "
+            "legacy CLI execution."
+        )
+
+    if "minimumsafeinspectionversion = '1.28.0'" not in provider_source:
+        fail(
+            "Rustup legacy safety threshold must remain explicit at 1.28.0."
+        )
+
+    if provider_source.count("rustup_auto_install") < 6:
+        fail(
+            "Modern rustup probes and proxies must consistently disable "
+            "automatic installation."
         )
 
     if "rustc_proxy_not_executed" not in provider_source:
