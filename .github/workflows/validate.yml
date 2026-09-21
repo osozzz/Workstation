@@ -60,6 +60,11 @@ jobs:
         run: |
           python ./tests/dotnet/validate_dotnet_fixtures.py
 
+      - name: Validate Rust Go toolchain fixtures
+        shell: pwsh
+        run: |
+          python ./tests/rust-go/validate_rust_go_fixtures.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -175,11 +180,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 10) {
-              throw "Expected nine built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 11) {
+              throw "Expected ten built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -366,6 +371,38 @@ jobs:
               throw ".NET workload update metadata must remain outside Sprint 2 normalization."
           }
 
+          $rustGoProvider = $result.Report.providers | Where-Object providerId -eq 'rust-go.toolchains'
+          if ($rustGoProvider.status -eq 'failed') {
+              $rustGoMessages = @($rustGoProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "Rust/Go toolchain provider failed during smoke test: $rustGoMessages"
+          }
+
+          foreach ($componentId in @('rustup', 'rust-toolchains', 'rustc', 'cargo', 'go')) {
+              if (-not ($rustGoProvider.components | Where-Object componentId -eq $componentId)) {
+                  throw "Expected Rust/Go component '$componentId'."
+              }
+          }
+
+          foreach ($componentId in @('rustup', 'rustc', 'cargo', 'go')) {
+              $component = $rustGoProvider.components | Where-Object componentId -eq $componentId
+              if ($component.state -eq 'present' -and @($component.commandResolutions).Count -lt 1) {
+                  throw "Present Rust/Go component '$componentId' must preserve command resolution."
+              }
+          }
+
+          $rustToolchainEvidence = $rustGoProvider.evidence | Where-Object evidenceId -eq 'rust.toolchains'
+          if (-not $rustToolchainEvidence) {
+              throw "Expected Rust toolchain inventory evidence."
+          }
+
+          $goEnvironmentEvidence = $rustGoProvider.evidence | Where-Object evidenceId -eq 'go.environment'
+          if (-not $goEnvironmentEvidence) {
+              throw "Expected Go environment evidence."
+          }
+          if ($goEnvironmentEvidence.attributes.rawOutputRetained) {
+              throw "Raw go env JSON must not be retained."
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
@@ -437,6 +474,12 @@ jobs:
               throw "Generic command inventory must not duplicate .NET SDK ownership."
           }
 
+          foreach ($componentId in @('rust', 'cargo', 'rustup', 'go')) {
+              if ($commandInventory.components | Where-Object componentId -eq $componentId) {
+                  throw "Generic command inventory must not duplicate Rust/Go ownership for '$componentId'."
+              }
+          }
+
           $failedProvider = $result.Report.providers | Where-Object providerId -eq 'synthetic.failure'
           if ($failedProvider.status -ne 'failed') {
               throw "Expected the synthetic provider to be isolated as failed."
@@ -454,7 +497,7 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 9) {
+          if ($missingProviderResult.Report.summary.providerCount -ne 10) {
               throw "Expected built-in providers to continue after an additional provider path failure."
           }
 
