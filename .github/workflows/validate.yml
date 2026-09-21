@@ -228,8 +228,8 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 13) {
-              throw "Expected twelve built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 14) {
+              throw "Expected thirteen built-in providers plus the synthetic failure provider."
           }
 
           foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
