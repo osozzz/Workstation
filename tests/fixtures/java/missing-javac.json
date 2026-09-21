@@ -1,0 +1,205 @@
+{
+  "providerId": "java.jvm",
+  "category": "runtime",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "java",
+      "name": "Java Runtime",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "25.0.2",
+        "normalized": "25.0.2",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "25.0.2",
+          "normalized": "25.0.2",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Java\\runtime-25",
+          "version": {
+            "raw": "25.0.2",
+            "normalized": "25.0.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "java",
+          "path": "C:\\Synthetic\\Java\\runtime-25\\bin\\java.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "javac",
+      "name": "Java Compiler",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "maven",
+      "name": "Apache Maven",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "gradle",
+      "name": "Gradle",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "JAVAC_COMMAND_MISSING",
+      "message": "Java runtime is available, but javac is not resolvable. A complete developer JDK toolchain is not active.",
+      "severity": "warning",
+      "componentId": "javac",
+      "evidenceIds": [
+        "java.installations"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "java.environment",
+      "type": "environment",
+      "source": "JAVA_HOME",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "configured": false,
+        "variables": []
+      }
+    },
+    {
+      "evidenceId": "java.runtime.properties",
+      "type": "command",
+      "source": "java -XshowSettings:properties -version",
+      "exitCode": 0,
+      "captured": "java.version = 25.0.2",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "javaVersion": "25.0.2",
+        "javaHomeKnown": true,
+        "vendor": "Synthetic Vendor",
+        "runtimeName": "OpenJDK Runtime Environment",
+        "vmName": "OpenJDK 64-Bit Server VM",
+        "architecture": "amd64"
+      }
+    },
+    {
+      "evidenceId": "java.registry",
+      "type": "registry",
+      "source": "JavaSoft JDK/JRE registry keys",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "inspectedKeyCount": 8,
+        "discoveredRootCount": 0
+      }
+    },
+    {
+      "evidenceId": "java.filesystem",
+      "type": "filesystem",
+      "source": "bounded known Java installation roots",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "inspectedRootCount": 9,
+        "discoveredCandidateCount": 1
+      }
+    },
+    {
+      "evidenceId": "java.installations",
+      "type": "derived",
+      "source": "normalized Java installation metadata",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "installations": [
+          {
+            "path": "C:\\Synthetic\\Java\\runtime-25",
+            "version": "25.0.2",
+            "majorVersion": 25,
+            "vendor": "Synthetic Vendor",
+            "distribution": null,
+            "kind": "jre",
+            "architecture": "amd64",
+            "sources": [
+              "command"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
