@@ -246,6 +246,16 @@
           },
           "active": true,
           "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\Pnpm\\global\\node_modules\\@angular\\cli",
+          "version": {
+            "raw": "22.1.8",
+            "normalized": "22.1.8",
+            "channel": null
+          },
+          "active": false,
+          "source": "package-manager"
         }
       ],
       "commandResolutions": [
@@ -342,6 +352,43 @@
       "attributes": {
         "status": "success",
         "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "javascript.npm.global-inventory",
+      "type": "command",
+      "source": "npm list --global --depth=0 --json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "truncated": false,
+        "timedOut": false,
+        "parseSucceeded": true,
+        "matchedPackages": []
+      }
+    },
+    {
+      "evidenceId": "javascript.pnpm.global-inventory",
+      "type": "command",
+      "source": "pnpm list --global --depth=0 --json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "truncated": false,
+        "timedOut": false,
+        "parseSucceeded": true,
+        "matchedPackages": [
+          {
+            "packageName": "@angular/cli",
+            "manager": "pnpm",
+            "version": "22.1.8",
+            "pathKnown": true
+          }
+        ]
       }
     }
   ]
