@@ -89,6 +89,10 @@ try {
         throw 'Expected unresolved environment reference to remain explicit.'
     }
 
+    if (@($machine.entries[4].unresolvedVariables) -notcontains 'WORKSTATION_PATH_UNRESOLVED') {
+        throw 'Expected unresolved PATH variable name to remain explicit.'
+    }
+
     if ($null -ne $machine.entries[4].exists) {
         throw 'Existence must remain unknown when a PATH entry contains an unresolved variable.'
     }
