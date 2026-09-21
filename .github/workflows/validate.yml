@@ -199,6 +199,27 @@ jobs:
               throw "Present Node.js state must preserve command resolution."
           }
 
+          foreach ($managerId in @('npm', 'pnpm')) {
+              $managerComponent = $javascriptProvider.components | Where-Object componentId -eq $managerId
+              if ($managerComponent.state -in @('present', 'partial')) {
+                  $inventoryEvidenceId = "javascript.$managerId.global-inventory"
+                  $inventoryEvidence = $javascriptProvider.evidence | Where-Object evidenceId -eq $inventoryEvidenceId
+
+                  if (-not $inventoryEvidence) {
+                      throw "Expected redacted global inventory evidence for '$managerId'."
+                  }
+
+                  if ($null -ne $inventoryEvidence.captured -or -not $inventoryEvidence.redacted) {
+                      throw "Global package inventory for '$managerId' must remain redacted."
+                  }
+
+                  $rootEvidence = $javascriptProvider.evidence | Where-Object evidenceId -eq "javascript.$managerId.global-root"
+                  if ($rootEvidence -and ($null -ne $rootEvidence.captured -or -not $rootEvidence.redacted)) {
+                      throw "Global package root evidence for '$managerId' must remain redacted."
+                  }
+              }
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
