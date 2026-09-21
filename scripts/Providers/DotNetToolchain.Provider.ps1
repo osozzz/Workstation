@@ -504,11 +504,19 @@ if ($sdkItems.Count -gt 0) {
         $warnings.Add((New-AuditIssue -Code 'DOTNET_WORKLOAD_LIST_FAILED' -Message 'Installed .NET workloads could not be enumerated for the active SDK.' -Severity warning -ComponentId 'dotnet-workloads' -EvidenceIds @('dotnet.workloads')))
     }
 
-    $evidence.Add((New-AuditEvidence -EvidenceId 'dotnet.workloads' -Type command -Source 'dotnet workload list --machine-readable' -ExitCode $workloadResult.ExitCode -Captured $workloadResult.Captured -Redacted:$workloadResult.Redacted -Attributes @{
+    $workloadCaptured = if ($workloadResult.Status -eq 'success') {
+        $null
+    }
+    else {
+        $workloadResult.Captured
+    }
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'dotnet.workloads' -Type command -Source 'dotnet workload list --machine-readable' -ExitCode $workloadResult.ExitCode -Captured $workloadCaptured -Redacted:$workloadResult.Redacted -Attributes @{
         status = $workloadResult.Status
         installed = @($workloadIds)
         installedCount = $workloadIds.Count
         updateMetadataIgnored = $true
+        rawOutputRetained = ($workloadResult.Status -ne 'success')
     }))
 }
 else {
@@ -517,6 +525,7 @@ else {
         installed = @()
         installedCount = 0
         updateMetadataIgnored = $true
+        rawOutputRetained = $false
     }))
 }
 
