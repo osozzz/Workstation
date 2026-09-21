@@ -589,7 +589,7 @@ if (($rustcComponent.state -eq 'missing') -xor ($cargoComponent.state -eq 'missi
     $warnings.Add((New-AuditIssue -Code 'RUST_TOOLCHAIN_PARTIAL' -Message 'Only one of rustc or Cargo is resolvable.' -Severity warning -ComponentId 'rust-toolchains' -EvidenceIds $partialEvidenceIds))
 }
 
-$goResult = Invoke-AuditCommand -Command 'go' -Arguments @('version') -TimeoutSeconds 20
+$goResult = Invoke-AuditCommand -Command 'go' -Arguments @('version') -TimeoutSeconds 20 -EnvironmentOverrides @{ GOTOOLCHAIN = 'local' }
 $goVersion = if ($goResult.Found -and $goResult.Status -eq 'success') {
     $match = [regex]::Match($goResult.Captured, '(?i)\bgo(?<version>\d+\.\d+(?:\.\d+)?)\b')
     if ($match.Success) {
@@ -608,6 +608,7 @@ if ($goResult.Found) {
     $evidence.Add((New-AuditEvidence -EvidenceId 'go.version' -Type command -Source 'go version' -ExitCode $goResult.ExitCode -Captured $goResult.Captured -Redacted:$goResult.Redacted -Attributes @{
         status = $goResult.Status
         resolutionCount = $goResolutions.Count
+        GOTOOLCHAIN = 'local'
     }))
 
     if ($goResolutions.Count -gt 1) {
@@ -621,7 +622,7 @@ $goRootObserved = $null
 $goPathObserved = $null
 
 if ($goResult.Found) {
-    $goEnvResult = Invoke-AuditCommand -Command 'go' -Arguments @('env', '-json', 'GOROOT', 'GOPATH') -TimeoutSeconds 20
+    $goEnvResult = Invoke-AuditCommand -Command 'go' -Arguments @('env', '-json', 'GOROOT', 'GOPATH') -TimeoutSeconds 20 -EnvironmentOverrides @{ GOTOOLCHAIN = 'local' }
 
     if ($goEnvResult.Status -eq 'success') {
         try {
@@ -641,6 +642,7 @@ if ($goResult.Found) {
 
     $evidence.Add((New-AuditEvidence -EvidenceId 'go.environment' -Type command -Source 'go env -json GOROOT GOPATH' -ExitCode $goEnvResult.ExitCode -Captured $null -Attributes @{
         status = $goEnvResult.Status
+        GOTOOLCHAIN = 'local'
         GOROOT = $goRootObserved
         GOPATH = $goPathObserved
         rawOutputRetained = $false
