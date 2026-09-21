@@ -639,7 +639,11 @@ foreach ($mapping in $pyMappings) {
     Add-UniqueInstallation -List $pythonInstallations -Path ([string]$mapping.path) -Version $mapping.version -Active $(if (-not [string]::IsNullOrWhiteSpace($activePythonPath)) { Test-PathEquals -Left ([string]$mapping.path) -Right $activePythonPath } else { [bool]$mapping.default }) -Source package-manager
     Add-UniqueVersion -List $pythonVersions -Version $mapping.version
 
-    if ($null -eq $activePythonVersion -and $mapping.default) {
+    if (
+        $null -eq $activePythonVersion -and
+        $mapping.default -and
+        $pythonResolutions.Count -gt 0
+    ) {
         $activePythonVersion = $mapping.version
     }
 }
@@ -675,7 +679,16 @@ if (@($unsafePythonResolutions | Where-Object active).Count -gt 0) {
     $warnings.Add((New-AuditIssue -Code 'PYTHON_ACTIVE_ALIAS_NOT_EXECUTED' -Message 'The active python resolution is a Windows app/manager alias and was intentionally not executed to avoid automatic installation side effects.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.command-resolution', 'python.launcher-list')))
 }
 
-$pythonState = if ($null -ne $activePythonVersion -and $unsafePythonResolutions.Count -eq 0) {
+if ($pythonResolutions.Count -eq 0 -and $pythonInstallations.Count -gt 0) {
+    $hasPartial = $true
+    $warnings.Add((New-AuditIssue -Code 'PYTHON_COMMAND_UNRESOLVED' -Message 'Python interpreters were discovered, but the python command is not resolvable.' -Severity warning -ComponentId 'python' -EvidenceIds @('python.launcher-list', 'python.installations')))
+}
+
+$pythonState = if (
+    -not [string]::IsNullOrWhiteSpace($activePythonPath) -and
+    $null -ne $activePythonVersion -and
+    @($unsafePythonResolutions | Where-Object active).Count -eq 0
+) {
     'present'
 }
 elseif ($pythonInstallations.Count -gt 0 -or $pythonResolutions.Count -gt 0) {
