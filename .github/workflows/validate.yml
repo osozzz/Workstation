@@ -71,6 +71,23 @@ jobs:
             throw "Expected provider status warning."
           }
 
+          $allowedEnvironment = Get-AuditEnvironmentSnapshot -Names @('JAVA_HOME', 'PNPM_HOME')
+          if (@($allowedEnvironment).Count -ne 2) {
+            throw "Expected allowlisted environment snapshot entries."
+          }
+
+          $rejectedEnvironmentName = $false
+          try {
+            Get-AuditEnvironmentSnapshot -Names @('PATH') | Out-Null
+          }
+          catch {
+            $rejectedEnvironmentName = $true
+          }
+
+          if (-not $rejectedEnvironmentName) {
+            throw "Expected non-allowlisted environment variable access to be rejected."
+          }
+
       - name: Validate JSON configuration
         shell: pwsh
         run: |
