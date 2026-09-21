@@ -88,6 +88,77 @@ jobs:
             throw "Expected non-allowlisted environment variable access to be rejected."
           }
 
+      - name: Smoke-test provider orchestrator
+        shell: pwsh
+        run: |
+          $tempRoot = Join-Path $env:RUNNER_TEMP 'workstation-orchestrator'
+          $reportRoot = Join-Path $tempRoot 'reports'
+          $failingProvider = Join-Path $tempRoot 'SyntheticFailure.Provider.ps1'
+          New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+
+          @'
+          [CmdletBinding(DefaultParameterSetName = 'Run')]
+          param(
+              [Parameter(Mandatory, ParameterSetName = 'Describe')]
+              [switch]$Describe,
+
+              [Parameter(Mandatory, ParameterSetName = 'Run')]
+              [psobject]$Context
+          )
+
+          if ($Describe) {
+              return [pscustomobject][ordered]@{
+                  providerId = 'synthetic.failure'
+                  category   = 'synthetic'
+                  order      = 999
+              }
+          }
+
+          throw 'Synthetic provider failure.'
+          '@ | Set-Content -LiteralPath $failingProvider -Encoding UTF8
+
+          $auditArgs = @{
+              OutputDirectory = $reportRoot
+              AdditionalProviderPath = @($failingProvider)
+              PassThru = $true
+          }
+          $result = & ./scripts/Audit-Workstation.ps1 @auditArgs
+
+          if ($result.Report.schemaVersion -ne '1.0.0') {
+              throw "Expected normalized audit schema 1.0.0."
+          }
+
+          if ($result.Report.summary.providerCount -ne 5) {
+              throw "Expected four built-in providers plus the synthetic failure provider."
+          }
+
+          foreach ($providerId in @('host.system', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+              if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
+                  throw "Expected provider '$providerId' in the aggregate report."
+              }
+          }
+
+          $failedProvider = $result.Report.providers | Where-Object providerId -eq 'synthetic.failure'
+          if ($failedProvider.status -ne 'failed') {
+              throw "Expected the synthetic provider to be isolated as failed."
+          }
+
+          if ($result.Report.summary.status -ne 'failed') {
+              throw "Expected aggregate status to reflect the isolated provider failure."
+          }
+
+          if (-not (Test-Path -LiteralPath $result.JsonPath) -or -not (Test-Path -LiteralPath $result.MarkdownPath)) {
+              throw "Expected JSON and Markdown reports to be generated despite provider failure."
+          }
+
+          $missingProviderResult = & ./scripts/Audit-Workstation.ps1 -OutputDirectory (Join-Path $tempRoot 'missing-provider-reports') -AdditionalProviderPath @((Join-Path $tempRoot 'DoesNotExist.Provider.ps1')) -PassThru
+          if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
+              throw "Expected missing additional provider paths to be isolated as report-level errors."
+          }
+          if ($missingProviderResult.Report.summary.providerCount -ne 4) {
+              throw "Expected built-in providers to continue after an additional provider path failure."
+          }
+
       - name: Validate JSON configuration
         shell: pwsh
         run: |

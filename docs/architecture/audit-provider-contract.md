@@ -261,6 +261,23 @@ A released report must declare the schema version it was produced against. Consu
 
 Changes to the schema must be reviewed together with the contract documentation.
 
+## Provider execution protocol
+
+Provider files live under `scripts/Providers` and use the `*.Provider.ps1` naming convention.
+
+Each provider supports two invocation modes:
+
+- `-Describe` returns stable metadata: `providerId`, `category`, and numeric `order`;
+- `-Context <object>` performs the read-only inspection and returns one result matching `provider-result.schema.json`.
+
+The orchestrator discovers provider files, reads their descriptions, and executes them in deterministic order by `order`, then `providerId`, then path.
+
+Provider execution is isolated. If one provider throws, returns an invalid envelope, or cannot complete its work, the orchestrator converts that failure into a normalized failed-provider result and continues with the remaining providers.
+
+The shared context currently includes the audit timestamp, Workstation tool version, approved environment-variable names, and compatibility options such as `IncludeWingetInventory`. The transitional `winget.baseline` provider preserves the existing WinGet upgrade diagnostics and, when that switch is enabled, the WinGet inventory capture used by `Run-Audit.cmd`. Providers must not use the context as authority to mutate the workstation.
+
+This protocol keeps provider discovery separate from provider result semantics: the description controls orchestration, while the provider-result schema controls audit data.
+
 ## Transition from the v0.2 audit skeleton
 
 The `v0.2.0` audit script uses a monolithic report with sections such as `Tools`, `CommandCollisions`, `PathHealth`, `EnvironmentVariables`, and `PackageManagers`.
