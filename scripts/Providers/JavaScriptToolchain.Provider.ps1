@@ -376,7 +376,10 @@ function Get-KnownGlobalPackageInventory {
 
 function Get-PackageManagerInstallations {
     param(
-        [Parameter(Mandatory)][object[]]$Inventory,
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [object[]]$Inventory,
+
         [Parameter(Mandatory)][string[]]$PackageNames
     )
 
