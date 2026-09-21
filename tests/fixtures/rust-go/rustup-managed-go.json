@@ -289,21 +289,25 @@
     {
       "evidenceId": "rust.rustup.version",
       "type": "command",
-      "source": "rustup --version",
+      "source": "rustup --version with RUSTUP_AUTO_INSTALL=0",
       "exitCode": 0,
       "captured": "rustup 1.28.2",
       "redacted": false,
       "attributes": {
         "status": "success",
-        "resolutionCount": 1
+        "resolutionCount": 1,
+        "executionSkipped": false,
+        "fileMetadataVersion": "1.28.2",
+        "minimumSafeInspectionVersion": "1.28.0",
+        "autoInstallGuard": "RUSTUP_AUTO_INSTALL=0"
       }
     },
     {
       "evidenceId": "rust.toolchains",
       "type": "command",
-      "source": "rustup toolchain list",
+      "source": "rustup toolchain list with RUSTUP_AUTO_INSTALL=0",
       "exitCode": 0,
-      "captured": "stable-x86_64-pc-windows-msvc (active, default)\n1.89.0-x86_64-pc-windows-msvc",
+      "captured": "stable-x86_64-pc-windows-msvc (default)\n1.89.0-x86_64-pc-windows-msvc",
       "redacted": false,
       "attributes": {
         "status": "success",
@@ -315,7 +319,8 @@
             "default": true,
             "channel": "stable",
             "version": null,
-            "path": "C:\\Synthetic\\Rustup\\toolchains\\stable-x86_64-pc-windows-msvc"
+            "path": "C:\\Synthetic\\Rustup\\toolchains\\stable-x86_64-pc-windows-msvc",
+            "override": false
           },
           {
             "name": "1.89.0-x86_64-pc-windows-msvc",
@@ -323,9 +328,24 @@
             "default": false,
             "channel": null,
             "version": "1.89.0",
-            "path": "C:\\Synthetic\\Rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc"
+            "path": "C:\\Synthetic\\Rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc",
+            "override": false
           }
-        ]
+        ],
+        "autoInstallGuard": "RUSTUP_AUTO_INSTALL=0"
+      }
+    },
+    {
+      "evidenceId": "rust.active-toolchain",
+      "type": "command",
+      "source": "rustup show active-toolchain with RUSTUP_AUTO_INSTALL=0",
+      "exitCode": 0,
+      "captured": "stable-x86_64-pc-windows-msvc (default)",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "activeToolchain": "stable-x86_64-pc-windows-msvc",
+        "autoInstallGuard": "RUSTUP_AUTO_INSTALL=0"
       }
     },
     {
@@ -340,7 +360,8 @@
         "timedOut": false,
         "truncated": false,
         "resolutionCount": 1,
-        "executionSkipped": false
+        "executionSkipped": false,
+        "rustupAutoInstallGuard": true
       }
     },
     {
@@ -355,7 +376,8 @@
         "timedOut": false,
         "truncated": false,
         "resolutionCount": 1,
-        "executionSkipped": false
+        "executionSkipped": false,
+        "rustupAutoInstallGuard": true
       }
     },
     {
