@@ -639,7 +639,7 @@ $javaInstallations = @(
         ForEach-Object {
             [pscustomobject][ordered]@{
                 path    = $_.path
-                version = $jdkMetadataItem.version
+                version = $_.version
                 active  = $(if (-not [string]::IsNullOrWhiteSpace($activeJavaRoot)) { Test-PathEquals -Left $_.path -Right $activeJavaRoot } else { $false })
                 source  = $(if ($_.sources -contains 'command') { 'command' } elseif ($_.sources -contains 'environment') { 'environment' } elseif ($_.sources -contains 'registry') { 'registry' } else { 'filesystem' })
             }
@@ -728,7 +728,7 @@ $javacInstallations = @(
             $jdkMetadataItem = $_
             [pscustomobject][ordered]@{
                 path    = Join-Path $jdkMetadataItem.path 'bin\javac.exe'
-                version = $_.version
+                version = $jdkMetadataItem.version
                 active  = @(
                     $javacResult.Resolutions |
                         Where-Object {
