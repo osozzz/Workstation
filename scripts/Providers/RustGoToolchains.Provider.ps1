@@ -477,29 +477,60 @@ $evidence.Add((New-AuditEvidence -EvidenceId 'rust-go.environment' -Type environ
     gopathConfigured = -not [string]::IsNullOrWhiteSpace($gopathConfigured)
 }))
 
-$rustupResult = Invoke-AuditCommand -Command 'rustup' -Arguments @('--version') -TimeoutSeconds 20
-$rustupVersion = if ($rustupResult.Found -and $rustupResult.Status -eq 'success') {
-    Get-VersionRecordFromText -Text $rustupResult.Captured -Channel $null
+$rustupResolutions = @(Get-AuditCommandResolution -Command 'rustup')
+$rustupPath = Get-ActiveResolutionPath -Resolutions $rustupResolutions
+$rustupFileVersion = Get-ExecutableVersionRecord -Path $rustupPath
+$rustupSafeInspection = Test-VersionAtLeast -VersionRecord $rustupFileVersion -Minimum '1.28.0'
+$rustupResult = $null
+$rustupVersion = $rustupFileVersion
+$rustupExecutionSkipped = $false
+
+if ($rustupResolutions.Count -gt 0 -and $rustupSafeInspection) {
+    $rustupResult = Invoke-AuditCommand -Command 'rustup' -Arguments @('--version') -TimeoutSeconds 20 -EnvironmentOverrides @{
+        RUSTUP_AUTO_INSTALL = '0'
+    }
+
+    if ($rustupResult.Status -eq 'success') {
+        $cliVersion = Get-VersionRecordFromText -Text $rustupResult.Captured -Channel $null
+        if ($null -ne $cliVersion) {
+            $rustupVersion = $cliVersion
+        }
+    }
 }
-else {
-    $null
+elseif ($rustupResolutions.Count -gt 0) {
+    $rustupExecutionSkipped = $true
 }
 
-$rustupResolutions = @($rustupResult.Resolutions)
-$rustupState = if (-not $rustupResult.Found) {
+$rustupState = if ($rustupResolutions.Count -eq 0) {
     'missing'
 }
-elseif ($rustupResult.Status -eq 'success' -and $null -ne $rustupVersion) {
+elseif (
+    $rustupSafeInspection -and
+    $null -ne $rustupResult -and
+    $rustupResult.Status -eq 'success' -and
+    $null -ne $rustupVersion
+) {
     'present'
 }
 else {
     'partial'
 }
 
-if ($rustupResult.Found) {
-    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.rustup.version' -Type command -Source 'rustup --version' -ExitCode $rustupResult.ExitCode -Captured $rustupResult.Captured -Redacted:$rustupResult.Redacted -Attributes @{
-        status = $rustupResult.Status
+if ($rustupResolutions.Count -gt 0) {
+    $rustupEvidenceSource = if ($rustupExecutionSkipped) {
+        'rustup executable metadata; CLI execution skipped for legacy/unknown auto-install safety'
+    }
+    else {
+        'rustup --version with RUSTUP_AUTO_INSTALL=0'
+    }
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'rust.rustup.version' -Type command -Source $rustupEvidenceSource -ExitCode $(if ($null -ne $rustupResult) { $rustupResult.ExitCode } else { $null }) -Captured $(if ($null -ne $rustupResult) { $rustupResult.Captured } else { $null }) -Redacted:$(if ($null -ne $rustupResult) { $rustupResult.Redacted } else { $false }) -Attributes @{
+        status = $(if ($null -ne $rustupResult) { $rustupResult.Status } else { 'safety-skipped' })
         resolutionCount = $rustupResolutions.Count
+        executionSkipped = $rustupExecutionSkipped
+        fileMetadataVersion = $(if ($null -ne $rustupFileVersion) { $rustupFileVersion.normalized } else { $null })
+        minimumSafeInspectionVersion = '1.28.0'
+        autoInstallGuard = $(if ($rustupSafeInspection) { 'RUSTUP_AUTO_INSTALL=0' } else { $null })
     }))
 
     if ($rustupResolutions.Count -gt 1) {
@@ -507,7 +538,11 @@ if ($rustupResult.Found) {
         $warnings.Add((New-AuditIssue -Code 'RUSTUP_COMMAND_COLLISION' -Message 'Multiple rustup command resolutions were detected.' -Severity warning -ComponentId 'rustup' -EvidenceIds @('rust.rustup.version')))
     }
 
-    if ($rustupState -eq 'partial') {
+    if ($rustupExecutionSkipped) {
+        $hasPartial = $true
+        $warnings.Add((New-AuditIssue -Code 'RUSTUP_LEGACY_EXECUTION_SKIPPED' -Message 'rustup is present, but its version is older than the safe inspection baseline or cannot be verified from executable metadata. CLI execution was skipped to avoid legacy automatic toolchain installation side effects.' -Severity warning -ComponentId 'rustup' -EvidenceIds @('rust.rustup.version')))
+    }
+    elseif ($rustupState -eq 'partial') {
         $hasPartial = $true
         $warnings.Add((New-AuditIssue -Code 'RUSTUP_VERSION_INCOMPLETE' -Message 'rustup is resolvable, but its version could not be determined reliably.' -Severity warning -ComponentId 'rustup' -EvidenceIds @('rust.rustup.version')))
     }
@@ -529,7 +564,7 @@ $components.Add([pscustomobject][ordered]@{
     componentId         = 'rustup'
     name                = 'rustup'
     state               = $rustupState
-    installed           = $(if ($rustupResult.Found) { $true } else { $false })
+    installed           = $(if ($rustupResolutions.Count -gt 0) { $true } else { $false })
     activeVersion       = $rustupVersion
     discoveredVersions  = $(if ($null -ne $rustupVersion) { @($rustupVersion) } else { @() })
     installations       = $rustupInstallations
