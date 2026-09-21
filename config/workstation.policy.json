@@ -54,5 +54,12 @@
     "platformToolsTrack": "latest-stable",
     "preferAndroidHome": true,
     "acceptLicensesDuringAudit": false
+  },
+  "python": {
+    "defaultTrack": "latest-stable",
+    "windowsManager": "python-install-manager",
+    "projectsMustUseLocalCompatibleVersion": true,
+    "virtualEnvironments": "per-project",
+    "packageToolsTrack": "latest-stable"
   }
 }
