@@ -506,7 +506,10 @@ function ConvertTo-AuditPathEntry {
 
         [Parameter(Mandatory)]
         [AllowEmptyString()]
-        [string]$Entry
+        [string]$Entry,
+
+        [AllowNull()]
+        [string[]]$AllowedEnvironmentReferenceNames
     )
 
     $original = $Entry
@@ -533,6 +536,17 @@ function ConvertTo-AuditPathEntry {
 
         foreach ($match in $matches) {
             $name = [string]$match.Groups['name'].Value
+
+            if (
+                $null -ne $AllowedEnvironmentReferenceNames -and
+                $AllowedEnvironmentReferenceNames -notcontains $name
+            ) {
+                if (-not $unresolvedVariables.Contains($name)) {
+                    $unresolvedVariables.Add($name)
+                }
+                continue
+            }
+
             $value = [Environment]::GetEnvironmentVariable($name, 'Process')
 
             if ([string]::IsNullOrEmpty($value)) {
@@ -791,7 +805,7 @@ function ConvertTo-AuditEnvironmentPathValue {
                 continue
             }
 
-            $pathValues.Add((ConvertTo-AuditPathEntry -Scope process -Position $pathValues.Count -Entry ([string]$segment)))
+            $pathValues.Add((ConvertTo-AuditPathEntry -Scope process -Position $pathValues.Count -Entry ([string]$segment) -AllowedEnvironmentReferenceNames $script:AuditEnvironmentAllowList))
         }
     }
 
