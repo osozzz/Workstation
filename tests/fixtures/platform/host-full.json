@@ -179,6 +179,7 @@
       "captured": null,
       "redacted": false,
       "attributes": {
+        "productName": "Windows 10 Pro",
         "displayVersion": "24H2",
         "editionId": "Professional",
         "ubr": "7019"
