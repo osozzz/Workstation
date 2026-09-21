@@ -129,7 +129,17 @@ function Get-RustupActiveToolchainName {
 
     $match = [regex]::Match(
         ([string]$line[0]).Trim(),
-        '^(?<name>.+?)(?:\s+\([^)]+\))?
+        '^(?<name>.+?)(?:\s+\([^)]+\))?$'
+    )
+
+    if (-not $match.Success) {
+        return $null
+    }
+
+    return $match.Groups['name'].Value.Trim()
+}
+
+function Test-PathEquals {
     param(
         [AllowNull()][string]$Left,
         [AllowNull()][string]$Right
