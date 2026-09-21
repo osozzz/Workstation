@@ -67,6 +67,7 @@ function Get-FirstOutputLine {
 function Add-UniqueVersion {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [System.Collections.Generic.List[object]]$List,
 
         [AllowNull()]
@@ -103,6 +104,7 @@ function Add-UniqueVersion {
 function Add-UniqueInstallation {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [System.Collections.Generic.List[object]]$List,
 
         [AllowNull()]
