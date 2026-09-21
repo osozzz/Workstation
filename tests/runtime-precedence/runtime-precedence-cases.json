@@ -1,0 +1,278 @@
+{
+  "cases": {
+    "alignedAll": {
+      "processPath": "C:\\Synthetic\\Pyenv\\bin;C:\\Synthetic\\Pyenv\\versions\\3.13.0;C:\\Synthetic\\DotNet;C:\\Synthetic\\Cargo\\bin;C:\\Synthetic\\Go\\bin",
+      "environment": {
+        "PYENV_ROOT": { "value": "C:\\Synthetic\\Pyenv", "exists": true },
+        "DOTNET_ROOT": { "value": "C:\\Synthetic\\DotNet", "exists": true },
+        "DOTNET_ROOT_X64": null,
+        "DOTNET_ROOT_X86": null,
+        "CARGO_HOME": { "value": "C:\\Synthetic\\Cargo", "exists": true },
+        "RUSTUP_HOME": { "value": "C:\\Synthetic\\Rustup", "exists": true },
+        "GOROOT": { "value": "C:\\Synthetic\\Go", "exists": true },
+        "GOPATH": { "value": "C:\\Synthetic\\GoPath", "exists": true }
+      },
+      "components": {
+        "python": "present",
+        "pyenv-win": "present",
+        "dotnet-sdk": "present",
+        "rustup": "present",
+        "rustc": "present",
+        "cargo": "present",
+        "go": "present"
+      },
+      "resolutions": {
+        "python": [
+          { "command": "python", "path": "C:\\Synthetic\\Pyenv\\versions\\3.13.0\\python.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "pyenv": [
+          { "command": "pyenv", "path": "C:\\Synthetic\\Pyenv\\bin\\pyenv.bat", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "dotnet": [
+          { "command": "dotnet", "path": "C:\\Synthetic\\DotNet\\dotnet.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "rustup": [
+          { "command": "rustup", "path": "C:\\Synthetic\\Cargo\\bin\\rustup.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "rustc": [
+          { "command": "rustc", "path": "C:\\Synthetic\\Cargo\\bin\\rustc.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "cargo": [
+          { "command": "cargo", "path": "C:\\Synthetic\\Cargo\\bin\\cargo.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ],
+        "go": [
+          { "command": "go", "path": "C:\\Synthetic\\Go\\bin\\go.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ]
+      },
+      "rustToolchainPaths": [
+        "C:\\Synthetic\\Rustup\\toolchains\\stable-x86_64-pc-windows-msvc"
+      ],
+      "goObserved": {
+        "status": "success",
+        "GOROOT": "C:\\Synthetic\\Go",
+        "GOPATH": "C:\\Synthetic\\GoPath",
+        "GOTOOLCHAIN": "local"
+      },
+      "expectedWarningCodes": []
+    },
+    "pyenvConflict": {
+      "processPath": "C:\\Synthetic\\DirectPython;C:\\Synthetic\\DirectPyenv;C:\\Synthetic\\Pyenv\\bin;C:\\Synthetic\\Pyenv\\versions\\3.13.0",
+      "environment": {
+        "PYENV_ROOT": { "value": "C:\\Synthetic\\Pyenv", "exists": true },
+        "DOTNET_ROOT": null,
+        "DOTNET_ROOT_X64": null,
+        "DOTNET_ROOT_X86": null,
+        "CARGO_HOME": null,
+        "RUSTUP_HOME": null,
+        "GOROOT": null,
+        "GOPATH": null
+      },
+      "components": {
+        "python": "present",
+        "pyenv-win": "present",
+        "dotnet-sdk": "missing",
+        "rustup": "missing",
+        "rustc": "missing",
+        "cargo": "missing",
+        "go": "missing"
+      },
+      "resolutions": {
+        "python": [
+          { "command": "python", "path": "C:\\Synthetic\\DirectPython\\python.exe", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "python", "path": "C:\\Synthetic\\Pyenv\\versions\\3.13.0\\python.exe", "commandType": "Application", "precedence": 1, "active": false }
+        ],
+        "pyenv": [
+          { "command": "pyenv", "path": "C:\\Synthetic\\DirectPyenv\\pyenv.bat", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "pyenv", "path": "C:\\Synthetic\\Pyenv\\bin\\pyenv.bat", "commandType": "Application", "precedence": 1, "active": false }
+        ]
+      },
+      "rustToolchainPaths": [],
+      "goObserved": null,
+      "expectedWarningCodes": [
+        "PYENV_PATH_COLLISION",
+        "PYENV_ROOT_PRECEDENCE_MISMATCH",
+        "PYTHON_BYPASSES_PYENV_ROOT",
+        "PYTHON_PATH_COLLISION"
+      ]
+    },
+    "dotnetAmbiguousAligned": {
+      "processPath": "C:\\Synthetic\\DotNetX64",
+      "environment": {
+        "PYENV_ROOT": null,
+        "DOTNET_ROOT": null,
+        "DOTNET_ROOT_X64": { "value": "C:\\Synthetic\\DotNetX64", "exists": true },
+        "DOTNET_ROOT_X86": { "value": "C:\\Synthetic\\DotNetX86", "exists": true },
+        "CARGO_HOME": null,
+        "RUSTUP_HOME": null,
+        "GOROOT": null,
+        "GOPATH": null
+      },
+      "components": {
+        "python": "missing",
+        "pyenv-win": "missing",
+        "dotnet-sdk": "present",
+        "rustup": "missing",
+        "rustc": "missing",
+        "cargo": "missing",
+        "go": "missing"
+      },
+      "resolutions": {
+        "dotnet": [
+          { "command": "dotnet", "path": "C:\\Synthetic\\DotNetX64\\dotnet.exe", "commandType": "Application", "precedence": 0, "active": true }
+        ]
+      },
+      "rustToolchainPaths": [],
+      "goObserved": null,
+      "expectedWarningCodes": []
+    },
+    "dotnetOutsideRoots": {
+      "processPath": "C:\\Synthetic\\OtherDotNet;C:\\Synthetic\\DotNetX64;C:\\Synthetic\\DotNetX86",
+      "environment": {
+        "PYENV_ROOT": null,
+        "DOTNET_ROOT": null,
+        "DOTNET_ROOT_X64": { "value": "C:\\Synthetic\\DotNetX64", "exists": true },
+        "DOTNET_ROOT_X86": { "value": "C:\\Synthetic\\DotNetX86", "exists": true },
+        "CARGO_HOME": null,
+        "RUSTUP_HOME": null,
+        "GOROOT": null,
+        "GOPATH": null
+      },
+      "components": {
+        "python": "missing",
+        "pyenv-win": "missing",
+        "dotnet-sdk": "present",
+        "rustup": "missing",
+        "rustc": "missing",
+        "cargo": "missing",
+        "go": "missing"
+      },
+      "resolutions": {
+        "dotnet": [
+          { "command": "dotnet", "path": "C:\\Synthetic\\OtherDotNet\\dotnet.exe", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "dotnet", "path": "C:\\Synthetic\\DotNetX64\\dotnet.exe", "commandType": "Application", "precedence": 1, "active": false },
+          { "command": "dotnet", "path": "C:\\Synthetic\\DotNetX86\\dotnet.exe", "commandType": "Application", "precedence": 2, "active": false }
+        ]
+      },
+      "rustToolchainPaths": [],
+      "goObserved": null,
+      "expectedWarningCodes": [
+        "DOTNET_PATH_COLLISION",
+        "DOTNET_ROOT_PRECEDENCE_MISMATCH"
+      ]
+    },
+    "rustRootsConflict": {
+      "processPath": "C:\\Synthetic\\DirectRust;C:\\Synthetic\\Cargo\\bin",
+      "environment": {
+        "PYENV_ROOT": null,
+        "DOTNET_ROOT": null,
+        "DOTNET_ROOT_X64": null,
+        "DOTNET_ROOT_X86": null,
+        "CARGO_HOME": { "value": "C:\\Synthetic\\Cargo", "exists": true },
+        "RUSTUP_HOME": { "value": "C:\\Synthetic\\Rustup", "exists": true },
+        "GOROOT": null,
+        "GOPATH": null
+      },
+      "components": {
+        "python": "missing",
+        "pyenv-win": "missing",
+        "dotnet-sdk": "missing",
+        "rustup": "present",
+        "rustc": "present",
+        "cargo": "present",
+        "go": "missing"
+      },
+      "resolutions": {
+        "rustup": [
+          { "command": "rustup", "path": "C:\\Synthetic\\DirectRust\\rustup.exe", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "rustup", "path": "C:\\Synthetic\\Cargo\\bin\\rustup.exe", "commandType": "Application", "precedence": 1, "active": false }
+        ],
+        "rustc": [
+          { "command": "rustc", "path": "C:\\Synthetic\\DirectRust\\rustc.exe", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "rustc", "path": "C:\\Synthetic\\Cargo\\bin\\rustc.exe", "commandType": "Application", "precedence": 1, "active": false }
+        ],
+        "cargo": [
+          { "command": "cargo", "path": "C:\\Synthetic\\DirectRust\\cargo.exe", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "cargo", "path": "C:\\Synthetic\\Cargo\\bin\\cargo.exe", "commandType": "Application", "precedence": 1, "active": false }
+        ]
+      },
+      "rustToolchainPaths": [
+        "C:\\Synthetic\\OtherRustup\\toolchains\\stable-x86_64-pc-windows-msvc"
+      ],
+      "goObserved": null,
+      "expectedWarningCodes": [
+        "CARGO_HOME_PRECEDENCE_MISMATCH",
+        "CARGO_PATH_COLLISION",
+        "RUSTC_CARGO_HOME_PRECEDENCE_MISMATCH",
+        "RUSTC_PATH_COLLISION",
+        "RUSTUP_CARGO_HOME_PRECEDENCE_MISMATCH",
+        "RUSTUP_HOME_TOOLCHAIN_MISMATCH",
+        "RUSTUP_PATH_COLLISION"
+      ]
+    },
+    "goConflict": {
+      "processPath": "C:\\Synthetic\\OtherGo\\bin;C:\\Synthetic\\Go\\bin",
+      "environment": {
+        "PYENV_ROOT": null,
+        "DOTNET_ROOT": null,
+        "DOTNET_ROOT_X64": null,
+        "DOTNET_ROOT_X86": null,
+        "CARGO_HOME": null,
+        "RUSTUP_HOME": null,
+        "GOROOT": { "value": "C:\\Synthetic\\Go", "exists": true },
+        "GOPATH": { "value": "C:\\Synthetic\\GoPathA;C:\\Synthetic\\GoPathB", "exists": true }
+      },
+      "components": {
+        "python": "missing",
+        "pyenv-win": "missing",
+        "dotnet-sdk": "missing",
+        "rustup": "missing",
+        "rustc": "missing",
+        "cargo": "missing",
+        "go": "present"
+      },
+      "resolutions": {
+        "go": [
+          { "command": "go", "path": "C:\\Synthetic\\OtherGo\\bin\\go.exe", "commandType": "Application", "precedence": 0, "active": true },
+          { "command": "go", "path": "C:\\Synthetic\\Go\\bin\\go.exe", "commandType": "Application", "precedence": 1, "active": false }
+        ]
+      },
+      "rustToolchainPaths": [],
+      "goObserved": {
+        "status": "success",
+        "GOROOT": "C:\\Synthetic\\OtherGo",
+        "GOPATH": "C:\\Synthetic\\OtherGoPath",
+        "GOTOOLCHAIN": "local"
+      },
+      "expectedWarningCodes": [
+        "GO_GOROOT_PRECEDENCE_MISMATCH",
+        "GO_PATH_COLLISION"
+      ]
+    },
+    "missingOptionalTooling": {
+      "processPath": "C:\\Synthetic\\Tools",
+      "environment": {
+        "PYENV_ROOT": null,
+        "DOTNET_ROOT": null,
+        "DOTNET_ROOT_X64": null,
+        "DOTNET_ROOT_X86": null,
+        "CARGO_HOME": null,
+        "RUSTUP_HOME": null,
+        "GOROOT": null,
+        "GOPATH": null
+      },
+      "components": {
+        "python": "missing",
+        "pyenv-win": "missing",
+        "dotnet-sdk": "missing",
+        "rustup": "missing",
+        "rustc": "missing",
+        "cargo": "missing",
+        "go": "missing"
+      },
+      "resolutions": {},
+      "rustToolchainPaths": [],
+      "goObserved": null,
+      "expectedWarningCodes": []
+    }
+  }
+}
