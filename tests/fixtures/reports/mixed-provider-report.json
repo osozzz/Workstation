@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-09-21T00:00:00Z",
+  "audit": {
+    "mode": "read-only",
+    "toolVersion": "0.3.0"
+  },
+  "host": {
+    "name": "SYNTHETIC-WORKSTATION",
+    "platform": "windows",
+    "architecture": "x64"
+  },
+  "summary": {
+    "status": "failed",
+    "providerCount": 5,
+    "successCount": 2,
+    "warningCount": 0,
+    "partialCount": 1,
+    "failedCount": 1,
+    "unavailableCount": 1,
+    "notApplicableCount": 0
+  },
+  "providers": [
+    {
+      "providerId": "runtime.synthetic-present",
+      "category": "runtime",
+      "status": "success",
+      "observedAt": "2026-09-21T00:00:00Z",
+      "components": [],
+      "warnings": [],
+      "errors": [],
+      "evidence": []
+    },
+    {
+      "providerId": "runtime.synthetic-missing",
+      "category": "runtime",
+      "status": "success",
+      "observedAt": "2026-09-21T00:00:00Z",
+      "components": [],
+      "warnings": [],
+      "errors": [],
+      "evidence": []
+    },
+    {
+      "providerId": "runtime.synthetic-partial",
+      "category": "runtime",
+      "status": "partial",
+      "observedAt": "2026-09-21T00:00:00Z",
+      "components": [],
+      "warnings": [
+        {
+          "code": "SYNTHETIC_PARTIAL",
+          "message": "Synthetic partial provider.",
+          "severity": "warning",
+          "componentId": null,
+          "evidenceIds": []
+        }
+      ],
+      "errors": [],
+      "evidence": []
+    },
+    {
+      "providerId": "synthetic.failure",
+      "category": "synthetic",
+      "status": "failed",
+      "observedAt": "2026-09-21T00:00:00Z",
+      "components": [],
+      "warnings": [],
+      "errors": [
+        {
+          "code": "SYNTHETIC_PROVIDER_FAILURE",
+          "message": "Synthetic provider failure.",
+          "severity": "error",
+          "componentId": null,
+          "evidenceIds": []
+        }
+      ],
+      "evidence": []
+    },
+    {
+      "providerId": "versions.synthetic-offline",
+      "category": "version-intelligence",
+      "status": "unavailable",
+      "observedAt": "2026-09-21T00:00:00Z",
+      "components": [],
+      "warnings": [
+        {
+          "code": "SYNTHETIC_SOURCE_UNAVAILABLE",
+          "message": "Synthetic source is offline.",
+          "severity": "warning",
+          "componentId": null,
+          "evidenceIds": []
+        }
+      ],
+      "errors": [],
+      "evidence": []
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}

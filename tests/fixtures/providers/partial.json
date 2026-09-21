@@ -1,0 +1,59 @@
+{
+  "providerId": "runtime.synthetic-partial",
+  "category": "runtime",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "synthetic-partial",
+      "name": "Synthetic Partial Runtime",
+      "state": "partial",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Partial",
+          "version": null,
+          "active": true,
+          "source": "filesystem"
+        }
+      ],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "unknown",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": "Version data was intentionally unavailable in this synthetic fixture."
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "SYNTHETIC_VERSION_UNKNOWN",
+      "message": "Synthetic runtime was detected but its version could not be determined.",
+      "severity": "warning",
+      "componentId": "synthetic-partial",
+      "evidenceIds": [
+        "synthetic.partial.version"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "synthetic.partial.version",
+      "type": "command",
+      "source": "synthetic --version",
+      "exitCode": 1,
+      "captured": "Synthetic version lookup failed.",
+      "redacted": false,
+      "attributes": {
+        "fixture": true
+      }
+    }
+  ]
+}

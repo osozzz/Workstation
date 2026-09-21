@@ -1,0 +1,32 @@
+{
+  "providerId": "synthetic.failure",
+  "category": "synthetic",
+  "status": "failed",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [],
+  "warnings": [],
+  "errors": [
+    {
+      "code": "SYNTHETIC_PROVIDER_FAILURE",
+      "message": "Synthetic provider failure used to validate the contract.",
+      "severity": "error",
+      "componentId": null,
+      "evidenceIds": [
+        "synthetic.provider.failure"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "synthetic.provider.failure",
+      "type": "derived",
+      "source": "synthetic fixture",
+      "exitCode": null,
+      "captured": "Synthetic provider failure.",
+      "redacted": false,
+      "attributes": {
+        "fixture": true
+      }
+    }
+  ]
+}

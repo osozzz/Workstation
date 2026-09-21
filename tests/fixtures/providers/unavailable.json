@@ -1,0 +1,53 @@
+{
+  "providerId": "versions.synthetic-offline",
+  "category": "version-intelligence",
+  "status": "unavailable",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "synthetic-offline",
+      "name": "Synthetic Offline Source",
+      "state": "unavailable",
+      "installed": null,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "unavailable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": "synthetic://offline",
+        "checkedAt": "2026-09-21T00:00:00Z",
+        "message": "Synthetic source is offline."
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "SYNTHETIC_SOURCE_UNAVAILABLE",
+      "message": "Synthetic version source is unavailable.",
+      "severity": "warning",
+      "componentId": "synthetic-offline",
+      "evidenceIds": [
+        "synthetic.offline.source"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "synthetic.offline.source",
+      "type": "api",
+      "source": "synthetic://offline",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "reachable": false,
+        "fixture": true
+      }
+    }
+  ]
+}
