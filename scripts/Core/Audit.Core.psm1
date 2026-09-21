@@ -111,7 +111,7 @@ function Get-AuditCommandResolution {
         })
     }
 
-    return @($results)
+    return $results.ToArray()
 }
 
 function Invoke-AuditCommand {
@@ -431,7 +431,7 @@ function Get-AuditEnvironmentSnapshot {
         })
     }
 
-    return @($results)
+    return $results.ToArray()
 }
 
 Export-ModuleMember -Function @(
