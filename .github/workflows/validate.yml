@@ -85,6 +85,11 @@ jobs:
         run: |
           ./tests/environment/validate_environment_model.ps1
 
+      - name: Validate command PATH precedence
+        shell: pwsh
+        run: |
+          ./tests/path-precedence/validate_command_path_precedence.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -218,11 +223,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 12) {
-              throw "Expected eleven built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 13) {
+              throw "Expected twelve built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -482,6 +487,40 @@ jobs:
               }
           }
 
+          $pathPrecedenceProvider = $result.Report.providers | Where-Object providerId -eq 'path.precedence'
+          if ($pathPrecedenceProvider.status -eq 'failed') {
+              $pathMessages = @($pathPrecedenceProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "PATH precedence provider failed during smoke test: $pathMessages"
+          }
+
+          if (@($pathPrecedenceProvider.components).Count -ne 0) {
+              throw "PATH precedence provider must remain derived and own no components."
+          }
+
+          $pathPrecedenceSummary = $pathPrecedenceProvider.evidence | Where-Object evidenceId -eq 'path-precedence.summary'
+          if (-not $pathPrecedenceSummary) {
+              throw "Expected PATH precedence summary evidence."
+          }
+
+          if ($pathPrecedenceSummary.attributes.readOnly -ne $true) {
+              throw "PATH precedence analysis must remain explicitly read-only."
+          }
+
+          if ([int]$pathPrecedenceSummary.attributes.analyzedCommandCount -lt 1) {
+              throw "Expected PATH precedence provider to analyze prior command-resolution evidence."
+          }
+
+          $mappedCommandEvidence = @(
+              $pathPrecedenceProvider.evidence |
+                  Where-Object {
+                      $_.evidenceId -like 'path-precedence.command.*' -and
+                      [int]$_.attributes.mappedResolutionCount -gt 0
+                  }
+          )
+          if ($mappedCommandEvidence.Count -lt 1) {
+              throw "Expected at least one real command resolution to map to Process PATH."
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
@@ -586,7 +625,7 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 11) {
+          if ($missingProviderResult.Report.summary.providerCount -ne 12) {
               throw "Expected built-in providers to continue after an additional provider path failure."
           }
 
