@@ -731,6 +731,10 @@ function ConvertTo-AuditEnvironmentScopeValue {
     foreach ($pathItem in @($pathItems)) {
         $unapprovedReferenceCount += [int]$pathItem.unapprovedReferenceCount
     }
+    $hasUnresolvedVariable = @(
+        $pathItems |
+            Where-Object { $_.hasUnresolvedVariable }
+    ).Count -gt 0
 
     $normalized = if ($definition.kind -eq 'path-list') {
         $normalizedParts -join ';'
@@ -778,7 +782,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
         exists                = $exists
         pathItems             = $pathItems.ToArray()
         missingPathCount      = $missingPathCount
-        hasUnresolvedVariable = ($unresolvedVariables.Count -gt 0)
+        hasUnresolvedVariable = $hasUnresolvedVariable
         unresolvedVariables   = @($unresolvedVariables)
         unapprovedReferenceCount = $unapprovedReferenceCount
         isConfigured          = $true
