@@ -848,8 +848,8 @@ if ($pyenvResult.Found) {
         resolutionCount = @($pyenvResult.Resolutions).Count
     }))
 
-    $pyenvVersionsResult = Invoke-AuditCommand -Command 'pyenv' -Arguments @('versions', '--bare') -TimeoutSeconds 20
-    $evidence.Add((New-AuditEvidence -EvidenceId 'python.pyenv.versions' -Type command -Source 'pyenv versions --bare' -ExitCode $pyenvVersionsResult.ExitCode -Captured $pyenvVersionsResult.Captured -Redacted:$pyenvVersionsResult.Redacted -Attributes @{
+    $pyenvVersionsResult = Invoke-AuditCommand -Command 'pyenv' -Arguments @('versions') -TimeoutSeconds 20
+    $evidence.Add((New-AuditEvidence -EvidenceId 'python.pyenv.versions' -Type command -Source 'pyenv versions' -ExitCode $pyenvVersionsResult.ExitCode -Captured $pyenvVersionsResult.Captured -Redacted:$pyenvVersionsResult.Redacted -Attributes @{
         status = $pyenvVersionsResult.Status
     }))
 }
