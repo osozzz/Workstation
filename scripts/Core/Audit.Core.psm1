@@ -509,16 +509,18 @@ function ConvertTo-AuditPathEntry {
         [string]$Entry
     )
 
-    $original = $Entry.Trim()
+    $original = $Entry
+    $entryValue = $Entry.Trim()
+
     if (
-        $original.Length -ge 2 -and
-        $original.StartsWith('"') -and
-        $original.EndsWith('"')
+        $entryValue.Length -ge 2 -and
+        $entryValue.StartsWith('"') -and
+        $entryValue.EndsWith('"')
     ) {
-        $original = $original.Substring(1, $original.Length - 2).Trim()
+        $entryValue = $entryValue.Substring(1, $entryValue.Length - 2).Trim()
     }
 
-    $expanded = [Environment]::ExpandEnvironmentVariables($original)
+    $expanded = [Environment]::ExpandEnvironmentVariables($entryValue)
     $hasUnresolvedVariable = ($expanded -match '%[^%]+%')
 
     $normalized = $expanded.Trim()
@@ -587,7 +589,7 @@ function ConvertTo-AuditPathEntry {
     return [pscustomobject][ordered]@{
         scope                   = $Scope
         position                = $Position
-        entry                   = $original
+        entry                   = $entryValue
         original                = $original
         expanded                = $expanded
         normalized              = $normalized
