@@ -625,8 +625,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
         [string]$Scope,
 
         [AllowNull()]
-        [AllowEmptyString()]
-        [string]$Value,
+        [object]$Value,
 
         [System.Collections.IDictionary]$ReferenceValues = @{}
     )
@@ -651,7 +650,9 @@ function ConvertTo-AuditEnvironmentScopeValue {
         }
     }
 
-    if ($Value.Length -eq 0) {
+    $textValue = [string]$Value
+
+    if ($textValue.Length -eq 0) {
         return [pscustomobject][ordered]@{
             scope                 = $Scope
             state                 = 'empty'
@@ -672,7 +673,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
     $pathItems = [System.Collections.Generic.List[object]]::new()
 
     if ($definition.kind -eq 'path-list') {
-        $segments = @($Value -split ';')
+        $segments = @($textValue -split ';')
         foreach ($segment in $segments) {
             if ([string]::IsNullOrWhiteSpace([string]$segment)) {
                 continue
@@ -682,7 +683,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
         }
     }
     else {
-        $pathItems.Add((ConvertTo-AuditPathEntry -Scope $Scope -Position 0 -Entry $Value -EnvironmentValues $ReferenceValues))
+        $pathItems.Add((ConvertTo-AuditPathEntry -Scope $Scope -Position 0 -Entry $textValue -EnvironmentValues $ReferenceValues))
     }
 
     $normalizedParts = @(
@@ -737,7 +738,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
     return [pscustomobject][ordered]@{
         scope                 = $Scope
         state                 = 'value'
-        raw                   = $Value
+        raw                   = $textValue
         expanded              = $expanded
         normalized            = $normalized
         comparisonKey         = $comparisonKey
