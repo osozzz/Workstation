@@ -196,15 +196,25 @@ if (Test-Path -LiteralPath $ProviderDirectory) {
     Get-ChildItem -LiteralPath $ProviderDirectory -Filter '*.Provider.ps1' -File |
         ForEach-Object { $providerPaths.Add($_.FullName) }
 }
+else {
+    $message = "Provider directory '$ProviderDirectory' was not found."
+    $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_DIRECTORY_NOT_FOUND' -Message $message -Severity error -EvidenceIds @()))
+}
 
 foreach ($path in $AdditionalProviderPath) {
     if ([string]::IsNullOrWhiteSpace($path)) {
         continue
     }
 
-    $resolvedPath = (Resolve-Path -LiteralPath $path -ErrorAction Stop).Path
-    if (-not $providerPaths.Contains($resolvedPath)) {
-        $providerPaths.Add($resolvedPath)
+    try {
+        $resolvedPath = (Resolve-Path -LiteralPath $path -ErrorAction Stop).Path
+        if (-not $providerPaths.Contains($resolvedPath)) {
+            $providerPaths.Add($resolvedPath)
+        }
+    }
+    catch {
+        $message = "Additional provider path '$path' could not be resolved: $($_.Exception.Message)"
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_PATH_NOT_FOUND' -Message $message -Severity error -EvidenceIds @()))
     }
 }
 
@@ -249,8 +259,16 @@ $duplicateProviderIds = @(
 )
 
 if ($duplicateProviderIds.Count -gt 0) {
-    $ids = ($duplicateProviderIds.Name -join ', ')
-    throw "Duplicate providerId registrations detected: $ids"
+    foreach ($duplicate in $duplicateProviderIds) {
+        $message = "Duplicate providerId '$($duplicate.Name)' was registered $($duplicate.Count) times. Those registrations were skipped."
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_ID_DUPLICATE' -Message $message -Severity error -EvidenceIds @()))
+    }
+
+    $duplicateNames = @($duplicateProviderIds | ForEach-Object { $_.Name })
+    $orderedRegistrations = @(
+        $orderedRegistrations |
+            Where-Object { $_.providerId -notin $duplicateNames }
+    )
 }
 
 $providerResults = New-Object System.Collections.Generic.List[object]
