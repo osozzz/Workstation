@@ -46,6 +46,7 @@ foreach ($variable in @($environmentModel.variables)) {
         invalidScopeCount = $variable.invalidScopeCount
         missingPathCount = $variable.missingPathCount
         unresolvedScopeCount = $variable.unresolvedScopeCount
+        unapprovedReferenceCount = $variable.unapprovedReferenceCount
         scopes = $variable.scopes
     }))
 
