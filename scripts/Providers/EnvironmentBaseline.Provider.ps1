@@ -25,69 +25,6 @@ $warnings = New-Object System.Collections.Generic.List[object]
 $errors = New-Object System.Collections.Generic.List[object]
 $evidence = New-Object System.Collections.Generic.List[object]
 
-function Split-PathEntries {
-    param([AllowNull()][string]$Value)
-
-    if ([string]::IsNullOrWhiteSpace($Value)) {
-        return @()
-    }
-
-    return @(
-        $Value -split ';' |
-            ForEach-Object { $_.Trim().Trim('"') } |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-    )
-}
-
-function Get-PathHealth {
-    param(
-        [Parameter(Mandatory)][string]$Scope,
-        [AllowNull()][string]$RawPath
-    )
-
-    $entries = Split-PathEntries -Value $RawPath
-    $seen = @{}
-    $details = New-Object System.Collections.Generic.List[object]
-
-    foreach ($entry in $entries) {
-        $expanded = [Environment]::ExpandEnvironmentVariables($entry)
-        $unresolved = $expanded -match '%[^%]+%'
-        $key = $expanded.TrimEnd('\').ToLowerInvariant()
-        $duplicate = $seen.ContainsKey($key)
-
-        if (-not $duplicate) {
-            $seen[$key] = $true
-        }
-
-        $exists = $null
-        if (-not $unresolved) {
-            try {
-                $exists = Test-Path -LiteralPath $expanded
-            }
-            catch {
-                $exists = $false
-            }
-        }
-
-        $details.Add([pscustomobject][ordered]@{
-            entry = $entry
-            expanded = $expanded
-            exists = $exists
-            duplicate = $duplicate
-            hasUnresolvedVariable = $unresolved
-        })
-    }
-
-    return [pscustomobject][ordered]@{
-        scope = $Scope
-        entryCount = $entries.Count
-        duplicateCount = @($details | Where-Object { $_.duplicate }).Count
-        missingCount = @($details | Where-Object { $_.exists -eq $false }).Count
-        unresolvedVariableCount = @($details | Where-Object { $_.hasUnresolvedVariable }).Count
-        entries = $details.ToArray()
-    }
-}
-
 $environment = Get-AuditEnvironmentSnapshot -Names $Context.EnvironmentVariableNames
 
 foreach ($item in $environment) {
@@ -99,35 +36,41 @@ foreach ($item in $environment) {
     }))
 }
 
-$pathScopes = @(
-    @{ Name = 'machine'; Value = [Environment]::GetEnvironmentVariable('Path', 'Machine') },
-    @{ Name = 'user'; Value = [Environment]::GetEnvironmentVariable('Path', 'User') },
-    @{ Name = 'process'; Value = [Environment]::GetEnvironmentVariable('Path', 'Process') }
-)
+$pathModel = Get-AuditPathModel -MachinePath ([Environment]::GetEnvironmentVariable('Path', 'Machine')) -UserPath ([Environment]::GetEnvironmentVariable('Path', 'User')) -ProcessPath ([Environment]::GetEnvironmentVariable('Path', 'Process'))
 
-foreach ($scope in $pathScopes) {
-    $health = Get-PathHealth -Scope $scope.Name -RawPath $scope.Value
-    $evidenceId = "path.$($scope.Name).health"
+foreach ($scopeModel in @($pathModel.scopes)) {
+    $evidenceId = "path.$($scopeModel.scope).health"
 
-    $evidence.Add((New-AuditEvidence -EvidenceId $evidenceId -Type path -Source "$($scope.Name) PATH" -Captured $null -Attributes @{
-        entryCount = $health.entryCount
-        duplicateCount = $health.duplicateCount
-        missingCount = $health.missingCount
-        unresolvedVariableCount = $health.unresolvedVariableCount
-        entries = $health.entries
+    $evidence.Add((New-AuditEvidence -EvidenceId $evidenceId -Type path -Source "$($scopeModel.scope) PATH" -Captured $null -Attributes @{
+        entryCount = $scopeModel.entryCount
+        duplicateCount = $scopeModel.duplicateCount
+        missingCount = $scopeModel.missingCount
+        unresolvedVariableCount = $scopeModel.unresolvedVariableCount
+        entries = $scopeModel.entries
     }))
 
-    if ($health.duplicateCount -gt 0) {
-        $warnings.Add((New-AuditIssue -Code 'PATH_DUPLICATE_ENTRIES' -Message "$($scope.Name) PATH contains $($health.duplicateCount) duplicate entries." -Severity warning -EvidenceIds @($evidenceId)))
+    if ($scopeModel.duplicateCount -gt 0) {
+        $warnings.Add((New-AuditIssue -Code 'PATH_DUPLICATE_ENTRIES' -Message "$($scopeModel.scope) PATH contains $($scopeModel.duplicateCount) duplicate entries." -Severity warning -EvidenceIds @($evidenceId)))
     }
 
-    if ($health.missingCount -gt 0) {
-        $warnings.Add((New-AuditIssue -Code 'PATH_MISSING_ENTRIES' -Message "$($scope.Name) PATH contains $($health.missingCount) missing entries." -Severity warning -EvidenceIds @($evidenceId)))
+    if ($scopeModel.missingCount -gt 0) {
+        $warnings.Add((New-AuditIssue -Code 'PATH_MISSING_ENTRIES' -Message "$($scopeModel.scope) PATH contains $($scopeModel.missingCount) missing entries." -Severity warning -EvidenceIds @($evidenceId)))
     }
 
-    if ($health.unresolvedVariableCount -gt 0) {
-        $warnings.Add((New-AuditIssue -Code 'PATH_UNRESOLVED_VARIABLES' -Message "$($scope.Name) PATH contains $($health.unresolvedVariableCount) unresolved environment-variable references." -Severity warning -EvidenceIds @($evidenceId)))
+    if ($scopeModel.unresolvedVariableCount -gt 0) {
+        $warnings.Add((New-AuditIssue -Code 'PATH_UNRESOLVED_VARIABLES' -Message "$($scopeModel.scope) PATH contains $($scopeModel.unresolvedVariableCount) unresolved environment-variable references." -Severity warning -EvidenceIds @($evidenceId)))
     }
+}
+
+$crossScopeEvidenceId = 'path.persistent.cross-scope-duplicates'
+$evidence.Add((New-AuditEvidence -EvidenceId $crossScopeEvidenceId -Type derived -Source 'Machine/User PATH equivalence analysis' -Captured $null -Attributes @{
+    duplicateCount = $pathModel.crossScopeDuplicateCount
+    duplicates = $pathModel.crossScopeDuplicates
+    processScopeExcluded = $true
+}))
+
+if ($pathModel.crossScopeDuplicateCount -gt 0) {
+    $warnings.Add((New-AuditIssue -Code 'PATH_CROSS_SCOPE_DUPLICATES' -Message "Machine and User PATH contain $($pathModel.crossScopeDuplicateCount) equivalent persistent entries." -Severity warning -EvidenceIds @($crossScopeEvidenceId)))
 }
 
 return [pscustomobject][ordered]@{
