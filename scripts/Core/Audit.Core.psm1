@@ -491,6 +491,230 @@ function Get-AuditEnvironmentSnapshot {
     return $results.ToArray()
 }
 
+
+
+function ConvertTo-AuditPathEntry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('machine', 'user', 'process')]
+        [string]$Scope,
+
+        [Parameter(Mandatory)]
+        [ValidateRange(0, 1048576)]
+        [int]$Position,
+
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string]$Entry
+    )
+
+    $original = $Entry.Trim()
+    if (
+        $original.Length -ge 2 -and
+        $original.StartsWith('"') -and
+        $original.EndsWith('"')
+    ) {
+        $original = $original.Substring(1, $original.Length - 2).Trim()
+    }
+
+    $expanded = [Environment]::ExpandEnvironmentVariables($original)
+    $hasUnresolvedVariable = ($expanded -match '%[^%]+%')
+
+    $normalized = $expanded.Trim()
+    if (
+        $normalized.Length -ge 2 -and
+        $normalized.StartsWith('"') -and
+        $normalized.EndsWith('"')
+    ) {
+        $normalized = $normalized.Substring(1, $normalized.Length - 2).Trim()
+    }
+
+    $normalized = $normalized.Replace('/', '\')
+
+    if ($normalized.StartsWith('\\')) {
+        $uncTail = $normalized.Substring(2) -replace '\\{2,}', '\'
+        $normalized = "\\$uncTail"
+    }
+    else {
+        $normalized = $normalized -replace '\\{2,}', '\'
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($normalized)) {
+        $root = $null
+        try {
+            $root = [IO.Path]::GetPathRoot($normalized)
+        }
+        catch {
+            $root = $null
+        }
+
+        if (
+            -not [string]::IsNullOrWhiteSpace($root) -and
+            -not [string]::Equals(
+                $normalized,
+                $root,
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        ) {
+            $normalized = $normalized.TrimEnd('\')
+        }
+        elseif ([string]::IsNullOrWhiteSpace($root)) {
+            $normalized = $normalized.TrimEnd('\')
+        }
+    }
+
+    $comparisonKey = if ([string]::IsNullOrWhiteSpace($normalized)) {
+        $null
+    }
+    else {
+        $normalized.ToLowerInvariant()
+    }
+
+    $exists = $null
+    if (
+        -not $hasUnresolvedVariable -and
+        -not [string]::IsNullOrWhiteSpace($normalized)
+    ) {
+        try {
+            $exists = Test-Path -LiteralPath $normalized
+        }
+        catch {
+            $exists = $false
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        scope                   = $Scope
+        position                = $Position
+        entry                   = $original
+        original                = $original
+        expanded                = $expanded
+        normalized              = $normalized
+        comparisonKey           = $comparisonKey
+        exists                  = $exists
+        duplicate               = $false
+        duplicateWithinScope    = $false
+        firstEquivalentPosition = $null
+        hasUnresolvedVariable   = $hasUnresolvedVariable
+    }
+}
+
+
+function Get-AuditPathScopeModel {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('machine', 'user', 'process')]
+        [string]$Scope,
+
+        [AllowNull()]
+        [string]$RawPath
+    )
+
+    $rawEntries = if ([string]::IsNullOrWhiteSpace($RawPath)) {
+        @()
+    }
+    else {
+        @($RawPath -split ';')
+    }
+
+    $entries = New-Object System.Collections.Generic.List[object]
+    $seen = @{}
+
+    foreach ($rawIndex in 0..([Math]::Max($rawEntries.Count - 1, -1))) {
+        if ($rawIndex -lt 0) {
+            break
+        }
+
+        $rawEntry = [string]$rawEntries[$rawIndex]
+        if ([string]::IsNullOrWhiteSpace($rawEntry)) {
+            continue
+        }
+
+        $entry = ConvertTo-AuditPathEntry -Scope $Scope -Position $entries.Count -Entry $rawEntry
+        $key = [string]$entry.comparisonKey
+
+        if (-not [string]::IsNullOrWhiteSpace($key)) {
+            if ($seen.ContainsKey($key)) {
+                $entry.duplicate = $true
+                $entry.duplicateWithinScope = $true
+                $entry.firstEquivalentPosition = [int]$seen[$key]
+            }
+            else {
+                $seen[$key] = [int]$entry.position
+            }
+        }
+
+        $entries.Add($entry)
+    }
+
+    return [pscustomobject][ordered]@{
+        scope                    = $Scope
+        entryCount               = $entries.Count
+        duplicateCount           = @($entries | Where-Object { $_.duplicateWithinScope }).Count
+        missingCount             = @($entries | Where-Object { $_.exists -eq $false }).Count
+        unresolvedVariableCount  = @($entries | Where-Object { $_.hasUnresolvedVariable }).Count
+        entries                  = $entries.ToArray()
+    }
+}
+
+
+function Get-AuditPathModel {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][string]$MachinePath,
+        [AllowNull()][string]$UserPath,
+        [AllowNull()][string]$ProcessPath
+    )
+
+    $machine = Get-AuditPathScopeModel -Scope machine -RawPath $MachinePath
+    $user = Get-AuditPathScopeModel -Scope user -RawPath $UserPath
+    $process = Get-AuditPathScopeModel -Scope process -RawPath $ProcessPath
+
+    $persistentOccurrences = @{}
+
+    foreach ($scopeModel in @($machine, $user)) {
+        foreach ($entry in @($scopeModel.entries)) {
+            $key = [string]$entry.comparisonKey
+            if ([string]::IsNullOrWhiteSpace($key)) {
+                continue
+            }
+
+            if (-not $persistentOccurrences.ContainsKey($key)) {
+                $persistentOccurrences[$key] = New-Object System.Collections.Generic.List[object]
+            }
+
+            $persistentOccurrences[$key].Add([pscustomobject][ordered]@{
+                scope      = $entry.scope
+                position   = $entry.position
+                normalized = $entry.normalized
+            })
+        }
+    }
+
+    $crossScopeDuplicates = New-Object System.Collections.Generic.List[object]
+    foreach ($key in @($persistentOccurrences.Keys | Sort-Object)) {
+        $occurrences = @($persistentOccurrences[$key])
+        $distinctScopes = @($occurrences | Select-Object -ExpandProperty scope -Unique)
+
+        if ($distinctScopes.Count -gt 1) {
+            $crossScopeDuplicates.Add([pscustomobject][ordered]@{
+                comparisonKey = $key
+                normalized    = $occurrences[0].normalized
+                scopes        = $distinctScopes
+                occurrences   = $occurrences
+            })
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        scopes                   = @($machine, $user, $process)
+        crossScopeDuplicateCount = $crossScopeDuplicates.Count
+        crossScopeDuplicates     = $crossScopeDuplicates.ToArray()
+    }
+}
+
 Export-ModuleMember -Function @(
     'New-AuditVersionRecord',
     'Get-AuditCommandResolution',
@@ -498,5 +722,8 @@ Export-ModuleMember -Function @(
     'New-AuditEvidence',
     'New-AuditIssue',
     'Get-AuditProviderStatus',
-    'Get-AuditEnvironmentSnapshot'
+    'Get-AuditEnvironmentSnapshot',
+    'ConvertTo-AuditPathEntry',
+    'Get-AuditPathScopeModel',
+    'Get-AuditPathModel'
 )
