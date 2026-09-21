@@ -1,0 +1,232 @@
+{
+  "providerId": "host.system",
+  "category": "host",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "windows",
+      "name": "Windows 11 Pro",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "10.0.26100",
+        "normalized": "10.0.26100",
+        "channel": "24H2"
+      },
+      "discoveredVersions": [
+        {
+          "raw": "10.0.26100",
+          "normalized": "10.0.26100",
+          "channel": "24H2"
+        }
+      ],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "powershell.windows",
+      "name": "Windows PowerShell",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "5.1.26100.7019",
+        "normalized": "5.1.26100.7019",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "5.1.26100.7019",
+          "normalized": "5.1.26100.7019",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\WindowsPowerShell\\powershell.exe",
+          "version": {
+            "raw": "5.1.26100.7019",
+            "normalized": "5.1.26100.7019",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "powershell.exe",
+          "path": "C:\\Synthetic\\WindowsPowerShell\\powershell.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "powershell.core",
+      "name": "PowerShell",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "7.6.6",
+        "normalized": "7.6.6",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "7.6.6",
+          "normalized": "7.6.6",
+          "channel": null
+        },
+        {
+          "raw": "7.5.4",
+          "normalized": "7.5.4",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\PowerShell\\7\\pwsh.exe",
+          "version": {
+            "raw": "7.6.6",
+            "normalized": "7.6.6",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\PowerShell\\7.5.4\\pwsh.exe",
+          "version": {
+            "raw": "7.5.4",
+            "normalized": "7.5.4",
+            "channel": null
+          },
+          "active": false,
+          "source": "registry"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "pwsh.exe",
+          "path": "C:\\Synthetic\\PowerShell\\7\\pwsh.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        },
+        {
+          "command": "pwsh.exe",
+          "path": "C:\\Synthetic\\PowerShell\\7.5.4\\pwsh.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 1,
+          "active": false
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "host.windows.cim",
+      "type": "derived",
+      "source": "Win32_OperatingSystem",
+      "exitCode": null,
+      "captured": "10.0.26100",
+      "redacted": false,
+      "attributes": {
+        "caption": "Windows 11 Pro",
+        "build": "26100",
+        "architecture": "64-bit"
+      }
+    },
+    {
+      "evidenceId": "host.windows.registry",
+      "type": "registry",
+      "source": "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "displayVersion": "24H2",
+        "editionId": "Professional",
+        "ubr": "7019"
+      }
+    },
+    {
+      "evidenceId": "host.powershell.current",
+      "type": "derived",
+      "source": "$PSVersionTable",
+      "exitCode": null,
+      "captured": "7.6.6",
+      "redacted": false,
+      "attributes": {
+        "edition": "Core"
+      }
+    },
+    {
+      "evidenceId": "host.powershell.windows.version",
+      "type": "command",
+      "source": "powershell.exe -NoLogo -NoProfile -NonInteractive -Command",
+      "exitCode": 0,
+      "captured": "5.1.26100.7019",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "host.powershell.core.version",
+      "type": "command",
+      "source": "pwsh.exe -NoLogo -NoProfile -NonInteractive -Command",
+      "exitCode": 0,
+      "captured": "7.6.6",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "host.powershell.core.registry",
+      "type": "registry",
+      "source": "PowerShell Core InstalledVersions registry",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "fixture": true
+      }
+    }
+  ]
+}
