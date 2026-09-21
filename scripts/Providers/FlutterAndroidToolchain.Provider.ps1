@@ -247,7 +247,17 @@ function Get-AdbVersionRecord {
 
     $match = [regex]::Match(
         $Text,
-        '(?im)^Version\s+(?<version>\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?)\s*
+        '(?im)^Version\s+(?<version>\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?)\s*$'
+    )
+
+    if ($match.Success) {
+        return Get-VersionRecordFromText -Text $match.Groups['version'].Value -Channel $null
+    }
+
+    return Get-VersionRecordFromText -Text $Text -Channel $null
+}
+
+function Get-FlutterChannel {
     param([AllowNull()][string]$Text)
 
     if ([string]::IsNullOrWhiteSpace($Text)) {
