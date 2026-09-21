@@ -1,0 +1,93 @@
+{
+  "providerId": "winget.baseline",
+  "category": "package-manager",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "winget",
+      "name": "WinGet",
+      "state": "partial",
+      "installed": true,
+      "activeVersion": {
+        "raw": "v1.11.1000",
+        "normalized": "1.11.1000",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "v1.11.1000",
+          "normalized": "1.11.1000",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\WindowsApps\\winget.exe",
+          "version": {
+            "raw": "v1.11.1000",
+            "normalized": "1.11.1000",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "winget",
+          "path": "C:\\Synthetic\\WindowsApps\\winget.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "WINGET_SOURCE_QUERY_FAILED",
+      "message": "WinGet source diagnostics did not complete successfully.",
+      "severity": "warning",
+      "componentId": "winget",
+      "evidenceIds": [
+        "winget.sources"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "winget.version",
+      "type": "command",
+      "source": "winget --version",
+      "exitCode": 0,
+      "captured": "v1.11.1000",
+      "redacted": false,
+      "attributes": {
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "winget.sources",
+      "type": "command",
+      "source": "winget source list --disable-interactivity",
+      "exitCode": 1,
+      "captured": "Synthetic source failure.",
+      "redacted": false,
+      "attributes": {
+        "status": "non-zero"
+      }
+    }
+  ]
+}
