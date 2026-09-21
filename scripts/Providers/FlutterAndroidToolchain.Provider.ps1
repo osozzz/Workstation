@@ -701,7 +701,7 @@ $components.Add([pscustomobject][ordered]@{
     state               = $flutterState
     installed           = $flutterInstalled
     activeVersion       = $flutterVersion
-    discoveredVersions  = $(if ($null -ne $flutterVersion) { @($flutterVersion) } else { @() })
+    discoveredVersions  = @(if ($null -ne $flutterVersion) { $flutterVersion })
     installations       = $flutterInstallations.ToArray()
     commandResolutions  = @($flutterResult.Resolutions)
     versionIntelligence = New-NotApplicableVersionIntelligence
