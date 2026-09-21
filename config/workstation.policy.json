@@ -8,7 +8,9 @@
     "manager": "nvm-windows",
     "defaultTrack": "lts",
     "alsoInstallCurrent": true,
-    "projectVersionsMustBePinned": true
+    "projectVersionsMustBePinned": true,
+    "managerTrack": "latest-stable",
+    "legacyManagerPolicy": "detect-and-migrate"
   },
   "javascript": {
     "primaryPackageManager": "pnpm",
@@ -36,5 +38,10 @@
     "allowMissingEntries": false,
     "allowDuplicateEntries": false,
     "auditCommandCollisions": true
+  },
+  "versioning": {
+    "globalDefaultTrack": "latest-stable",
+    "prereleasePolicy": "explicit-opt-in-only",
+    "projectCompatibilityOverridesGlobal": true
   }
 }
