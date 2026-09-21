@@ -225,6 +225,179 @@ function Get-EffectiveEnvironmentValue {
     return $null
 }
 
+function Get-KnownGlobalPackageInventory {
+    param(
+        [Parameter(Mandatory)][string]$Manager,
+        [Parameter(Mandatory)][string]$Command,
+        [Parameter(Mandatory)][string[]]$ListArguments,
+        [Parameter(Mandatory)][string[]]$RootArguments,
+        [Parameter(Mandatory)][string[]]$PackageNames,
+        [Parameter(Mandatory)][string]$EvidencePrefix
+    )
+
+    $listResult = Invoke-AuditCommand -Command $Command -Arguments $ListArguments -TimeoutSeconds 45
+    if (-not $listResult.Found) {
+        return @()
+    }
+
+    $matches = New-Object System.Collections.Generic.List[object]
+    $parseSucceeded = $false
+
+    if (-not [string]::IsNullOrWhiteSpace($listResult.Captured)) {
+        try {
+            $parsed = $listResult.Captured | ConvertFrom-Json -ErrorAction Stop
+
+            foreach ($container in @($parsed)) {
+                foreach ($collectionName in @('dependencies', 'devDependencies', 'optionalDependencies')) {
+                    $collectionProperty = $container.PSObject.Properties[$collectionName]
+                    if ($null -eq $collectionProperty -or $null -eq $collectionProperty.Value) {
+                        continue
+                    }
+
+                    foreach ($packageName in $PackageNames) {
+                        $packageProperty = $collectionProperty.Value.PSObject.Properties[$packageName]
+                        if ($null -eq $packageProperty) {
+                            continue
+                        }
+
+                        $packageValue = $packageProperty.Value
+                        $versionText = $null
+                        $packagePath = $null
+
+                        if ($packageValue -is [string]) {
+                            $versionText = [string]$packageValue
+                        }
+                        else {
+                            $versionProperty = $packageValue.PSObject.Properties['version']
+                            if ($versionProperty -and $versionProperty.Value) {
+                                $versionText = [string]$versionProperty.Value
+                            }
+
+                            $pathProperty = $packageValue.PSObject.Properties['path']
+                            if ($pathProperty -and $pathProperty.Value) {
+                                $packagePath = [string]$pathProperty.Value
+                            }
+                        }
+
+                        $versionRecord = Get-VersionRecordFromText -Text $versionText
+
+                        $alreadyRecorded = @(
+                            $matches |
+                                Where-Object {
+                                    $_.packageName -eq $packageName -and
+                                    (
+                                        ($null -eq $_.version -and $null -eq $versionRecord) -or
+                                        (
+                                            $null -ne $_.version -and
+                                            $null -ne $versionRecord -and
+                                            $_.version.normalized -eq $versionRecord.normalized
+                                        )
+                                    )
+                                }
+                        ).Count -gt 0
+
+                        if (-not $alreadyRecorded) {
+                            $matches.Add([pscustomobject][ordered]@{
+                                packageName = $packageName
+                                manager     = $Manager
+                                version     = $versionRecord
+                                path        = $packagePath
+                            })
+                        }
+                    }
+                }
+            }
+
+            $parseSucceeded = $true
+        }
+        catch {
+            $parseSucceeded = $false
+        }
+    }
+
+    $rootResult = $null
+    $rootPath = $null
+
+    if ($matches.Count -gt 0 -and @($matches | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.path) }).Count -gt 0) {
+        $rootResult = Invoke-AuditCommand -Command $Command -Arguments $RootArguments -TimeoutSeconds 20
+
+        if ($rootResult.Found -and $rootResult.Status -eq 'success' -and -not [string]::IsNullOrWhiteSpace($rootResult.Captured)) {
+            $rootPath = @(
+                $rootResult.Captured -split '\r?\n' |
+                    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                    Select-Object -First 1
+            )
+
+            if ($rootPath.Count -gt 0) {
+                $rootPath = ([string]$rootPath[0]).Trim()
+            }
+            else {
+                $rootPath = $null
+            }
+        }
+
+        $evidence.Add((New-AuditEvidence -EvidenceId "$EvidencePrefix.global-root" -Type command -Source ((@($Command) + @($RootArguments)) -join ' ') -ExitCode $rootResult.ExitCode -Captured $rootResult.Captured -Sensitive -Attributes @{
+            status    = $rootResult.Status
+            truncated = $rootResult.Truncated
+            timedOut  = $rootResult.TimedOut
+            resolved  = -not [string]::IsNullOrWhiteSpace([string]$rootPath)
+        }))
+    }
+
+    foreach ($match in $matches) {
+        if ([string]::IsNullOrWhiteSpace([string]$match.path) -and -not [string]::IsNullOrWhiteSpace([string]$rootPath)) {
+            $relativePackagePath = ([string]$match.packageName).Replace('/', [IO.Path]::DirectorySeparatorChar)
+            $match.path = Join-Path $rootPath $relativePackagePath
+        }
+    }
+
+    $matchedAttributes = @(
+        $matches |
+            ForEach-Object {
+                [pscustomobject][ordered]@{
+                    packageName = $_.packageName
+                    manager     = $_.manager
+                    version     = if ($null -ne $_.version) { $_.version.normalized } else { $null }
+                    pathKnown   = -not [string]::IsNullOrWhiteSpace([string]$_.path)
+                }
+            }
+    )
+
+    $evidence.Add((New-AuditEvidence -EvidenceId "$EvidencePrefix.global-inventory" -Type command -Source ((@($Command) + @($ListArguments)) -join ' ') -ExitCode $listResult.ExitCode -Captured $listResult.Captured -Sensitive -Attributes @{
+        status          = $listResult.Status
+        truncated       = $listResult.Truncated
+        timedOut        = $listResult.TimedOut
+        parseSucceeded  = $parseSucceeded
+        matchedPackages = $matchedAttributes
+    }))
+
+    return $matches.ToArray()
+}
+
+function Get-PackageManagerInstallations {
+    param(
+        [Parameter(Mandatory)][object[]]$Inventory,
+        [Parameter(Mandatory)][string[]]$PackageNames
+    )
+
+    $results = New-Object System.Collections.Generic.List[object]
+
+    foreach ($item in @($Inventory)) {
+        if ($item.packageName -notin $PackageNames) {
+            continue
+        }
+
+        $results.Add([pscustomobject][ordered]@{
+            path    = $item.path
+            version = $item.version
+            active  = $false
+            source  = 'package-manager'
+        })
+    }
+
+    return $results.ToArray()
+}
+
 function New-CommandComponent {
     param(
         [Parameter(Mandatory)][string]$ComponentId,
@@ -570,10 +743,14 @@ if ($null -ne $nvmCurrentVersion -and $null -ne $nodeComponent.activeVersion) {
     }
 }
 
+$npmComponent = New-CommandComponent -ComponentId 'npm' -Name 'npm' -Command 'npm' -Arguments @('--version')
+$pnpmComponent = New-CommandComponent -ComponentId 'pnpm' -Name 'pnpm' -Command 'pnpm' -Arguments @('--version')
+$corepackComponent = New-CommandComponent -ComponentId 'corepack' -Name 'Corepack' -Command 'corepack' -Arguments @('--version')
+
 $components.Add($nodeComponent)
-$components.Add((New-CommandComponent -ComponentId 'npm' -Name 'npm' -Command 'npm' -Arguments @('--version')))
-$components.Add((New-CommandComponent -ComponentId 'pnpm' -Name 'pnpm' -Command 'pnpm' -Arguments @('--version')))
-$components.Add((New-CommandComponent -ComponentId 'corepack' -Name 'Corepack' -Command 'corepack' -Arguments @('--version')))
+$components.Add($npmComponent)
+$components.Add($pnpmComponent)
+$components.Add($corepackComponent)
 
 if ($null -ne $nvmVersion) {
     Add-UniqueVersion -List $nvmDiscoveredVersions -Version $nvmVersion
@@ -592,18 +769,40 @@ $components.Add([pscustomobject][ordered]@{
 })
 
 $javascriptCliSpecs = @(
-    @{ Id = 'angular-cli'; Label = 'Angular CLI'; Command = 'ng'; Args = @('version') },
-    @{ Id = 'typescript'; Label = 'TypeScript'; Command = 'tsc'; Args = @('--version') },
-    @{ Id = 'prisma'; Label = 'Prisma'; Command = 'prisma'; Args = @('--version') },
-    @{ Id = 'nodemon'; Label = 'Nodemon'; Command = 'nodemon'; Args = @('--version') },
-    @{ Id = 'rimraf'; Label = 'Rimraf'; Command = 'rimraf'; Args = @('--version') },
-    @{ Id = 'zoho-extension-toolkit'; Label = 'Zoho Extension Toolkit'; Command = 'zet'; Args = @('-v') },
-    @{ Id = 'zoho-catalyst-cli'; Label = 'Zoho Catalyst CLI'; Command = 'catalyst'; Args = @('--version') },
-    @{ Id = 'redis-commander'; Label = 'Redis Commander'; Command = 'redis-commander'; Args = @('--version') }
+    @{ Id = 'angular-cli'; Label = 'Angular CLI'; Command = 'ng'; Args = @('version'); Packages = @('@angular/cli') },
+    @{ Id = 'typescript'; Label = 'TypeScript'; Command = 'tsc'; Args = @('--version'); Packages = @('typescript') },
+    @{ Id = 'prisma'; Label = 'Prisma'; Command = 'prisma'; Args = @('--version'); Packages = @('prisma') },
+    @{ Id = 'nodemon'; Label = 'Nodemon'; Command = 'nodemon'; Args = @('--version'); Packages = @('nodemon') },
+    @{ Id = 'rimraf'; Label = 'Rimraf'; Command = 'rimraf'; Args = @('--version'); Packages = @('rimraf') },
+    @{ Id = 'zoho-extension-toolkit'; Label = 'Zoho Extension Toolkit'; Command = 'zet'; Args = @('-v'); Packages = @('zoho-extension-toolkit') },
+    @{ Id = 'zoho-catalyst-cli'; Label = 'Zoho Catalyst CLI'; Command = 'catalyst'; Args = @('--version'); Packages = @('zcatalyst-cli', 'zoho-catalyst-cli') },
+    @{ Id = 'redis-commander'; Label = 'Redis Commander'; Command = 'redis-commander'; Args = @('--version'); Packages = @('redis-commander') }
 )
 
+$knownGlobalPackages = @(
+    $javascriptCliSpecs |
+        ForEach-Object { @($_.Packages) } |
+        Select-Object -Unique
+)
+
+$globalPackageInventory = New-Object System.Collections.Generic.List[object]
+
+if ($npmComponent.state -in @('present', 'partial')) {
+    foreach ($item in @(Get-KnownGlobalPackageInventory -Manager 'npm' -Command 'npm' -ListArguments @('list', '--global', '--depth=0', '--json') -RootArguments @('root', '--global') -PackageNames $knownGlobalPackages -EvidencePrefix 'javascript.npm')) {
+        $globalPackageInventory.Add($item)
+    }
+}
+
+if ($pnpmComponent.state -in @('present', 'partial')) {
+    foreach ($item in @(Get-KnownGlobalPackageInventory -Manager 'pnpm' -Command 'pnpm' -ListArguments @('list', '--global', '--depth=0', '--json') -RootArguments @('root', '--global') -PackageNames $knownGlobalPackages -EvidencePrefix 'javascript.pnpm')) {
+        $globalPackageInventory.Add($item)
+    }
+}
+
 foreach ($spec in $javascriptCliSpecs) {
-    $components.Add((New-CommandComponent -ComponentId $spec.Id -Name $spec.Label -Command $spec.Command -Arguments $spec.Args -EvidencePrefix 'javascript.cli'))
+    $packageManagerInstallations = Get-PackageManagerInstallations -Inventory $globalPackageInventory.ToArray() -PackageNames @($spec.Packages)
+
+    $components.Add((New-CommandComponent -ComponentId $spec.Id -Name $spec.Label -Command $spec.Command -Arguments $spec.Args -EvidencePrefix 'javascript.cli' -AdditionalInstallations $packageManagerInstallations))
 }
 
 $primaryComponents = @(
