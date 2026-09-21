@@ -32,6 +32,7 @@
   },
   "flutter": {
     "channel": "stable",
+    "sdkTrack": "latest-stable",
     "dartSource": "flutter-sdk-preferred"
   },
   "path": {
@@ -47,5 +48,11 @@
   "java": {
     "defaultTrack": "latest-stable",
     "projectsMustUseLocalCompatibleVersion": true
+  },
+  "android": {
+    "sdkToolsTrack": "latest-stable",
+    "platformToolsTrack": "latest-stable",
+    "preferAndroidHome": true,
+    "acceptLicensesDuringAudit": false
   }
 }
