@@ -1,0 +1,308 @@
+{
+  "providerId": "dotnet.toolchain",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "dotnet-sdk",
+      "name": ".NET SDK",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "10.0.100",
+        "normalized": "10.0.100",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "10.0.100",
+          "normalized": "10.0.100",
+          "channel": null
+        },
+        {
+          "raw": "9.0.306",
+          "normalized": "9.0.306",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\DotNet\\sdk\\10.0.100",
+          "version": {
+            "raw": "10.0.100",
+            "normalized": "10.0.100",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\DotNet\\sdk\\9.0.306",
+          "version": {
+            "raw": "9.0.306",
+            "normalized": "9.0.306",
+            "channel": null
+          },
+          "active": false,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "dotnet",
+          "path": "C:\\Synthetic\\DotNet\\dotnet.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "dotnet-runtime",
+      "name": ".NET Runtimes",
+      "state": "present",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [
+        {
+          "raw": "10.0.0",
+          "normalized": "10.0.0",
+          "channel": null
+        },
+        {
+          "raw": "9.0.10",
+          "normalized": "9.0.10",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App\\10.0.0",
+          "version": {
+            "raw": "10.0.0",
+            "normalized": "10.0.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App\\9.0.10",
+          "version": {
+            "raw": "9.0.10",
+            "normalized": "9.0.10",
+            "channel": null
+          },
+          "active": false,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.AspNetCore.App\\10.0.0",
+          "version": {
+            "raw": "10.0.0",
+            "normalized": "10.0.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "dotnet-workloads",
+      "name": ".NET Workloads",
+      "state": "present",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "dotnet.environment",
+      "type": "environment",
+      "source": "DOTNET_ROOT/DOTNET_ROOT_X64/DOTNET_ROOT_X86",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "DOTNET_ROOT",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "DOTNET_ROOT_X64",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "DOTNET_ROOT_X86",
+            "process": null,
+            "user": null,
+            "machine": null
+          }
+        ],
+        "dotnetRootConfigured": false,
+        "dotnetRootX64Configured": false,
+        "dotnetRootX86Configured": false
+      }
+    },
+    {
+      "evidenceId": "dotnet.command-resolution",
+      "type": "command",
+      "source": "Get-Command dotnet -All",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "resolutionCount": 1,
+        "resolutions": [
+          {
+            "command": "dotnet",
+            "path": "C:\\Synthetic\\DotNet\\dotnet.exe",
+            "commandType": "Application",
+            "version": null,
+            "precedence": 0,
+            "active": true
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "dotnet.version",
+      "type": "command",
+      "source": "dotnet --version",
+      "exitCode": 0,
+      "captured": "10.0.100",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "dotnet.info",
+      "type": "command",
+      "source": "dotnet --info",
+      "exitCode": 0,
+      "captured": ".NET SDK:\n Version: 10.0.100\nHost:\n Version: 10.0.0\n Architecture: x64",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false
+      }
+    },
+    {
+      "evidenceId": "dotnet.sdks",
+      "type": "command",
+      "source": "dotnet --list-sdks",
+      "exitCode": 0,
+      "captured": "10.0.100 [C:\\Synthetic\\DotNet\\sdk]\n9.0.306 [C:\\Synthetic\\DotNet\\sdk]",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "sdkCount": 2,
+        "sdks": [
+          {
+            "version": "10.0.100",
+            "root": "C:\\Synthetic\\DotNet\\sdk",
+            "path": "C:\\Synthetic\\DotNet\\sdk\\10.0.100"
+          },
+          {
+            "version": "9.0.306",
+            "root": "C:\\Synthetic\\DotNet\\sdk",
+            "path": "C:\\Synthetic\\DotNet\\sdk\\9.0.306"
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "dotnet.runtimes",
+      "type": "command",
+      "source": "dotnet --list-runtimes",
+      "exitCode": 0,
+      "captured": "Microsoft.NETCore.App 10.0.0 [C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App]\nMicrosoft.NETCore.App 9.0.10 [C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App]\nMicrosoft.AspNetCore.App 10.0.0 [C:\\Synthetic\\DotNet\\shared\\Microsoft.AspNetCore.App]",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "runtimeCount": 3,
+        "runtimes": [
+          {
+            "product": "Microsoft.NETCore.App",
+            "version": "10.0.0",
+            "root": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App",
+            "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App\\10.0.0"
+          },
+          {
+            "product": "Microsoft.NETCore.App",
+            "version": "9.0.10",
+            "root": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App",
+            "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App\\9.0.10"
+          },
+          {
+            "product": "Microsoft.AspNetCore.App",
+            "version": "10.0.0",
+            "root": "C:\\Synthetic\\DotNet\\shared\\Microsoft.AspNetCore.App",
+            "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.AspNetCore.App\\10.0.0"
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "dotnet.workloads",
+      "type": "command",
+      "source": "dotnet workload list --machine-readable",
+      "exitCode": 0,
+      "captured": "{\"installed\":[\"maui-windows\",\"wasm-tools\"],\"updateAvailable\":[{\"workloadId\":\"maui-windows\"}]}",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "installed": [
+          "maui-windows",
+          "wasm-tools"
+        ],
+        "installedCount": 2,
+        "updateMetadataIgnored": true
+      }
+    }
+  ]
+}
