@@ -10,7 +10,7 @@ It covers:
 - a safety guard that refuses to execute rustup proxy binaries when no active installed toolchain is proven, preventing accidental rustup auto-install behavior;
 - standalone Rust without inferring that rustup owns the installation;
 - allowlisted `RUSTUP_HOME` and `CARGO_HOME`;
-- Go version and command resolution;
+- Go version and command resolution with `GOTOOLCHAIN=local` injected only into the isolated child process, preventing module-driven toolchain switching/downloads;
 - read-only `go env -json GOROOT GOPATH` inspection without retaining the raw JSON;
 - allowlisted `GOROOT` and `GOPATH` mismatch findings;
 - migration of Rust/Cargo/rustup/Go ownership out of the transitional command inventory;
