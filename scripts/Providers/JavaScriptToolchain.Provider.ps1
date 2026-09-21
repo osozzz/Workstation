@@ -347,6 +347,7 @@ $nvmRoot = $nvmHome
 $nvmResolutions = @()
 $nvmInstallations = New-Object System.Collections.Generic.List[object]
 $nvmDiscoveredVersions = New-Object System.Collections.Generic.List[object]
+$nvmListedNodeVersions = New-Object System.Collections.Generic.List[object]
 $nvmState = 'missing'
 $nvmInstalled = $false
 
@@ -407,7 +408,7 @@ if ($nvmVersionResult.Found) {
             }
 
             $versionRecord = Get-VersionRecordFromText -Text $match.Groups['version'].Value
-            Add-UniqueVersion -List $nvmDiscoveredVersions -Version $versionRecord
+            Add-UniqueVersion -List $nvmListedNodeVersions -Version $versionRecord
         }
     }
     elseif ($nvmListResult.Status -ne 'success') {
@@ -457,6 +458,21 @@ else {
 
 $nodeAdditionalInstallations = New-Object System.Collections.Generic.List[object]
 
+if ([string]::IsNullOrWhiteSpace($nvmRoot) -or -not (Test-Path -LiteralPath $nvmRoot -PathType Container)) {
+    foreach ($versionRecord in $nvmListedNodeVersions) {
+        $active = $false
+        if ($null -ne $nvmCurrentVersion -and $null -ne $versionRecord) {
+            $active = [string]::Equals(
+                [string]$nvmCurrentVersion.normalized,
+                [string]$versionRecord.normalized,
+                [StringComparison]::OrdinalIgnoreCase
+            )
+        }
+
+        Add-UniqueInstallation -List $nodeAdditionalInstallations -Path $null -Version $versionRecord -Active $active -Source configuration
+    }
+}
+
 if (-not [string]::IsNullOrWhiteSpace($nvmRoot) -and (Test-Path -LiteralPath $nvmRoot -PathType Container)) {
     try {
         foreach ($directory in @(Get-ChildItem -LiteralPath $nvmRoot -Directory -ErrorAction Stop)) {
@@ -471,7 +487,7 @@ if (-not [string]::IsNullOrWhiteSpace($nvmRoot) -and (Test-Path -LiteralPath $nv
             }
 
             $versionRecord = Get-VersionRecordFromText -Text $versionMatch.Groups['version'].Value
-            Add-UniqueVersion -List $nvmDiscoveredVersions -Version $versionRecord
+            Add-UniqueVersion -List $nvmListedNodeVersions -Version $versionRecord
 
             $active = $false
             if ($null -ne $nvmCurrentVersion -and $null -ne $versionRecord) {
