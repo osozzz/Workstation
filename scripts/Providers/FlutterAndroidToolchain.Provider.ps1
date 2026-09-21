@@ -711,11 +711,18 @@ $bundledDartVersion = if ($flutterResult.Found) { Get-FlutterBundledDartVersion 
 
 $bundledDartCandidates = New-Object System.Collections.Generic.List[object]
 foreach ($flutterInstallation in $flutterInstallations) {
-    $dartPath = Join-Path ([string]$flutterInstallation.path) 'bin\cache\dart-sdk\bin\dart.exe'
-    if (Test-Path -LiteralPath $dartPath -PathType Leaf) {
+    $flutterRoot = [string]$flutterInstallation.path
+    $dartWrapperPath = Join-Path $flutterRoot 'bin\dart.bat'
+    $dartSdkPath = Join-Path $flutterRoot 'bin\cache\dart-sdk\bin\dart.exe'
+
+    foreach ($candidatePath in @($dartWrapperPath, $dartSdkPath)) {
+        if (-not (Test-Path -LiteralPath $candidatePath -PathType Leaf)) {
+            continue
+        }
+
         $bundledDartCandidates.Add([pscustomobject][ordered]@{
-            path        = $dartPath
-            flutterRoot = [string]$flutterInstallation.path
+            path        = $candidatePath
+            flutterRoot = $flutterRoot
             source      = 'filesystem'
             version     = $bundledDartVersion
         })
