@@ -45,6 +45,11 @@ jobs:
         run: |
           python ./tests/java/validate_java_fixtures.py
 
+      - name: Validate Flutter Dart Android fixtures
+        shell: pwsh
+        run: |
+          python ./tests/mobile/validate_mobile_fixtures.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -160,11 +165,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 7) {
-              throw "Expected six built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 8) {
+              throw "Expected seven built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -254,6 +259,33 @@ jobs:
               }
           }
 
+          $mobileProvider = $result.Report.providers | Where-Object providerId -eq 'mobile.flutter-android'
+          if ($mobileProvider.status -eq 'failed') {
+              $mobileMessages = @($mobileProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "Mobile toolchain provider failed during smoke test: $mobileMessages"
+          }
+
+          foreach ($componentId in @('flutter', 'dart', 'android-sdk', 'adb', 'sdkmanager')) {
+              if (-not ($mobileProvider.components | Where-Object componentId -eq $componentId)) {
+                  throw "Expected mobile toolchain component '$componentId'."
+              }
+          }
+
+          $flutterComponent = $mobileProvider.components | Where-Object componentId -eq 'flutter'
+          if ($flutterComponent.state -eq 'present' -and @($flutterComponent.commandResolutions).Count -lt 1) {
+              throw "Present Flutter state must preserve command resolution."
+          }
+
+          $dartRelationshipEvidence = $mobileProvider.evidence | Where-Object evidenceId -eq 'mobile.dart.relationship'
+          if (-not $dartRelationshipEvidence) {
+              throw "Expected Dart relationship evidence in mobile provider."
+          }
+
+          $androidMetadataEvidence = $mobileProvider.evidence | Where-Object evidenceId -eq 'mobile.android-sdk.metadata'
+          if (-not $androidMetadataEvidence) {
+              throw "Expected bounded Android SDK metadata evidence."
+          }
+
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
           if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
               throw "Expected normalized WinGet component."
@@ -307,6 +339,13 @@ jobs:
               }
           }
 
+          $mobileOwnedIds = @('flutter', 'dart', 'adb')
+          foreach ($componentId in $mobileOwnedIds) {
+              if ($commandInventory.components | Where-Object componentId -eq $componentId) {
+                  throw "Generic command inventory must not duplicate mobile toolchain ownership for '$componentId'."
+              }
+          }
+
           $failedProvider = $result.Report.providers | Where-Object providerId -eq 'synthetic.failure'
           if ($failedProvider.status -ne 'failed') {
               throw "Expected the synthetic provider to be isolated as failed."
@@ -324,7 +363,7 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 6) {
+          if ($missingProviderResult.Report.summary.providerCount -ne 7) {
               throw "Expected built-in providers to continue after an additional provider path failure."
           }
 

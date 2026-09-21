@@ -1,0 +1,412 @@
+{
+  "providerId": "mobile.flutter-android",
+  "category": "runtime",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "flutter",
+      "name": "Flutter SDK",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "3.47.2",
+        "normalized": "3.47.2",
+        "channel": "stable"
+      },
+      "discoveredVersions": [
+        {
+          "raw": "3.47.2",
+          "normalized": "3.47.2",
+          "channel": "stable"
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Flutter",
+          "version": {
+            "raw": "3.47.2",
+            "normalized": "3.47.2",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "flutter",
+          "path": "C:\\Synthetic\\Flutter\\bin\\flutter.bat",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "dart",
+      "name": "Dart SDK",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "3.10.0",
+        "normalized": "3.10.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "3.10.0",
+          "normalized": "3.10.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Flutter\\bin\\dart.bat",
+          "version": {
+            "raw": "3.10.0",
+            "normalized": "3.10.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\Flutter\\bin\\cache\\dart-sdk\\bin\\dart.exe",
+          "version": {
+            "raw": "3.10.0",
+            "normalized": "3.10.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "filesystem"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "dart",
+          "path": "C:\\Synthetic\\Flutter\\bin\\dart.bat",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "android-sdk",
+      "name": "Android SDK",
+      "state": "partial",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Android\\SdkA",
+          "version": null,
+          "active": true,
+          "source": "environment"
+        },
+        {
+          "path": "C:\\Synthetic\\Android\\SdkB",
+          "version": null,
+          "active": false,
+          "source": "environment"
+        }
+      ],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "adb",
+      "name": "Android Debug Bridge",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "37.0.1",
+        "normalized": "37.0.1",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "37.0.1",
+          "normalized": "37.0.1",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Android\\Sdk\\platform-tools\\adb.exe",
+          "version": {
+            "raw": "37.0.1",
+            "normalized": "37.0.1",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "adb",
+          "path": "C:\\Synthetic\\Android\\Sdk\\platform-tools\\adb.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "sdkmanager",
+      "name": "Android SDK Manager",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "19.0",
+        "normalized": "19.0",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "19.0",
+          "normalized": "19.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Android\\Sdk\\cmdline-tools\\latest\\bin\\sdkmanager.bat",
+          "version": {
+            "raw": "19.0",
+            "normalized": "19.0",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "sdkmanager",
+          "path": "C:\\Synthetic\\Android\\Sdk\\cmdline-tools\\latest\\bin\\sdkmanager.bat",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "ANDROID_SDK_ROOT_CONFLICT",
+      "message": "ANDROID_HOME and ANDROID_SDK_ROOT point to different Android SDK locations.",
+      "severity": "warning",
+      "componentId": "android-sdk",
+      "evidenceIds": [
+        "mobile.environment",
+        "mobile.android-sdk.metadata"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "mobile.environment",
+      "type": "environment",
+      "source": "FLUTTER_ROOT/PUB_CACHE/ANDROID_HOME/ANDROID_SDK_ROOT",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "FLUTTER_ROOT",
+            "process": "C:\\Synthetic\\Flutter",
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "PUB_CACHE",
+            "process": "C:\\Synthetic\\PubCache",
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "ANDROID_HOME",
+            "process": "C:\\Synthetic\\Android\\SdkA",
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "ANDROID_SDK_ROOT",
+            "process": "C:\\Synthetic\\Android\\SdkB",
+            "user": null,
+            "machine": null
+          }
+        ],
+        "flutterRootConfigured": true,
+        "pubCacheConfigured": true,
+        "androidHomeConfigured": true,
+        "androidSdkRootConfigured": true
+      }
+    },
+    {
+      "evidenceId": "mobile.flutter.version",
+      "type": "command",
+      "source": "flutter --version",
+      "exitCode": 0,
+      "captured": "Flutter 3.47.2 • channel stable\nDart 3.10.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "channel": "stable",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "mobile.dart.version",
+      "type": "command",
+      "source": "dart --version",
+      "exitCode": 0,
+      "captured": "Dart SDK version: 3.10.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "mobile.dart.relationship",
+      "type": "derived",
+      "source": "Flutter-bundled versus standalone Dart classification",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "activeSource": "flutter-bundled",
+        "activeBundledFlutterRoot": "C:\\Synthetic\\Flutter",
+        "bundledInstallationCount": 2
+      }
+    },
+    {
+      "evidenceId": "mobile.android-sdk.metadata",
+      "type": "derived",
+      "source": "bounded Android SDK root/component inspection",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "roots": [
+          {
+            "path": "C:\\Synthetic\\Android\\SdkA",
+            "sources": [
+              "ANDROID_HOME"
+            ],
+            "components": [
+              {
+                "component": "platform-tools",
+                "revision": "37.0.1",
+                "path": "C:\\Synthetic\\Android\\SdkA\\platform-tools"
+              },
+              {
+                "component": "cmdline-tools/latest",
+                "revision": "19.0",
+                "path": "C:\\Synthetic\\Android\\SdkA\\cmdline-tools\\latest"
+              },
+              {
+                "component": "build-tools/36.0.0",
+                "revision": "36.0.0",
+                "path": "C:\\Synthetic\\Android\\SdkA\\build-tools\\36.0.0"
+              },
+              {
+                "component": "platforms/android-36",
+                "revision": "android-36",
+                "path": "C:\\Synthetic\\Android\\SdkA\\platforms\\android-36"
+              }
+            ],
+            "adbPresent": true
+          },
+          {
+            "path": "C:\\Synthetic\\Android\\SdkB",
+            "sources": [
+              "ANDROID_SDK_ROOT"
+            ],
+            "components": [],
+            "adbPresent": false
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "mobile.adb.version",
+      "type": "command",
+      "source": "adb version",
+      "exitCode": 0,
+      "captured": "Android Debug Bridge version 1.0.41\nVersion 37.0.1",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "mobile.sdkmanager.version",
+      "type": "command",
+      "source": "sdkmanager --version",
+      "exitCode": 0,
+      "captured": "19.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "resolutionCount": 1
+      }
+    }
+  ]
+}
