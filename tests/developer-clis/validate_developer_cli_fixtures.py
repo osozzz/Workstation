@@ -323,28 +323,39 @@ def validate_source_and_policy() -> None:
                 f"intact for '{component_id}'."
             )
 
-    required_probes = (
-        "git' -arguments @('--version')",
-        "gh' -arguments @('--version')",
-        "docker' -arguments @('--version')",
+    for command in (
+        "git",
+        "gh",
+        "docker",
+        "supabase",
+        "vercel",
+        "heroku",
+    ):
+        if not re.search(
+            rf"command\s*=\s*['\"]{re.escape(command)}['\"][\s\S]*?"
+            r"arguments\s*=\s*@\(['\"]--version['\"]\)",
+            provider_source,
+        ):
+            fail(
+                "Missing required read-only developer CLI version spec for "
+                f"{command}."
+            )
+
+    for probe in (
         "docker' -arguments @('compose', 'version')",
         "docker-compose' -arguments @('--version')",
-        "supabase' -arguments @('--version')",
-        "vercel' -arguments @('--version')",
-        "heroku' -arguments @('--version')",
-    )
-    for probe in required_probes:
+    ):
         if probe not in provider_source:
-            fail(f"Missing required read-only developer CLI probe: {probe}")
+            fail(f"Missing required Compose read-only probe: {probe}")
 
     required_patterns = (
-        "^git version",
-        "^gh version",
-        "^docker version",
-        "^vercel cli",
-        "^heroku/",
-        "^docker compose version",
-        "^docker-compose version",
+        "git version",
+        "gh version",
+        "docker version",
+        "vercel cli",
+        "heroku/",
+        "docker compose version",
+        "docker-compose|docker compose",
     )
     for pattern in required_patterns:
         if pattern not in provider_source:
