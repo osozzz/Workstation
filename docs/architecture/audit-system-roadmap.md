@@ -23,4 +23,4 @@ Planned detection coverage includes:
 - installed-vs-latest version intelligence;
 - normalized cross-PC comparison.
 
-Provider implementation starts after the repository-foundation phase is complete.
+The provider architecture is established in v0.3.0. Subsequent milestones expand ecosystem-specific detection, environment intelligence, project discovery, version intelligence, comparison, and hardening.
