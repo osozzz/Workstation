@@ -51,8 +51,6 @@ function Get-FirstOutputLine {
 
 $toolSpecs = @(
     @{ Id='heroku-cli'; Label='Heroku CLI'; Command='heroku'; Args=@('--version') },
-    @{ Id='flutter'; Label='Flutter'; Command='flutter'; Args=@('--version') },
-    @{ Id='dart'; Label='Dart'; Command='dart'; Args=@('--version') },
     @{ Id='python'; Label='Python'; Command='python'; Args=@('--version') },
     @{ Id='python-launcher'; Label='Python Launcher'; Command='py'; Args=@('--version') },
     @{ Id='pip'; Label='pip'; Command='pip'; Args=@('--version') },
@@ -67,7 +65,6 @@ $toolSpecs = @(
     @{ Id='github-cli'; Label='GitHub CLI'; Command='gh'; Args=@('--version') },
     @{ Id='docker'; Label='Docker'; Command='docker'; Args=@('--version') },
     @{ Id='docker-compose'; Label='Docker Compose'; Command='docker'; Args=@('compose','version') },
-    @{ Id='adb'; Label='ADB'; Command='adb'; Args=@('--version') },
     @{ Id='supabase-cli'; Label='Supabase CLI'; Command='supabase'; Args=@('--version') },
     @{ Id='vercel-cli'; Label='Vercel CLI'; Command='vercel'; Args=@('--version') }
 )
