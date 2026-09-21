@@ -225,6 +225,24 @@ function Get-EffectiveEnvironmentValue {
     return $null
 }
 
+function Get-OptionalPropertyValue {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $null
+    }
+
+    return $property.Value
+}
+
 function Get-KnownGlobalPackageInventory {
     param(
         [Parameter(Mandatory)][string]$Manager,
@@ -386,13 +404,14 @@ function Get-PackageManagerInstallations {
     $results = New-Object System.Collections.Generic.List[object]
 
     foreach ($item in @($Inventory)) {
-        if ($item.packageName -notin $PackageNames) {
+        $packageName = [string](Get-OptionalPropertyValue -InputObject $item -Name 'packageName')
+        if ([string]::IsNullOrWhiteSpace($packageName) -or $packageName -notin $PackageNames) {
             continue
         }
 
         $results.Add([pscustomobject][ordered]@{
-            path    = $item.path
-            version = $item.version
+            path    = Get-OptionalPropertyValue -InputObject $item -Name 'path'
+            version = Get-OptionalPropertyValue -InputObject $item -Name 'version'
             active  = $false
             source  = 'package-manager'
         })
@@ -418,8 +437,17 @@ function New-CommandComponent {
         $versions = New-Object System.Collections.Generic.List[object]
 
         foreach ($candidate in @($AdditionalInstallations)) {
-            Add-UniqueInstallation -List $installations -Path ([string]$candidate.path) -Version $candidate.version -Active ([bool]$candidate.active) -Source ([string]$candidate.source)
-            Add-UniqueVersion -List $versions -Version $candidate.version
+            $candidatePath = Get-OptionalPropertyValue -InputObject $candidate -Name 'path'
+            $candidateVersion = Get-OptionalPropertyValue -InputObject $candidate -Name 'version'
+            $candidateActive = [bool](Get-OptionalPropertyValue -InputObject $candidate -Name 'active')
+            $candidateSource = [string](Get-OptionalPropertyValue -InputObject $candidate -Name 'source')
+
+            if ([string]::IsNullOrWhiteSpace($candidateSource)) {
+                $candidateSource = 'unknown'
+            }
+
+            Add-UniqueInstallation -List $installations -Path ([string]$candidatePath) -Version $candidateVersion -Active $candidateActive -Source $candidateSource
+            Add-UniqueVersion -List $versions -Version $candidateVersion
         }
 
         $state = if ($installations.Count -gt 0) { 'partial' } else { 'missing' }
@@ -473,8 +501,17 @@ function New-CommandComponent {
     }
 
     foreach ($candidate in @($AdditionalInstallations)) {
-        Add-UniqueVersion -List $versions -Version $candidate.version
-        Add-UniqueInstallation -List $installations -Path ([string]$candidate.path) -Version $candidate.version -Active ([bool]$candidate.active) -Source ([string]$candidate.source)
+        $candidatePath = Get-OptionalPropertyValue -InputObject $candidate -Name 'path'
+        $candidateVersion = Get-OptionalPropertyValue -InputObject $candidate -Name 'version'
+        $candidateActive = [bool](Get-OptionalPropertyValue -InputObject $candidate -Name 'active')
+        $candidateSource = [string](Get-OptionalPropertyValue -InputObject $candidate -Name 'source')
+
+        if ([string]::IsNullOrWhiteSpace($candidateSource)) {
+            $candidateSource = 'unknown'
+        }
+
+        Add-UniqueVersion -List $versions -Version $candidateVersion
+        Add-UniqueInstallation -List $installations -Path ([string]$candidatePath) -Version $candidateVersion -Active $candidateActive -Source $candidateSource
     }
 
     $state = 'present'
