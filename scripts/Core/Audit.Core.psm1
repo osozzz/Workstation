@@ -747,6 +747,173 @@ function Get-AuditPathModel {
     }
 }
 
+function ConvertTo-AuditEnvironmentPathValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('process', 'user', 'machine')]
+        [string]$Scope,
+
+        [AllowNull()]
+        [string]$Value
+    )
+
+    if ($script:AuditEnvironmentAllowList -notcontains $Name) {
+        throw "Environment variable '$Name' is not in the audit allowlist."
+    }
+
+    $state = if ($null -eq $Value) {
+        'unset'
+    }
+    elseif ($Value.Length -eq 0) {
+        'empty'
+    }
+    else {
+        'present'
+    }
+
+    $pathValues = [System.Collections.Generic.List[object]]::new()
+
+    if ($state -eq 'present') {
+        $segments = if ($Name -eq 'GOPATH') {
+            @($Value -split [regex]::Escape([IO.Path]::PathSeparator.ToString()))
+        }
+        else {
+            @($Value)
+        }
+
+        foreach ($segment in $segments) {
+            if ([string]::IsNullOrWhiteSpace([string]$segment)) {
+                continue
+            }
+
+            $pathValues.Add((ConvertTo-AuditPathEntry -Scope process -Position $pathValues.Count -Entry ([string]$segment)))
+        }
+    }
+
+    $missingCount = @($pathValues | Where-Object { $_.exists -eq $false }).Count
+    $unresolvedVariableCount = @($pathValues | Where-Object { $_.hasUnresolvedVariable }).Count
+
+    $normalizedValue = if ($state -eq 'present') {
+        if ($Name -eq 'GOPATH') {
+            (@($pathValues | ForEach-Object { $_.normalized }) -join [IO.Path]::PathSeparator)
+        }
+        elseif ($pathValues.Count -gt 0) {
+            [string]$pathValues[0].normalized
+        }
+        else {
+            ''
+        }
+    }
+    elseif ($state -eq 'empty') {
+        ''
+    }
+    else {
+        $null
+    }
+
+    $comparisonKey = if ($state -eq 'present' -and -not [string]::IsNullOrWhiteSpace($normalizedValue)) {
+        $normalizedValue.ToLowerInvariant()
+    }
+    elseif ($state -eq 'empty') {
+        ''
+    }
+    else {
+        $null
+    }
+
+    return [pscustomobject][ordered]@{
+        name                    = $Name
+        scope                   = $Scope
+        state                   = $state
+        original                = $Value
+        normalized              = $normalizedValue
+        comparisonKey           = $comparisonKey
+        pathCount               = $pathValues.Count
+        missingPathCount        = $missingCount
+        unresolvedVariableCount = $unresolvedVariableCount
+        paths                   = $pathValues.ToArray()
+    }
+}
+
+
+function Get-AuditEnvironmentVariableModel {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+
+        [AllowNull()][string]$ProcessValue,
+        [AllowNull()][string]$UserValue,
+        [AllowNull()][string]$MachineValue
+    )
+
+    if ($script:AuditEnvironmentAllowList -notcontains $Name) {
+        throw "Environment variable '$Name' is not in the audit allowlist."
+    }
+
+    $process = ConvertTo-AuditEnvironmentPathValue -Name $Name -Scope process -Value $ProcessValue
+    $user = ConvertTo-AuditEnvironmentPathValue -Name $Name -Scope user -Value $UserValue
+    $machine = ConvertTo-AuditEnvironmentPathValue -Name $Name -Scope machine -Value $MachineValue
+
+    $scopes = @($process, $user, $machine)
+    $configuredScopes = @($scopes | Where-Object { $_.state -in @('present', 'empty') })
+    $presentScopes = @($scopes | Where-Object { $_.state -eq 'present' })
+
+    $distinctValues = @(
+        $presentScopes |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_.comparisonKey) } |
+            Select-Object -ExpandProperty comparisonKey -Unique
+    )
+
+    $missingPathCount = (@($scopes | ForEach-Object { [int]$_.missingPathCount }) | Measure-Object -Sum).Sum
+    if ($null -eq $missingPathCount) { $missingPathCount = 0 }
+
+    $unresolvedVariableCount = (@($scopes | ForEach-Object { [int]$_.unresolvedVariableCount }) | Measure-Object -Sum).Sum
+    if ($null -eq $unresolvedVariableCount) { $unresolvedVariableCount = 0 }
+
+    return [pscustomobject][ordered]@{
+        name                       = $Name
+        configuredScopeCount       = $configuredScopes.Count
+        presentScopeCount          = $presentScopes.Count
+        unsetScopeCount            = @($scopes | Where-Object { $_.state -eq 'unset' }).Count
+        emptyScopeCount            = @($scopes | Where-Object { $_.state -eq 'empty' }).Count
+        distinctPresentValueCount  = $distinctValues.Count
+        hasScopeDrift              = ($distinctValues.Count -gt 1)
+        hasEmptyConfiguredScope    = @($configuredScopes | Where-Object { $_.state -eq 'empty' }).Count -gt 0
+        missingPathCount           = [int]$missingPathCount
+        unresolvedVariableCount    = [int]$unresolvedVariableCount
+        scopes                     = $scopes
+    }
+}
+
+
+function Get-AuditEnvironmentIntelligence {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object[]]$Snapshot
+    )
+
+    $models = [System.Collections.Generic.List[object]]::new()
+
+    foreach ($item in @($Snapshot)) {
+        $name = [string]$item.name
+        if ($script:AuditEnvironmentAllowList -notcontains $name) {
+            throw "Environment variable '$name' is not in the audit allowlist."
+        }
+
+        $models.Add((Get-AuditEnvironmentVariableModel -Name $name -ProcessValue $item.process -UserValue $item.user -MachineValue $item.machine))
+    }
+
+    return $models.ToArray()
+}
+
 Export-ModuleMember -Function @(
     'New-AuditVersionRecord',
     'Get-AuditCommandResolution',
@@ -757,5 +924,8 @@ Export-ModuleMember -Function @(
     'Get-AuditEnvironmentSnapshot',
     'ConvertTo-AuditPathEntry',
     'Get-AuditPathScopeModel',
-    'Get-AuditPathModel'
+    'Get-AuditPathModel',
+    'ConvertTo-AuditEnvironmentPathValue',
+    'Get-AuditEnvironmentVariableModel',
+    'Get-AuditEnvironmentIntelligence'
 )
