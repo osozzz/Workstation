@@ -45,6 +45,16 @@
       ],
       "installations": [
         {
+          "path": "C:\\Synthetic\\Flutter\\bin\\dart.bat",
+          "version": {
+            "raw": "3.10.0",
+            "normalized": "3.10.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "filesystem"
+        },
+        {
           "path": "C:\\Synthetic\\Flutter\\bin\\cache\\dart-sdk\\bin\\dart.exe",
           "version": {
             "raw": "3.10.0",
@@ -263,7 +273,7 @@
       "attributes": {
         "activeSource": "unknown",
         "activeBundledFlutterRoot": null,
-        "bundledInstallationCount": 1
+        "bundledInstallationCount": 2
       }
     },
     {
