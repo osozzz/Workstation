@@ -364,7 +364,7 @@
     {
       "evidenceId": "python.pyenv.versions",
       "type": "command",
-      "source": "pyenv versions --bare",
+      "source": "pyenv versions",
       "exitCode": 0,
       "captured": "3.13.12\n3.14.7",
       "redacted": false,
