@@ -1,0 +1,321 @@
+{
+  "providerId": "python.ecosystem",
+  "category": "runtime",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "python",
+      "name": "Python",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "3.14.7",
+        "normalized": "3.14.7",
+        "channel": null
+      },
+      "discoveredVersions": [
+        {
+          "raw": "3.14.7",
+          "normalized": "3.14.7",
+          "channel": null
+        },
+        {
+          "raw": "3.13.12",
+          "normalized": "3.13.12",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Python314\\python.exe",
+          "version": {
+            "raw": "3.14.7",
+            "normalized": "3.14.7",
+            "channel": null
+          },
+          "active": true,
+          "source": "command"
+        },
+        {
+          "path": "C:\\Synthetic\\Python313\\python.exe",
+          "version": {
+            "raw": "3.13.12",
+            "normalized": "3.13.12",
+            "channel": null
+          },
+          "active": false,
+          "source": "package-manager"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "python",
+          "path": "C:\\Synthetic\\Python314\\python.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "python-launcher",
+      "name": "Python Windows Launcher / Install Manager",
+      "state": "present",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [
+        {
+          "raw": "3.14.7",
+          "normalized": "3.14.7",
+          "channel": null
+        },
+        {
+          "raw": "3.13.12",
+          "normalized": "3.13.12",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\WindowsApps\\py.exe",
+          "version": null,
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "py",
+          "path": "C:\\Synthetic\\WindowsApps\\py.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "pip",
+      "name": "pip",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "pipx",
+      "name": "pipx",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "uv",
+      "name": "uv",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "pyenv-win",
+      "name": "pyenv-win",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "PIP_MISSING_FOR_PYTHON",
+      "message": "Python is available, but pip could not be detected for the active interpreter or as a command.",
+      "severity": "warning",
+      "componentId": "pip",
+      "evidenceIds": [
+        "python.command-resolution"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "python.environment",
+      "type": "environment",
+      "source": "PYENV_ROOT",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "PYENV_ROOT",
+            "process": null,
+            "user": null,
+            "machine": null
+          }
+        ],
+        "pyenvRootConfigured": false
+      }
+    },
+    {
+      "evidenceId": "python.command-resolution",
+      "type": "command",
+      "source": "Get-Command python -All plus safe direct --version probes",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "resolutionCount": 1,
+        "safeResolutionCount": 1,
+        "unsafeResolutionCount": 0,
+        "unsafeResolutions": []
+      }
+    },
+    {
+      "evidenceId": "python.launcher-list",
+      "type": "command",
+      "source": "py list --format=json",
+      "exitCode": 0,
+      "captured": null,
+      "redacted": true,
+      "attributes": {
+        "status": "success",
+        "mode": "modern-json",
+        "mappingCount": 2
+      }
+    },
+    {
+      "evidenceId": "python.registry",
+      "type": "registry",
+      "source": "PEP 514 Python registry registrations",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "mappingCount": 2,
+        "mappings": [
+          {
+            "path": "C:\\Synthetic\\Python314\\python.exe",
+            "tag": "3.14",
+            "company": "PythonCore",
+            "version": "3.14.7"
+          },
+          {
+            "path": "C:\\Synthetic\\Python313\\python.exe",
+            "tag": "3.13",
+            "company": "PythonCore",
+            "version": "3.13.12"
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "python.installations",
+      "type": "derived",
+      "source": "normalized Python interpreter inventory",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "installations": [
+          {
+            "path": "C:\\Synthetic\\Python314\\python.exe",
+            "version": "3.14.7",
+            "active": true,
+            "source": "command"
+          },
+          {
+            "path": "C:\\Synthetic\\Python313\\python.exe",
+            "version": "3.13.12",
+            "active": false,
+            "source": "package-manager"
+          }
+        ],
+        "launcherMappings": [
+          {
+            "path": "C:\\Synthetic\\Python314\\python.exe",
+            "tag": "3.14",
+            "company": "PythonCore",
+            "version": "3.14.7",
+            "default": true,
+            "source": "python-install-manager"
+          },
+          {
+            "path": "C:\\Synthetic\\Python313\\python.exe",
+            "tag": "3.13",
+            "company": "PythonCore",
+            "version": "3.13.12",
+            "default": false,
+            "source": "python-install-manager"
+          }
+        ]
+      }
+    }
+  ]
+}
