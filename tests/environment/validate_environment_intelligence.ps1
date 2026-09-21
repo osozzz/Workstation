@@ -107,6 +107,30 @@ try {
         throw 'Environment intelligence must reject snapshots containing unapproved keys.'
     }
 
+    $blockedRawSnapshot = $false
+    try {
+        Get-AuditEnvironmentSnapshot -Names @('SECRET_TOKEN') | Out-Null
+    }
+    catch {
+        $blockedRawSnapshot = ($_.Exception.Message -match 'not in the audit allowlist')
+    }
+    if (-not $blockedRawSnapshot) {
+        throw 'Raw environment snapshot must reject unapproved variable names.'
+    }
+
+    $providerSource = Get-Content -LiteralPath (Join-Path $root 'scripts\Providers\EnvironmentBaseline.Provider.ps1') -Raw
+    $coreSource = Get-Content -LiteralPath $corePath -Raw
+    $combinedSource = $providerSource + [Environment]::NewLine + $coreSource
+
+    foreach ($forbiddenPattern in @(
+        '(?i)Get-ChildItem\s+(?:-Path\s+)?Env:',
+        '(?i)GetEnvironmentVariables\s*\('
+    )) {
+        if ($combinedSource -match $forbiddenPattern) {
+            throw "Environment audit source contains forbidden arbitrary enumeration pattern: $forbiddenPattern"
+        }
+    }
+
     Write-Host 'Environment intelligence validation passed.'
 }
 finally {
