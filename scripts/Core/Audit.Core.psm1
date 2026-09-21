@@ -1021,11 +1021,9 @@ function Get-AuditPathScopeModel {
         [string]$RawPath
     )
 
-    $rawEntries = if ([string]::IsNullOrWhiteSpace($RawPath)) {
-        @()
-    }
-    else {
-        @($RawPath -split ';')
+    [string[]]$rawEntries = @()
+    if (-not [string]::IsNullOrWhiteSpace($RawPath)) {
+        $rawEntries = @($RawPath -split ';')
     }
 
     $entries = [System.Collections.Generic.List[object]]::new()
@@ -1120,6 +1118,143 @@ function Get-AuditPathModel {
     }
 }
 
+
+function Test-AuditPathBasedCommandType {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [string]$CommandType
+    )
+
+    return $CommandType -in @('Application', 'ExternalScript')
+}
+
+
+function Get-AuditCommandPathAnalysis {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [object[]]$CommandResolutions,
+
+        [Parameter(Mandatory)]
+        [object[]]$ProcessPathEntries
+    )
+
+    $normalizedResolutions = [System.Collections.Generic.List[object]]::new()
+
+    foreach ($resolution in @($CommandResolutions)) {
+        $command = if ($resolution.PSObject.Properties['command']) { [string]$resolution.command } else { '' }
+        $path = if ($resolution.PSObject.Properties['path']) { [string]$resolution.path } else { '' }
+        $commandType = if ($resolution.PSObject.Properties['commandType']) { [string]$resolution.commandType } else { '' }
+        $precedence = if ($resolution.PSObject.Properties['precedence']) { [int]$resolution.precedence } else { $normalizedResolutions.Count }
+        $active = if ($resolution.PSObject.Properties['active']) { [bool]$resolution.active } else { $false }
+
+        $pathBased = Test-AuditPathBasedCommandType -CommandType $commandType
+        $pathDirectory = $null
+        $pathComparisonKey = $null
+        $pathMappingStatus = if ($pathBased) { 'unknown' } else { 'not-path-based' }
+        $pathPosition = $null
+        $candidatePathPositions = @()
+
+        if ($pathBased) {
+            if ([string]::IsNullOrWhiteSpace($path)) {
+                $pathMappingStatus = 'missing-resolution-path'
+            }
+            else {
+                try {
+                    $pathDirectory = [IO.Path]::GetDirectoryName($path)
+                }
+                catch {
+                    $pathDirectory = $null
+                }
+
+                if ([string]::IsNullOrWhiteSpace($pathDirectory)) {
+                    $pathMappingStatus = 'unmappable-resolution-directory'
+                }
+                else {
+                    $normalizedDirectory = ConvertTo-AuditPathEntry -Scope process -Position 0 -Entry $pathDirectory -EnvironmentValues @{}
+                    $pathComparisonKey = [string]$normalizedDirectory.comparisonKey
+
+                    $matches = @(
+                        $ProcessPathEntries |
+                            Where-Object {
+                                -not [string]::IsNullOrWhiteSpace([string]$_.comparisonKey) -and
+                                [string]::Equals([string]$_.comparisonKey, $pathComparisonKey, [StringComparison]::OrdinalIgnoreCase)
+                            } |
+                            Sort-Object position
+                    )
+
+                    if ($matches.Count -eq 1) {
+                        $pathPosition = [int]$matches[0].position
+                        $candidatePathPositions = @($pathPosition)
+                        $pathMappingStatus = 'mapped'
+                    }
+                    elseif ($matches.Count -gt 1) {
+                        $candidatePathPositions = @($matches | ForEach-Object { [int]$_.position })
+                        $pathPosition = [int]$candidatePathPositions[0]
+                        $pathMappingStatus = 'mapped-equivalent-duplicates'
+                    }
+                    else {
+                        $pathMappingStatus = 'not-in-process-path'
+                    }
+                }
+            }
+        }
+
+        $normalizedResolutions.Add([pscustomobject][ordered]@{
+            command                = $command
+            path                   = $path
+            commandType            = $commandType
+            precedence             = $precedence
+            active                 = $active
+            pathBased              = $pathBased
+            pathDirectory          = $pathDirectory
+            pathComparisonKey      = $pathComparisonKey
+            pathMappingStatus      = $pathMappingStatus
+            pathPosition           = $pathPosition
+            candidatePathPositions = @($candidatePathPositions)
+        })
+    }
+
+    $all = $normalizedResolutions.ToArray()
+    $pathBasedResolutions = @($all | Where-Object { $_.pathBased })
+    $mappedResolutions = @($pathBasedResolutions | Where-Object { $_.pathMappingStatus -in @('mapped', 'mapped-equivalent-duplicates') })
+    $unmappedPathResolutions = @($pathBasedResolutions | Where-Object { $_.pathMappingStatus -notin @('mapped', 'mapped-equivalent-duplicates') })
+    $activeResolution = @($all | Where-Object { $_.active } | Select-Object -First 1)
+    $shadowedResolutions = @($all | Where-Object { -not $_.active })
+
+    $distinctMappedPositions = @(
+        $mappedResolutions |
+            Where-Object { $null -ne $_.pathPosition } |
+            ForEach-Object { [int]$_.pathPosition } |
+            Select-Object -Unique
+    )
+
+    $distinctMappedDirectories = @(
+        $mappedResolutions |
+            Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.pathComparisonKey) } |
+            ForEach-Object { [string]$_.pathComparisonKey } |
+            Select-Object -Unique
+    )
+
+    $commandName = if ($all.Count -gt 0) { [string]$all[0].command } else { '' }
+
+    return [pscustomobject][ordered]@{
+        command                     = $commandName
+        resolutionCount             = $all.Count
+        pathBasedResolutionCount    = $pathBasedResolutions.Count
+        mappedResolutionCount       = $mappedResolutions.Count
+        unmappedPathResolutionCount = $unmappedPathResolutions.Count
+        hasResolutionCollision      = ($all.Count -gt 1)
+        hasPathResolutionCollision  = ($pathBasedResolutions.Count -gt 1)
+        hasPathOrderConflict        = ($distinctMappedPositions.Count -gt 1 -or $distinctMappedDirectories.Count -gt 1)
+        fullyMapped                 = ($pathBasedResolutions.Count -gt 0 -and $unmappedPathResolutions.Count -eq 0)
+        activeResolution            = $(if ($activeResolution.Count -gt 0) { $activeResolution[0] } else { $null })
+        shadowedResolutions         = @($shadowedResolutions)
+        resolutions                 = @($all)
+    }
+}
+
 Export-ModuleMember -Function @(
     'New-AuditVersionRecord',
     'Get-AuditCommandResolution',
@@ -1134,5 +1269,7 @@ Export-ModuleMember -Function @(
     'Get-AuditEnvironmentModel',
     'ConvertTo-AuditPathEntry',
     'Get-AuditPathScopeModel',
-    'Get-AuditPathModel'
+    'Get-AuditPathModel',
+    'Test-AuditPathBasedCommandType',
+    'Get-AuditCommandPathAnalysis'
 )

@@ -284,7 +284,10 @@ foreach ($registration in $orderedRegistrations) {
     }
 
     try {
-        $result = & $registration.path -Context $context
+        $providerContext = $context | Select-Object *
+        $providerContext | Add-Member -NotePropertyName PreviousProviderResults -NotePropertyValue $providerResults.ToArray() -Force
+
+        $result = & $registration.path -Context $providerContext
         Test-ProviderResultShape -Result $result -Registration $registration
         $providerResults.Add($result)
     }

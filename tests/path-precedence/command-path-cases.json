@@ -1,0 +1,78 @@
+{
+  "cases": {
+    "singleMapped": {
+      "processPath": "C:\\Tools;C:\\Other",
+      "resolutions": [
+        {
+          "command": "demo",
+          "path": "C:\\Tools\\demo.exe",
+          "commandType": "Application",
+          "precedence": 0,
+          "active": true
+        }
+      ]
+    },
+    "pathCollision": {
+      "processPath": "C:\\Primary;C:\\Secondary",
+      "resolutions": [
+        {
+          "command": "demo",
+          "path": "C:\\Primary\\demo.exe",
+          "commandType": "Application",
+          "precedence": 0,
+          "active": true
+        },
+        {
+          "command": "demo",
+          "path": "C:\\Secondary\\demo.exe",
+          "commandType": "Application",
+          "precedence": 1,
+          "active": false
+        }
+      ]
+    },
+    "nonPathPrecedence": {
+      "processPath": "C:\\Tools",
+      "resolutions": [
+        {
+          "command": "demo",
+          "path": "demo-alias",
+          "commandType": "Alias",
+          "precedence": 0,
+          "active": true
+        },
+        {
+          "command": "demo",
+          "path": "C:\\Tools\\demo.exe",
+          "commandType": "Application",
+          "precedence": 1,
+          "active": false
+        }
+      ]
+    },
+    "unmapped": {
+      "processPath": "C:\\Tools",
+      "resolutions": [
+        {
+          "command": "demo",
+          "path": "D:\\Outside\\demo.exe",
+          "commandType": "Application",
+          "precedence": 0,
+          "active": true
+        }
+      ]
+    },
+    "equivalentPathEntries": {
+      "processPath": "C:\\Tools;c:/tools/;C:\\Other",
+      "resolutions": [
+        {
+          "command": "demo",
+          "path": "C:\\TOOLS\\demo.exe",
+          "commandType": "Application",
+          "precedence": 0,
+          "active": true
+        }
+      ]
+    }
+  }
+}
