@@ -1021,11 +1021,9 @@ function Get-AuditPathScopeModel {
         [string]$RawPath
     )
 
-    $rawEntries = if ([string]::IsNullOrWhiteSpace($RawPath)) {
-        @()
-    }
-    else {
-        @($RawPath -split ';')
+    [string[]]$rawEntries = @()
+    if (-not [string]::IsNullOrWhiteSpace($RawPath)) {
+        $rawEntries = @($RawPath -split ';')
     }
 
     $entries = [System.Collections.Generic.List[object]]::new()
