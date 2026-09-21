@@ -128,11 +128,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 4) {
-              throw "Expected three built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 5) {
+              throw "Expected four built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'inventory.commands', 'environment.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'inventory.commands', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -149,6 +149,14 @@ jobs:
 
           if (-not (Test-Path -LiteralPath $result.JsonPath) -or -not (Test-Path -LiteralPath $result.MarkdownPath)) {
               throw "Expected JSON and Markdown reports to be generated despite provider failure."
+          }
+
+          $missingProviderResult = & ./scripts/Audit-Workstation.ps1 -OutputDirectory (Join-Path $tempRoot 'missing-provider-reports') -AdditionalProviderPath @((Join-Path $tempRoot 'DoesNotExist.Provider.ps1')) -PassThru
+          if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
+              throw "Expected missing additional provider paths to be isolated as report-level errors."
+          }
+          if ($missingProviderResult.Report.summary.providerCount -ne 4) {
+              throw "Expected built-in providers to continue after an additional provider path failure."
           }
 
       - name: Validate JSON configuration
