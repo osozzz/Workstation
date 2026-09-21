@@ -221,7 +221,7 @@ function Get-PowerShellComponent {
     }
 
     foreach ($resolution in $resolutions) {
-        Add-UniqueInstallation -List $installations -Path ([string]$resolution.path) -Version $(if ($resolution.active) { $activeVersion } else { $resolution.version }) -Active:[bool]$resolution.active -Source command
+        Add-UniqueInstallation -List $installations -Path ([string]$resolution.path) -Version $(if ($resolution.active) { $activeVersion } else { $resolution.version }) -Active ([bool]$resolution.active) -Source command
     }
 
     foreach ($candidate in @($AdditionalInstallations)) {
@@ -242,7 +242,7 @@ function Get-PowerShellComponent {
             )
         }
 
-        Add-UniqueInstallation -List $installations -Path ([string]$candidate.path) -Version $candidateVersion -Active:$candidateActive -Source ([string]$candidate.source)
+        Add-UniqueInstallation -List $installations -Path ([string]$candidate.path) -Version $candidateVersion -Active $candidateActive -Source ([string]$candidate.source)
     }
 
     if (-not $installed -and $installations.Count -gt 0) {
