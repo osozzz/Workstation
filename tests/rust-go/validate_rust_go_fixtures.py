@@ -304,6 +304,20 @@ def validate_source_ownership() -> None:
     if "rawoutputretained = $false" not in provider_source:
         fail("Go environment raw JSON must not be retained.")
 
+    if provider_source.count("gotoolchain = 'local'") < 2:
+        fail(
+            "Both Go probes must force GOTOOLCHAIN=local in the isolated "
+            "child environment to prevent automatic toolchain switching or "
+            "downloads."
+        )
+
+    core_source_original = CORE_PATH.read_text(encoding="utf-8")
+    if "EnvironmentOverrides" not in core_source_original:
+        fail(
+            "Audit core must support isolated child-process environment "
+            "overrides for side-effect-safe probes."
+        )
+
     for pattern in FORBIDDEN_MUTATION_PATTERNS:
         if re.search(pattern, provider_source, flags=re.IGNORECASE):
             fail(
