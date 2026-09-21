@@ -293,7 +293,7 @@ def validate_source_ownership() -> None:
             "python."
         )
 
-    if "pythonsoftwarefoundation.pythonmanager" not in provider_source:
+    if "pythonsoftwarefoundation\\.pythonmanager" not in provider_source:
         fail(
             "Python provider must guard Python Install Manager aliases before "
             "direct interpreter probes."
