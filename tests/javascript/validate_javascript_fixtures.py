@@ -280,10 +280,20 @@ def validate_source_ownership() -> None:
                 f"JavaScript ownership for '{component_id}'."
             )
 
-    if not re.search(
+    javascript_order = re.search(
+        r"providerid\s*=\s*['\"]javascript\.toolchain['\"][\s\S]*?"
+        r"order\s*=\s*(\d+)",
+        provider_source,
+    )
+    inventory_order = re.search(
         r"providerid\s*=\s*['\"]inventory\.commands['\"][\s\S]*?"
-        r"order\s*=\s*25",
+        r"order\s*=\s*(\d+)",
         command_source,
+    )
+    if (
+        not javascript_order
+        or not inventory_order
+        or int(inventory_order.group(1)) <= int(javascript_order.group(1))
     ):
         fail(
             "CommandInventory.Provider.ps1 must run after the specialized "

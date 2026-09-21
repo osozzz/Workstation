@@ -14,7 +14,7 @@ if ($Describe) {
     return [pscustomobject][ordered]@{
         providerId = 'inventory.commands'
         category   = 'runtime'
-        order      = 25
+        order      = 26
     }
 }
 
@@ -51,7 +51,6 @@ function Get-FirstOutputLine {
 
 $toolSpecs = @(
     @{ Id='heroku-cli'; Label='Heroku CLI'; Command='heroku'; Args=@('--version') },
-    @{ Id='dotnet-sdk'; Label='.NET SDK'; Command='dotnet'; Args=@('--version') },
     @{ Id='rust'; Label='Rust'; Command='rustc'; Args=@('--version') },
     @{ Id='cargo'; Label='Cargo'; Command='cargo'; Args=@('--version') },
     @{ Id='rustup'; Label='Rustup'; Command='rustup'; Args=@('--version') },

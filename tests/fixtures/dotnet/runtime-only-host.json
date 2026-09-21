@@ -1,0 +1,233 @@
+{
+  "providerId": "dotnet.toolchain",
+  "category": "runtime",
+  "status": "partial",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "dotnet-sdk",
+      "name": ".NET SDK",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [
+        {
+          "command": "dotnet",
+          "path": "C:\\Synthetic\\DotNet\\dotnet.exe",
+          "commandType": "Application",
+          "version": null,
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "dotnet-runtime",
+      "name": ".NET Runtimes",
+      "state": "present",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [
+        {
+          "raw": "10.0.0",
+          "normalized": "10.0.0",
+          "channel": null
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App\\10.0.0",
+          "version": {
+            "raw": "10.0.0",
+            "normalized": "10.0.0",
+            "channel": null
+          },
+          "active": false,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "dotnet-workloads",
+      "name": ".NET Workloads",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "DOTNET_SDK_MISSING",
+      "message": "The dotnet host is available, but no .NET SDKs were reported.",
+      "severity": "warning",
+      "componentId": "dotnet-sdk",
+      "evidenceIds": [
+        "dotnet.sdks",
+        "dotnet.version"
+      ]
+    }
+  ],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "dotnet.environment",
+      "type": "environment",
+      "source": "DOTNET_ROOT/DOTNET_ROOT_X64/DOTNET_ROOT_X86",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "DOTNET_ROOT",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "DOTNET_ROOT_X64",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "DOTNET_ROOT_X86",
+            "process": null,
+            "user": null,
+            "machine": null
+          }
+        ],
+        "dotnetRootConfigured": false,
+        "dotnetRootX64Configured": false,
+        "dotnetRootX86Configured": false
+      }
+    },
+    {
+      "evidenceId": "dotnet.command-resolution",
+      "type": "command",
+      "source": "Get-Command dotnet -All",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "resolutionCount": 1,
+        "resolutions": [
+          {
+            "command": "dotnet",
+            "path": "C:\\Synthetic\\DotNet\\dotnet.exe",
+            "commandType": "Application",
+            "version": null,
+            "precedence": 0,
+            "active": true
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "dotnet.version",
+      "type": "command",
+      "source": "dotnet --version",
+      "exitCode": 145,
+      "captured": "No .NET SDKs were found.",
+      "redacted": false,
+      "attributes": {
+        "status": "non-zero",
+        "timedOut": false,
+        "resolutionCount": 1
+      }
+    },
+    {
+      "evidenceId": "dotnet.info",
+      "type": "command",
+      "source": "dotnet --info",
+      "exitCode": 0,
+      "captured": ".NET runtimes installed:\n Microsoft.NETCore.App 10.0.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false
+      }
+    },
+    {
+      "evidenceId": "dotnet.sdks",
+      "type": "command",
+      "source": "dotnet --list-sdks",
+      "exitCode": 0,
+      "captured": "",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "sdkCount": 0,
+        "sdks": []
+      }
+    },
+    {
+      "evidenceId": "dotnet.runtimes",
+      "type": "command",
+      "source": "dotnet --list-runtimes",
+      "exitCode": 0,
+      "captured": "Microsoft.NETCore.App 10.0.0 [C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App]",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "runtimeCount": 1,
+        "runtimes": [
+          {
+            "product": "Microsoft.NETCore.App",
+            "version": "10.0.0",
+            "root": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App",
+            "path": "C:\\Synthetic\\DotNet\\shared\\Microsoft.NETCore.App\\10.0.0"
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "dotnet.workloads",
+      "type": "derived",
+      "source": "workload inspection skipped because no SDK is installed",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "status": "not-applicable",
+        "installed": [],
+        "installedCount": 0,
+        "updateMetadataIgnored": true,
+        "rawOutputRetained": false
+      }
+    }
+  ]
+}

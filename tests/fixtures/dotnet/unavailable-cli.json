@@ -1,0 +1,102 @@
+{
+  "providerId": "dotnet.toolchain",
+  "category": "runtime",
+  "status": "unavailable",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "dotnet-sdk",
+      "name": ".NET SDK",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "dotnet-runtime",
+      "name": ".NET Runtimes",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "dotnet-workloads",
+      "name": ".NET Workloads",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "dotnet.environment",
+      "type": "environment",
+      "source": "DOTNET_ROOT/DOTNET_ROOT_X64/DOTNET_ROOT_X86",
+      "exitCode": null,
+      "captured": null,
+      "redacted": false,
+      "attributes": {
+        "variables": [
+          {
+            "name": "DOTNET_ROOT",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "DOTNET_ROOT_X64",
+            "process": null,
+            "user": null,
+            "machine": null
+          },
+          {
+            "name": "DOTNET_ROOT_X86",
+            "process": null,
+            "user": null,
+            "machine": null
+          }
+        ],
+        "dotnetRootConfigured": false,
+        "dotnetRootX64Configured": false,
+        "dotnetRootX86Configured": false
+      }
+    }
+  ]
+}
