@@ -161,6 +161,10 @@ jobs:
           }
 
           $hostProvider = $result.Report.providers | Where-Object providerId -eq 'host.system'
+          if ($hostProvider.status -eq 'failed') {
+              $hostMessages = @($hostProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "Host provider failed during smoke test: $hostMessages"
+          }
           foreach ($componentId in @('windows', 'powershell.windows', 'powershell.core')) {
               if (-not ($hostProvider.components | Where-Object componentId -eq $componentId)) {
                   throw "Expected host component '$componentId'."
