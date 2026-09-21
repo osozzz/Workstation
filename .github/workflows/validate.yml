@@ -70,6 +70,11 @@ jobs:
         run: |
           python ./tests/developer-clis/validate_developer_cli_fixtures.py
 
+      - name: Validate Sprint 2 integration fixtures
+        shell: pwsh
+        run: |
+          python ./tests/integration/validate_sprint2_suite.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -573,6 +578,54 @@ jobs:
           }
           if ($missingProviderResult.Report.summary.providerCount -ne 11) {
               throw "Expected built-in providers to continue after an additional provider path failure."
+          }
+
+      - name: Run controlled Sprint 2 integration audit
+        shell: pwsh
+        run: |
+          $integrationRoot = Join-Path $env:RUNNER_TEMP 'workstation-sprint2-integration'
+          if (Test-Path -LiteralPath $integrationRoot) {
+              Remove-Item -LiteralPath $integrationRoot -Recurse -Force
+          }
+
+          New-Item -ItemType Directory -Path $integrationRoot -Force | Out-Null
+
+          try {
+              $result = & ./scripts/Audit-Workstation.ps1 -OutputDirectory $integrationRoot -PassThru
+
+              if (-not (Test-Path -LiteralPath $result.JsonPath)) {
+                  throw "Controlled Sprint 2 audit did not generate JSON output."
+              }
+
+              if (-not (Test-Path -LiteralPath $result.MarkdownPath)) {
+                  throw "Controlled Sprint 2 audit did not generate Markdown output."
+              }
+
+              $workspacePrefix = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\') + '\'
+              $jsonFullPath = [IO.Path]::GetFullPath($result.JsonPath)
+              $markdownFullPath = [IO.Path]::GetFullPath($result.MarkdownPath)
+
+              if ($jsonFullPath.StartsWith($workspacePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                  throw "Controlled audit JSON must remain outside the repository workspace."
+              }
+
+              if ($markdownFullPath.StartsWith($workspacePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                  throw "Controlled audit Markdown must remain outside the repository workspace."
+              }
+
+              python ./tests/integration/validate_sprint2_suite.py --report "$($result.JsonPath)"
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Controlled Sprint 2 audit validation failed."
+              }
+          }
+          finally {
+              if (Test-Path -LiteralPath $integrationRoot) {
+                  Remove-Item -LiteralPath $integrationRoot -Recurse -Force
+              }
+          }
+
+          if (Test-Path -LiteralPath $integrationRoot) {
+              throw "Controlled Sprint 2 audit output must be deleted after validation."
           }
 
       - name: Validate JSON configuration
