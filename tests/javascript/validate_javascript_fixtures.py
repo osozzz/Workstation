@@ -237,6 +237,25 @@ def validate_source_ownership() -> None:
                 f"mutation pattern: {pattern}"
             )
 
+    nvm_invocations = set(
+        re.findall(
+            r"invoke-auditcommand\s+-command\s+['\"]nvm['\"]"
+            r"\s+-arguments\s+@\(['\"]([^'\"]+)['\"]\)",
+            provider_source,
+        )
+    )
+    allowed_nvm_invocations = {"version", "current", "list", "root"}
+    if nvm_invocations - allowed_nvm_invocations:
+        fail(
+            "JavaScriptToolchain.Provider.ps1 uses unexpected NVM "
+            f"subcommands: {sorted(nvm_invocations - allowed_nvm_invocations)}"
+        )
+    if nvm_invocations != allowed_nvm_invocations:
+        fail(
+            "JavaScriptToolchain.Provider.ps1 must keep the expected "
+            f"read-only NVM probes: {sorted(allowed_nvm_invocations)}"
+        )
+
     if re.search(r"\bnpm\s+outdated\b", provider_source):
         fail(
             "JavaScriptToolchain.Provider.ps1 must not own latest-version "
