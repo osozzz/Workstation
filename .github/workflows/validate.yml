@@ -75,6 +75,11 @@ jobs:
         run: |
           python ./tests/integration/validate_sprint2_suite.py
 
+      - name: Validate PATH scope model
+        shell: pwsh
+        run: |
+          ./tests/path/validate_path_model.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
