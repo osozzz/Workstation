@@ -251,50 +251,51 @@ function New-VersionCommandComponent {
 
 $specs = @(
     @{
-        ComponentId = 'git'
-        Name        = 'Git'
-        Command     = 'git'
-        Arguments   = @('--version')
-        EvidenceId  = 'developer.git.version'
+        ComponentId    = 'git'
+        Name           = 'Git'
+        Command        = 'git'
+        Arguments      = @('--version')
+        EvidenceId     = 'developer.git.version'
         VersionPattern = 'git version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
-        ComponentId = 'github-cli'
-        Name        = 'GitHub CLI'
-        Command     = 'gh'
-        Arguments   = @('--version')
-        EvidenceId  = 'developer.github-cli.version'
+        ComponentId    = 'github-cli'
+        Name           = 'GitHub CLI'
+        Command        = 'gh'
+        Arguments      = @('--version')
+        EvidenceId     = 'developer.github-cli.version'
         VersionPattern = 'gh version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
-        ComponentId = 'docker'
-        Name        = 'Docker CLI'
-        Command     = 'docker'
-        Arguments   = @('--version')
-        EvidenceId  = 'developer.docker.version'
+        ComponentId    = 'docker'
+        Name           = 'Docker CLI'
+        Command        = 'docker'
+        Arguments      = @('--version')
+        EvidenceId     = 'developer.docker.version'
         VersionPattern = 'Docker version (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
-        ComponentId = 'supabase-cli'
-        Name        = 'Supabase CLI'
-        Command     = 'supabase'
-        Arguments   = @('--version')
-        EvidenceId  = 'developer.supabase.version'
-        VersionPattern = '^(?:Supabase CLI\s+)?v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)\s*
+        ComponentId    = 'supabase-cli'
+        Name           = 'Supabase CLI'
+        Command        = 'supabase'
+        Arguments      = @('--version')
+        EvidenceId     = 'developer.supabase.version'
+        VersionPattern = '^(?:Supabase CLI\s+)?v?(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)\s*$'
+    },
     @{
-        ComponentId = 'vercel-cli'
-        Name        = 'Vercel CLI'
-        Command     = 'vercel'
-        Arguments   = @('--version')
-        EvidenceId  = 'developer.vercel.version'
+        ComponentId    = 'vercel-cli'
+        Name           = 'Vercel CLI'
+        Command        = 'vercel'
+        Arguments      = @('--version')
+        EvidenceId     = 'developer.vercel.version'
         VersionPattern = 'Vercel CLI (?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     },
     @{
-        ComponentId = 'heroku-cli'
-        Name        = 'Heroku CLI'
-        Command     = 'heroku'
-        Arguments   = @('--version')
-        EvidenceId  = 'developer.heroku.version'
+        ComponentId    = 'heroku-cli'
+        Name           = 'Heroku CLI'
+        Command        = 'heroku'
+        Arguments      = @('--version')
+        EvidenceId     = 'developer.heroku.version'
         VersionPattern = 'heroku/(?<version>\d+(?:\.\d+)+(?:[.-][0-9A-Za-z]+)*)'
     }
 )
