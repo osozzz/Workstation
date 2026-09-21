@@ -56,7 +56,7 @@
     {
       "componentId": "rust-toolchains",
       "name": "Rust Toolchains",
-      "state": "present",
+      "state": "partial",
       "installed": true,
       "activeVersion": null,
       "discoveredVersions": [
@@ -188,7 +188,7 @@
   "warnings": [
     {
       "code": "RUSTC_PROXY_NOT_EXECUTED",
-      "message": "rustc resolves through rustup, but no active installed toolchain was proven. Version execution was skipped to avoid rustup auto-install side effects.",
+      "message": "rustc resolves through rustup, but a safely inspectable active installed toolchain was not proven. Version execution was skipped to avoid rustup auto-install side effects.",
       "severity": "warning",
       "componentId": "rustc",
       "evidenceIds": [
@@ -197,7 +197,7 @@
     },
     {
       "code": "CARGO_PROXY_NOT_EXECUTED",
-      "message": "cargo resolves through rustup, but no active installed toolchain was proven. Version execution was skipped to avoid rustup auto-install side effects.",
+      "message": "cargo resolves through rustup, but a safely inspectable active installed toolchain was not proven. Version execution was skipped to avoid rustup auto-install side effects.",
       "severity": "warning",
       "componentId": "cargo",
       "evidenceIds": [
@@ -206,11 +206,12 @@
     },
     {
       "code": "RUSTUP_ACTIVE_TOOLCHAIN_UNPROVEN",
-      "message": "rustup toolchains are installed, but none was marked active for the current audit context.",
+      "message": "rustup toolchains are installed, but the active toolchain could not be proven safely for the current audit context.",
       "severity": "warning",
       "componentId": "rust-toolchains",
       "evidenceIds": [
-        "rust.toolchains"
+        "rust.toolchains",
+        "rust.active-toolchain"
       ]
     }
   ],
@@ -259,19 +260,23 @@
     {
       "evidenceId": "rust.rustup.version",
       "type": "command",
-      "source": "rustup --version",
+      "source": "rustup --version with RUSTUP_AUTO_INSTALL=0",
       "exitCode": 0,
       "captured": "rustup 1.28.2",
       "redacted": false,
       "attributes": {
         "status": "success",
-        "resolutionCount": 1
+        "resolutionCount": 1,
+        "executionSkipped": false,
+        "fileMetadataVersion": "1.28.2",
+        "minimumSafeInspectionVersion": "1.28.0",
+        "autoInstallGuard": "RUSTUP_AUTO_INSTALL=0"
       }
     },
     {
       "evidenceId": "rust.toolchains",
       "type": "command",
-      "source": "rustup toolchain list",
+      "source": "rustup toolchain list with RUSTUP_AUTO_INSTALL=0",
       "exitCode": 0,
       "captured": "stable-x86_64-pc-windows-msvc (default)\n1.89.0-x86_64-pc-windows-msvc",
       "redacted": false,
@@ -285,7 +290,8 @@
             "default": true,
             "channel": "stable",
             "version": null,
-            "path": "C:\\Synthetic\\Rustup\\toolchains\\stable-x86_64-pc-windows-msvc"
+            "path": "C:\\Synthetic\\Rustup\\toolchains\\stable-x86_64-pc-windows-msvc",
+            "override": false
           },
           {
             "name": "1.89.0-x86_64-pc-windows-msvc",
@@ -293,9 +299,24 @@
             "default": false,
             "channel": null,
             "version": "1.89.0",
-            "path": "C:\\Synthetic\\Rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc"
+            "path": "C:\\Synthetic\\Rustup\\toolchains\\1.89.0-x86_64-pc-windows-msvc",
+            "override": false
           }
-        ]
+        ],
+        "autoInstallGuard": "RUSTUP_AUTO_INSTALL=0"
+      }
+    },
+    {
+      "evidenceId": "rust.active-toolchain",
+      "type": "command",
+      "source": "rustup show active-toolchain with RUSTUP_AUTO_INSTALL=0",
+      "exitCode": 1,
+      "captured": "error: no active toolchain",
+      "redacted": false,
+      "attributes": {
+        "status": "non-zero",
+        "activeToolchain": null,
+        "autoInstallGuard": "RUSTUP_AUTO_INSTALL=0"
       }
     },
     {
