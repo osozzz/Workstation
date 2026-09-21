@@ -1,0 +1,84 @@
+{
+  "providerId": "runtime.synthetic-present",
+  "category": "runtime",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "synthetic-runtime",
+      "name": "Synthetic Runtime",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "v1.2.3",
+        "normalized": "1.2.3",
+        "channel": "stable"
+      },
+      "discoveredVersions": [
+        {
+          "raw": "v1.2.3",
+          "normalized": "1.2.3",
+          "channel": "stable"
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Synthetic\\Runtime",
+          "version": {
+            "raw": "v1.2.3",
+            "normalized": "1.2.3",
+            "channel": "stable"
+          },
+          "active": true,
+          "source": "filesystem"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "synthetic",
+          "path": "C:\\Synthetic\\Runtime\\synthetic.exe",
+          "commandType": "Application",
+          "version": {
+            "raw": "v1.2.3",
+            "normalized": "1.2.3",
+            "channel": "stable"
+          },
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "known",
+        "latestStable": {
+          "raw": "v1.2.4",
+          "normalized": "1.2.4",
+          "channel": "stable"
+        },
+        "latestLts": null,
+        "latestCurrent": {
+          "raw": "v1.3.0",
+          "normalized": "1.3.0",
+          "channel": "current"
+        },
+        "source": "synthetic://versions",
+        "checkedAt": "2026-09-21T00:00:00Z",
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "synthetic.runtime.version",
+      "type": "command",
+      "source": "synthetic --version",
+      "exitCode": 0,
+      "captured": "v1.2.3",
+      "redacted": false,
+      "attributes": {
+        "fixture": true
+      }
+    }
+  ]
+}
