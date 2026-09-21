@@ -444,8 +444,22 @@ foreach ($runtime in $runtimeItems) {
     Add-UniqueInstallation -List $runtimeInstallations -Path ([string]$runtime.path) -Version $runtime.version -Active $false -Source command
 }
 
-$runtimeState = if ($runtimeListResult.Status -eq 'success') { 'present' } else { 'partial' }
-$runtimeInstalled = if ($runtimeListResult.Status -eq 'success') { ($runtimeItems.Count -gt 0) } else { $null }
+$runtimeState = if ($runtimeListResult.Status -ne 'success') {
+    'partial'
+}
+elseif ($runtimeItems.Count -gt 0) {
+    'present'
+}
+else {
+    'missing'
+}
+
+$runtimeInstalled = if ($runtimeListResult.Status -eq 'success') {
+    ($runtimeItems.Count -gt 0)
+}
+else {
+    $null
+}
 
 if ($runtimeListResult.Status -ne 'success') {
     $hasPartial = $true
@@ -487,8 +501,14 @@ if ($sdkItems.Count -gt 0) {
                 )
             }
 
-            $workloadState = 'present'
-            $workloadInstalled = ($workloadIds.Count -gt 0)
+            if ($workloadIds.Count -gt 0) {
+                $workloadState = 'present'
+                $workloadInstalled = $true
+            }
+            else {
+                $workloadState = 'missing'
+                $workloadInstalled = $false
+            }
         }
         else {
             $workloadState = 'partial'

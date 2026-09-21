@@ -517,7 +517,7 @@ function New-SimpleCommandComponent {
         state               = $state
         installed           = $true
         activeVersion       = $version
-        discoveredVersions  = $(if ($null -ne $version) { @($version) } else { @() })
+        discoveredVersions  = @(if ($null -ne $version) { $version })
         installations       = $installations
         commandResolutions  = @($result.Resolutions)
         versionIntelligence = New-NotApplicableVersionIntelligence
@@ -887,7 +887,7 @@ $components.Add([pscustomobject][ordered]@{
     state               = $pyenvState
     installed           = $(if ($pyenvResult.Found) { $true } elseif (-not [string]::IsNullOrWhiteSpace($pyenvRoot)) { $null } else { $false })
     activeVersion       = $pyenvVersion
-    discoveredVersions  = $(if ($null -ne $pyenvVersion) { @($pyenvVersion) } else { @() })
+    discoveredVersions  = @(if ($null -ne $pyenvVersion) { $pyenvVersion })
     installations       = $pyenvInstallations
     commandResolutions  = @($pyenvResult.Resolutions)
     versionIntelligence = New-NotApplicableVersionIntelligence

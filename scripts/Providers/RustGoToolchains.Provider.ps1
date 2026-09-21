@@ -460,7 +460,7 @@ function New-CommandVersionComponent {
         state               = $state
         installed           = $true
         activeVersion       = $version
-        discoveredVersions  = $(if ($null -ne $version) { @($version) } else { @() })
+        discoveredVersions  = @(if ($null -ne $version) { $version })
         installations       = $installations.ToArray()
         commandResolutions  = @($result.Resolutions)
         versionIntelligence = New-NotApplicableVersionIntelligence
@@ -576,7 +576,7 @@ $components.Add([pscustomobject][ordered]@{
     state               = $rustupState
     installed           = $(if ($rustupResolutions.Count -gt 0) { $true } else { $false })
     activeVersion       = $rustupVersion
-    discoveredVersions  = $(if ($null -ne $rustupVersion) { @($rustupVersion) } else { @() })
+    discoveredVersions  = @(if ($null -ne $rustupVersion) { $rustupVersion })
     installations       = $rustupInstallations
     commandResolutions  = $rustupResolutions
     versionIntelligence = New-NotApplicableVersionIntelligence
@@ -894,7 +894,7 @@ $components.Add([pscustomobject][ordered]@{
     state               = $goState
     installed           = $(if ($goResult.Found) { $true } else { $false })
     activeVersion       = $goVersion
-    discoveredVersions  = $(if ($null -ne $goVersion) { @($goVersion) } else { @() })
+    discoveredVersions  = @(if ($null -ne $goVersion) { $goVersion })
     installations       = $goInstallations.ToArray()
     commandResolutions  = $goResolutions
     versionIntelligence = New-NotApplicableVersionIntelligence

@@ -174,7 +174,7 @@ else {
         state               = $componentState
         installed           = $true
         activeVersion       = $activeVersion
-        discoveredVersions  = $(if ($activeVersion) { @($activeVersion) } else { @() })
+        discoveredVersions  = @(if ($null -ne $activeVersion) { $activeVersion })
         installations       = $installations.ToArray()
         commandResolutions  = @($versionResult.Resolutions)
         versionIntelligence = New-NotApplicableVersionIntelligence

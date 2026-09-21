@@ -442,7 +442,7 @@ function New-SimpleCommandComponent {
         state               = $state
         installed           = $true
         activeVersion       = $version
-        discoveredVersions  = $(if ($null -ne $version) { @($version) } else { @() })
+        discoveredVersions  = @(if ($null -ne $version) { $version })
         installations       = $installations
         commandResolutions  = @($result.Resolutions)
         versionIntelligence = New-NotApplicableVersionIntelligence
