@@ -1,5 +1,22 @@
 Set-StrictMode -Version Latest
 
+$script:AuditEnvironmentAllowList = @(
+    'NVM_HOME',
+    'NVM_SYMLINK',
+    'PNPM_HOME',
+    'JAVA_HOME',
+    'ANDROID_HOME',
+    'ANDROID_SDK_ROOT',
+    'FLUTTER_ROOT',
+    'PUB_CACHE',
+    'CARGO_HOME',
+    'RUSTUP_HOME',
+    'GOPATH',
+    'GOROOT',
+    'PYENV_ROOT'
+)
+
+
 function Get-AuditCommandTarget {
     [CmdletBinding()]
     param(
@@ -420,9 +437,17 @@ function Get-AuditEnvironmentSnapshot {
         [string[]]$Names
     )
 
+    $requestedNames = @($Names | Select-Object -Unique)
+
+    foreach ($name in $requestedNames) {
+        if ($script:AuditEnvironmentAllowList -notcontains $name) {
+            throw "Environment variable '$name' is not in the audit allowlist."
+        }
+    }
+
     $results = New-Object System.Collections.Generic.List[object]
 
-    foreach ($name in ($Names | Select-Object -Unique)) {
+    foreach ($name in $requestedNames) {
         $results.Add([pscustomobject][ordered]@{
             name    = $name
             process = [Environment]::GetEnvironmentVariable($name, 'Process')
