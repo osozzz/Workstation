@@ -136,7 +136,7 @@ else {
     ) -TimeoutSeconds 30 -SensitiveOutput
 
     $sourceEvidenceId = 'winget.sources'
-    $evidence.Add((New-AuditEvidence -EvidenceId $sourceEvidenceId -Type command -Source 'winget source list --disable-interactivity' -ExitCode $sourceResult.ExitCode -Captured $sourceResult.Captured -Redacted:$sourceResult.Redacted -Attributes @{
+    $evidence.Add((New-AuditEvidence -EvidenceId $sourceEvidenceId -Type command -Source 'winget source list --disable-interactivity' -ExitCode $sourceResult.ExitCode -Captured $sourceResult.Captured -Sensitive -Attributes @{
         status    = $sourceResult.Status
         truncated = $sourceResult.Truncated
         timedOut  = $sourceResult.TimedOut
