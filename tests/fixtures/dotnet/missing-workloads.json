@@ -251,7 +251,8 @@
         "status": "non-zero",
         "installed": [],
         "installedCount": 0,
-        "updateMetadataIgnored": true
+        "updateMetadataIgnored": true,
+        "rawOutputRetained": true
       }
     }
   ]
