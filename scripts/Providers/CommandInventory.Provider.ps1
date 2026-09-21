@@ -85,8 +85,7 @@ $toolSpecs = @(
     @{ Id='docker-compose'; Label='Docker Compose'; Command='docker'; Args=@('compose','version') },
     @{ Id='adb'; Label='ADB'; Command='adb'; Args=@('--version') },
     @{ Id='supabase-cli'; Label='Supabase CLI'; Command='supabase'; Args=@('--version') },
-    @{ Id='vercel-cli'; Label='Vercel CLI'; Command='vercel'; Args=@('--version') },
-    @{ Id='winget'; Label='WinGet'; Command='winget'; Args=@('--version') }
+    @{ Id='vercel-cli'; Label='Vercel CLI'; Command='vercel'; Args=@('--version') }
 )
 
 foreach ($spec in $toolSpecs) {

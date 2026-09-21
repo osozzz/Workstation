@@ -1,0 +1,38 @@
+{
+  "providerId": "winget.baseline",
+  "category": "package-manager",
+  "status": "unavailable",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "winget",
+      "name": "WinGet",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "WINGET_NOT_FOUND",
+      "message": "WinGet is unavailable; package-manager diagnostics were not collected.",
+      "severity": "warning",
+      "componentId": "winget",
+      "evidenceIds": []
+    }
+  ],
+  "errors": [],
+  "evidence": []
+}
