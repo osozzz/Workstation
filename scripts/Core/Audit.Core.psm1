@@ -551,11 +551,13 @@ function Resolve-AuditEnvironmentReferences {
             expanded            = $null
             hasUnresolved       = $false
             unresolvedVariables = @()
+            unapprovedReferenceCount = 0
         }
     }
 
     $expanded = $Value
     $unresolved = [System.Collections.Generic.List[string]]::new()
+    $unapprovedReferences = [System.Collections.Generic.List[string]]::new()
 
     for ($pass = 0; $pass -lt 8; $pass++) {
         $matches = @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))
@@ -578,7 +580,22 @@ function Resolve-AuditEnvironmentReferences {
                 }
             }
 
-            if (-not $foundReference -or $null -eq $referenceValue -or [string]::IsNullOrEmpty([string]$referenceValue)) {
+            if (-not $foundReference) {
+                if ($script:AuditEnvironmentAllowList -contains $referenceName) {
+                    if (-not $unresolved.Contains($referenceName)) {
+                        $unresolved.Add($referenceName)
+                    }
+                }
+                else {
+                    $unapprovedKey = $referenceName.ToLowerInvariant()
+                    if (-not $unapprovedReferences.Contains($unapprovedKey)) {
+                        $unapprovedReferences.Add($unapprovedKey)
+                    }
+                }
+                continue
+            }
+
+            if ($null -eq $referenceValue -or [string]::IsNullOrEmpty([string]$referenceValue)) {
                 if (-not $unresolved.Contains($referenceName)) {
                     $unresolved.Add($referenceName)
                 }
@@ -600,15 +617,25 @@ function Resolve-AuditEnvironmentReferences {
 
     foreach ($match in @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))) {
         $referenceName = [string]$match.Groups['name'].Value
-        if (-not $unresolved.Contains($referenceName)) {
-            $unresolved.Add($referenceName)
+
+        if ($script:AuditEnvironmentAllowList -contains $referenceName) {
+            if (-not $unresolved.Contains($referenceName)) {
+                $unresolved.Add($referenceName)
+            }
+        }
+        else {
+            $unapprovedKey = $referenceName.ToLowerInvariant()
+            if (-not $unapprovedReferences.Contains($unapprovedKey)) {
+                $unapprovedReferences.Add($unapprovedKey)
+            }
         }
     }
 
     return [pscustomobject][ordered]@{
-        expanded            = $expanded
-        hasUnresolved       = ($unresolved.Count -gt 0)
-        unresolvedVariables = $unresolved.ToArray()
+        expanded                 = $expanded
+        hasUnresolved            = ($unresolved.Count -gt 0 -or $unapprovedReferences.Count -gt 0)
+        unresolvedVariables      = $unresolved.ToArray()
+        unapprovedReferenceCount = $unapprovedReferences.Count
     }
 }
 
@@ -645,6 +672,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
             missingPathCount      = 0
             hasUnresolvedVariable = $false
             unresolvedVariables   = @()
+            unapprovedReferenceCount = 0
             isConfigured          = $false
             isInvalid             = $false
         }
@@ -698,6 +726,10 @@ function ConvertTo-AuditEnvironmentScopeValue {
             Select-Object -Unique
     )
     $missingPathCount = @($pathItems | Where-Object { $_.exists -eq $false }).Count
+    $unapprovedReferenceCount = 0
+    foreach ($pathItem in @($pathItems)) {
+        $unapprovedReferenceCount += [int]$pathItem.unapprovedReferenceCount
+    }
 
     $normalized = if ($definition.kind -eq 'path-list') {
         $normalizedParts -join ';'
@@ -747,6 +779,7 @@ function ConvertTo-AuditEnvironmentScopeValue {
         missingPathCount      = $missingPathCount
         hasUnresolvedVariable = ($unresolvedVariables.Count -gt 0)
         unresolvedVariables   = @($unresolvedVariables)
+        unapprovedReferenceCount = $unapprovedReferenceCount
         isConfigured          = $true
         isInvalid             = $isInvalid
     }
@@ -814,6 +847,10 @@ function Get-AuditEnvironmentModel {
         $missingMeasure = @($scopeValues | Measure-Object -Property missingPathCount -Sum)
         $missingPathCount = if ($missingMeasure.Count -gt 0 -and $null -ne $missingMeasure[0].Sum) { [int]$missingMeasure[0].Sum } else { 0 }
         $unresolvedScopeCount = @($scopeValues | Where-Object { $_.hasUnresolvedVariable }).Count
+        $unapprovedReferenceCount = 0
+        foreach ($scopeValue in @($scopeValues)) {
+            $unapprovedReferenceCount += [int]$scopeValue.unapprovedReferenceCount
+        }
 
         $variables.Add([pscustomobject][ordered]@{
             name                 = $name
@@ -827,6 +864,7 @@ function Get-AuditEnvironmentModel {
             invalidScopeCount    = $invalidScopeCount
             missingPathCount     = $missingPathCount
             unresolvedScopeCount = $unresolvedScopeCount
+            unapprovedReferenceCount = $unapprovedReferenceCount
             scopes               = $scopeValues.ToArray()
         })
     }
@@ -881,6 +919,7 @@ function ConvertTo-AuditPathEntry {
 
     $expanded = $referenceResolution.expanded
     $unresolvedVariables = @($referenceResolution.unresolvedVariables)
+    $unapprovedReferenceCount = [int]$referenceResolution.unapprovedReferenceCount
     $hasUnresolvedVariable = [bool]$referenceResolution.hasUnresolved
 
     $normalized = $expanded.Trim()
@@ -960,6 +999,7 @@ function ConvertTo-AuditPathEntry {
         firstEquivalentPosition = $null
         hasUnresolvedVariable   = $hasUnresolvedVariable
         unresolvedVariables     = @($unresolvedVariables)
+        unapprovedReferenceCount = $unapprovedReferenceCount
     }
 }
 
