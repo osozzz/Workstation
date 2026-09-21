@@ -243,6 +243,84 @@ function Get-OptionalPropertyValue {
     return $property.Value
 }
 
+function Get-FirstJsonPropertyValue {
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory)][string[]]$Names
+    )
+
+    if ($null -eq $InputObject) {
+        return $null
+    }
+
+    foreach ($name in $Names) {
+        $property = @(
+            $InputObject.PSObject.Properties |
+                Where-Object {
+                    [string]::Equals(
+                        [string]$_.Name,
+                        $name,
+                        [StringComparison]::OrdinalIgnoreCase
+                    )
+                } |
+                Select-Object -First 1
+        )
+
+        if ($property.Count -gt 0) {
+            return $property[0].Value
+        }
+    }
+
+    foreach ($property in @($InputObject.PSObject.Properties)) {
+        $value = $property.Value
+        if ($null -eq $value -or $value -is [string]) {
+            continue
+        }
+
+        $valueType = $value.GetType()
+        if ($valueType.IsPrimitive -or $value -is [decimal]) {
+            continue
+        }
+
+        if ($value -is [System.Collections.IEnumerable]) {
+            foreach ($item in @($value)) {
+                $found = Get-FirstJsonPropertyValue -InputObject $item -Names $Names
+                if ($null -ne $found) {
+                    return $found
+                }
+            }
+
+            continue
+        }
+
+        $found = Get-FirstJsonPropertyValue -InputObject $value -Names $Names
+        if ($null -ne $found) {
+            return $found
+        }
+    }
+
+    return $null
+}
+
+function Get-VersionRecordsFromText {
+    param([AllowNull()][string]$Text)
+
+    $versions = New-Object System.Collections.Generic.List[object]
+    if ([string]::IsNullOrWhiteSpace($Text)) {
+        return $versions.ToArray()
+    }
+
+    foreach ($match in [regex]::Matches(
+        $Text,
+        '(?i)(?<![0-9A-Za-z])v?(?<version>\d+\.\d+\.\d+(?:\.\d+)?(?:[-+][0-9A-Za-z.-]+)?)'
+    )) {
+        $record = Get-VersionRecordFromText -Text $match.Value
+        Add-UniqueVersion -List $versions -Version $record
+    }
+
+    return $versions.ToArray()
+}
+
 function Get-KnownGlobalPackageInventory {
     param(
         [Parameter(Mandatory)][string]$Manager,
@@ -547,18 +625,21 @@ $nvmHome = Get-EffectiveEnvironmentValue -Snapshot $environmentSnapshot -Name 'N
 $nvmSymlink = Get-EffectiveEnvironmentValue -Snapshot $environmentSnapshot -Name 'NVM_SYMLINK'
 $pnpmHome = Get-EffectiveEnvironmentValue -Snapshot $environmentSnapshot -Name 'PNPM_HOME'
 
-$evidence.Add((New-AuditEvidence -EvidenceId 'javascript.environment' -Type environment -Source 'NVM_HOME/NVM_SYMLINK/PNPM_HOME' -Captured $null -Attributes @{
+$evidence.Add((New-AuditEvidence -EvidenceId 'javascript.environment' -Type environment -Source 'PNPM_HOME plus legacy NVM_HOME/NVM_SYMLINK' -Captured $null -Attributes @{
     variables = @($environmentSnapshot)
     pnpmHomeConfigured = -not [string]::IsNullOrWhiteSpace($pnpmHome)
+    legacyNvmEnvironmentConfigured = (
+        -not [string]::IsNullOrWhiteSpace($nvmHome) -or
+        -not [string]::IsNullOrWhiteSpace($nvmSymlink)
+    )
 }))
 
 $nvmVersionResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('version') -TimeoutSeconds 15
-$nvmCurrentResult = $null
-$nvmListResult = $null
-$nvmRootResult = $null
 $nvmVersion = $null
+$nvmMajorVersion = $null
 $nvmCurrentVersion = $null
-$nvmRoot = $nvmHome
+$nvmRoot = $null
+$nvmMode = $null
 $nvmResolutions = @()
 $nvmInstallations = New-Object System.Collections.Generic.List[object]
 $nvmDiscoveredVersions = New-Object System.Collections.Generic.List[object]
@@ -583,91 +664,215 @@ if ($nvmVersionResult.Found) {
         $hasPartial = $true
         $warnings.Add((New-AuditIssue -Code 'NVM_VERSION_INCOMPLETE' -Message 'NVM for Windows version detection was incomplete.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.version')))
     }
+    elseif ([string]$nvmVersion.normalized -match '^(?<major>\d+)') {
+        $nvmMajorVersion = [int]$Matches['major']
+    }
 
     foreach ($resolution in $nvmResolutions) {
         Add-UniqueInstallation -List $nvmInstallations -Path ([string]$resolution.path) -Version $(if ($resolution.active) { $nvmVersion } else { $resolution.version }) -Active ([bool]$resolution.active) -Source command
     }
 
-    $nvmCurrentResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('current') -TimeoutSeconds 15
-    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.current' -Type command -Source 'nvm current' -ExitCode $nvmCurrentResult.ExitCode -Captured $nvmCurrentResult.Captured -Redacted:$nvmCurrentResult.Redacted -Attributes @{
-        status = $nvmCurrentResult.Status
-        truncated = $nvmCurrentResult.Truncated
-        timedOut = $nvmCurrentResult.TimedOut
-    }))
+    if ($null -ne $nvmMajorVersion -and $nvmMajorVersion -ge 2) {
+        $nvmEnvResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('env', '--json') -TimeoutSeconds 20
+        $nvmEnvParsed = $null
 
-    if ($nvmCurrentResult.Status -eq 'success') {
-        $nvmCurrentVersion = Get-VersionRecordFromText -Text $nvmCurrentResult.Captured
+        if ($nvmEnvResult.Status -eq 'success' -and -not [string]::IsNullOrWhiteSpace($nvmEnvResult.Captured)) {
+            try {
+                $nvmEnvParsed = $nvmEnvResult.Captured | ConvertFrom-Json -ErrorAction Stop
+                $candidateMode = Get-FirstJsonPropertyValue -InputObject $nvmEnvParsed -Names @('mode', 'operatingMode', 'operating_mode')
+                $candidateRoot = Get-FirstJsonPropertyValue -InputObject $nvmEnvParsed -Names @('root', 'installRoot', 'install_root', 'installsRoot', 'installs_root')
+                $candidateActive = Get-FirstJsonPropertyValue -InputObject $nvmEnvParsed -Names @('activeVersion', 'active_version', 'default')
+
+                if (-not [string]::IsNullOrWhiteSpace([string]$candidateMode)) {
+                    $nvmMode = [string]$candidateMode
+                }
+                if (-not [string]::IsNullOrWhiteSpace([string]$candidateRoot)) {
+                    $nvmRoot = [string]$candidateRoot
+                }
+                if (-not [string]::IsNullOrWhiteSpace([string]$candidateActive)) {
+                    $nvmCurrentVersion = Get-VersionRecordFromText -Text ([string]$candidateActive)
+                }
+            }
+            catch {
+                $nvmState = 'partial'
+                $hasPartial = $true
+                $warnings.Add((New-AuditIssue -Code 'NVM_V2_ENV_PARSE_FAILED' -Message 'NVM for Windows v2 environment JSON could not be parsed.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.env-v2')))
+            }
+        }
+        elseif ($nvmEnvResult.Status -ne 'success') {
+            $nvmState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'NVM_V2_ENV_QUERY_FAILED' -Message 'NVM for Windows v2 environment query did not complete successfully.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.env-v2')))
+        }
+
+        $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.env-v2' -Type command -Source 'nvm env --json' -ExitCode $nvmEnvResult.ExitCode -Captured $nvmEnvResult.Captured -Sensitive -Attributes @{
+            status = $nvmEnvResult.Status
+            truncated = $nvmEnvResult.Truncated
+            timedOut = $nvmEnvResult.TimedOut
+            parsed = $null -ne $nvmEnvParsed
+            mode = $nvmMode
+            rootConfigured = -not [string]::IsNullOrWhiteSpace($nvmRoot)
+        }))
+
+        $nvmConfigResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('config', 'list', '--json') -TimeoutSeconds 20
+        $nvmConfigParsed = $null
+
+        if ($nvmConfigResult.Status -eq 'success' -and -not [string]::IsNullOrWhiteSpace($nvmConfigResult.Captured)) {
+            try {
+                $nvmConfigParsed = $nvmConfigResult.Captured | ConvertFrom-Json -ErrorAction Stop
+                $configRoot = Get-FirstJsonPropertyValue -InputObject $nvmConfigParsed -Names @('root')
+                $configMode = Get-FirstJsonPropertyValue -InputObject $nvmConfigParsed -Names @('mode')
+
+                if (-not [string]::IsNullOrWhiteSpace([string]$configRoot)) {
+                    $nvmRoot = [string]$configRoot
+                }
+                if (-not [string]::IsNullOrWhiteSpace([string]$configMode)) {
+                    $nvmMode = [string]$configMode
+                }
+            }
+            catch {
+                $nvmState = 'partial'
+                $hasPartial = $true
+                $warnings.Add((New-AuditIssue -Code 'NVM_V2_CONFIG_PARSE_FAILED' -Message 'NVM for Windows v2 configuration JSON could not be parsed.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.config-v2')))
+            }
+        }
+        elseif ($nvmConfigResult.Status -ne 'success') {
+            $nvmState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'NVM_V2_CONFIG_QUERY_FAILED' -Message 'NVM for Windows v2 configuration query did not complete successfully.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.config-v2')))
+        }
+
+        $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.config-v2' -Type command -Source 'nvm config list --json' -ExitCode $nvmConfigResult.ExitCode -Captured $nvmConfigResult.Captured -Sensitive -Attributes @{
+            status = $nvmConfigResult.Status
+            truncated = $nvmConfigResult.Truncated
+            timedOut = $nvmConfigResult.TimedOut
+            parsed = $null -ne $nvmConfigParsed
+            mode = $nvmMode
+            rootConfigured = -not [string]::IsNullOrWhiteSpace($nvmRoot)
+        }))
+
+        $nvmDefaultResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('default', '--json') -TimeoutSeconds 15
+        $nvmDefaultParsed = $null
+
+        if ($nvmDefaultResult.Status -eq 'success' -and -not [string]::IsNullOrWhiteSpace($nvmDefaultResult.Captured)) {
+            try {
+                $nvmDefaultParsed = $nvmDefaultResult.Captured | ConvertFrom-Json -ErrorAction Stop
+                $defaultValue = Get-FirstJsonPropertyValue -InputObject $nvmDefaultParsed -Names @('default')
+                if (-not [string]::IsNullOrWhiteSpace([string]$defaultValue)) {
+                    $nvmCurrentVersion = Get-VersionRecordFromText -Text ([string]$defaultValue)
+                }
+            }
+            catch {
+                $nvmState = 'partial'
+                $hasPartial = $true
+                $warnings.Add((New-AuditIssue -Code 'NVM_V2_DEFAULT_PARSE_FAILED' -Message 'NVM for Windows v2 default-version JSON could not be parsed.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.default-v2')))
+            }
+        }
+        elseif ($nvmDefaultResult.Status -ne 'success') {
+            $nvmState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'NVM_V2_DEFAULT_QUERY_FAILED' -Message 'NVM for Windows v2 default-version query did not complete successfully.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.default-v2')))
+        }
+
+        $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.default-v2' -Type command -Source 'nvm default --json' -ExitCode $nvmDefaultResult.ExitCode -Captured $nvmDefaultResult.Captured -Redacted:$nvmDefaultResult.Redacted -Attributes @{
+            status = $nvmDefaultResult.Status
+            truncated = $nvmDefaultResult.Truncated
+            timedOut = $nvmDefaultResult.TimedOut
+            parsed = $null -ne $nvmDefaultParsed
+        }))
+
+        $nvmListResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('list', '--json') -TimeoutSeconds 20
+        if ($nvmListResult.Status -eq 'success') {
+            foreach ($versionRecord in @(Get-VersionRecordsFromText -Text $nvmListResult.Captured)) {
+                Add-UniqueVersion -List $nvmListedNodeVersions -Version $versionRecord
+            }
+        }
+        else {
+            $nvmState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'NVM_V2_LIST_QUERY_FAILED' -Message 'NVM for Windows v2 installed-version query did not complete successfully.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.list-v2')))
+        }
+
+        $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.list-v2' -Type command -Source 'nvm list --json' -ExitCode $nvmListResult.ExitCode -Captured $nvmListResult.Captured -Sensitive -Attributes @{
+            status = $nvmListResult.Status
+            truncated = $nvmListResult.Truncated
+            timedOut = $nvmListResult.TimedOut
+            discoveredVersionCount = $nvmListedNodeVersions.Count
+        }))
+    }
+    elseif ($null -ne $nvmMajorVersion -and $nvmMajorVersion -lt 2) {
+        $nvmState = 'partial'
+        $hasPartial = $true
+        $warnings.Add((New-AuditIssue -Code 'NVM_LEGACY_VERSION' -Message 'NVM for Windows 1.x was detected. Workstation targets the current NVM for Windows v2 line.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.version')))
+
+        $nvmCurrentResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('current') -TimeoutSeconds 15
+        $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.current-legacy' -Type command -Source 'nvm current' -ExitCode $nvmCurrentResult.ExitCode -Captured $nvmCurrentResult.Captured -Redacted:$nvmCurrentResult.Redacted -Attributes @{
+            status = $nvmCurrentResult.Status
+            truncated = $nvmCurrentResult.Truncated
+            timedOut = $nvmCurrentResult.TimedOut
+        }))
+
+        if ($nvmCurrentResult.Status -eq 'success') {
+            $nvmCurrentVersion = Get-VersionRecordFromText -Text $nvmCurrentResult.Captured
+        }
+
+        $nvmListResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('list') -TimeoutSeconds 20
+        $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.list-legacy' -Type command -Source 'nvm list' -ExitCode $nvmListResult.ExitCode -Captured $nvmListResult.Captured -Redacted:$nvmListResult.Redacted -Attributes @{
+            status = $nvmListResult.Status
+            truncated = $nvmListResult.Truncated
+            timedOut = $nvmListResult.TimedOut
+        }))
+
+        if ($nvmListResult.Status -eq 'success') {
+            foreach ($versionRecord in @(Get-VersionRecordsFromText -Text $nvmListResult.Captured)) {
+                Add-UniqueVersion -List $nvmListedNodeVersions -Version $versionRecord
+            }
+        }
+
+        $nvmRoot = $nvmHome
+        $nvmRootResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('root') -TimeoutSeconds 15
+        if ([string]::IsNullOrWhiteSpace($nvmRoot) -and $nvmRootResult.Status -eq 'success') {
+            $rootMatch = [regex]::Match($nvmRootResult.Captured, '(?im)Current\s+Root:\s*(?<root>.+)$')
+            if ($rootMatch.Success) {
+                $nvmRoot = $rootMatch.Groups['root'].Value.Trim()
+            }
+        }
+
+        $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.root-legacy' -Type command -Source 'nvm root' -ExitCode $nvmRootResult.ExitCode -Captured $nvmRootResult.Captured -Sensitive -Attributes @{
+            status = $nvmRootResult.Status
+            truncated = $nvmRootResult.Truncated
+            timedOut = $nvmRootResult.TimedOut
+            rootConfigured = -not [string]::IsNullOrWhiteSpace($nvmRoot)
+        }))
     }
     else {
         $nvmState = 'partial'
         $hasPartial = $true
-        $warnings.Add((New-AuditIssue -Code 'NVM_CURRENT_QUERY_FAILED' -Message 'NVM for Windows current-version query did not complete successfully.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.current')))
-    }
-
-    $nvmListResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('list') -TimeoutSeconds 20
-    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.list' -Type command -Source 'nvm list' -ExitCode $nvmListResult.ExitCode -Captured $nvmListResult.Captured -Redacted:$nvmListResult.Redacted -Attributes @{
-        status = $nvmListResult.Status
-        truncated = $nvmListResult.Truncated
-        timedOut = $nvmListResult.TimedOut
-    }))
-
-    if ($nvmListResult.Status -eq 'success' -and -not [string]::IsNullOrWhiteSpace($nvmListResult.Captured)) {
-        foreach ($line in @($nvmListResult.Captured -split '\r?\n')) {
-            $match = [regex]::Match(
-                $line,
-                '^\s*(?<active>\*\s*)?(?<version>v?\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?)'
-            )
-
-            if (-not $match.Success) {
-                continue
-            }
-
-            $versionRecord = Get-VersionRecordFromText -Text $match.Groups['version'].Value
-            Add-UniqueVersion -List $nvmListedNodeVersions -Version $versionRecord
-        }
-    }
-    elseif ($nvmListResult.Status -ne 'success') {
-        $nvmState = 'partial'
-        $hasPartial = $true
-        $warnings.Add((New-AuditIssue -Code 'NVM_LIST_QUERY_FAILED' -Message 'NVM for Windows installed-version query did not complete successfully.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.list')))
-    }
-
-    $nvmRootResult = Invoke-AuditCommand -Command 'nvm' -Arguments @('root') -TimeoutSeconds 15
-    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.nvm-windows.root' -Type command -Source 'nvm root' -ExitCode $nvmRootResult.ExitCode -Captured $nvmRootResult.Captured -Sensitive -Attributes @{
-        status = $nvmRootResult.Status
-        truncated = $nvmRootResult.Truncated
-        timedOut = $nvmRootResult.TimedOut
-    }))
-
-    if ([string]::IsNullOrWhiteSpace($nvmRoot) -and $nvmRootResult.Status -eq 'success') {
-        $rootMatch = [regex]::Match($nvmRootResult.Captured, '(?im)Current\s+Root:\s*(?<root>.+)$')
-        if ($rootMatch.Success) {
-            $nvmRoot = $rootMatch.Groups['root'].Value.Trim()
-        }
+        $warnings.Add((New-AuditIssue -Code 'NVM_MAJOR_VERSION_UNKNOWN' -Message 'NVM for Windows was detected, but its major version could not be determined.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.nvm-windows.version')))
     }
 }
 else {
-    $nvmExe = if (-not [string]::IsNullOrWhiteSpace($nvmHome)) {
+    $legacyNvmExe = if (-not [string]::IsNullOrWhiteSpace($nvmHome)) {
         Join-Path $nvmHome 'nvm.exe'
     }
     else {
         $null
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($nvmExe) -and (Test-Path -LiteralPath $nvmExe -PathType Leaf)) {
+    if (-not [string]::IsNullOrWhiteSpace($legacyNvmExe) -and (Test-Path -LiteralPath $legacyNvmExe -PathType Leaf)) {
         $nvmInstalled = $true
         $nvmState = 'partial'
         $hasPartial = $true
-        $nvmFileVersion = Get-ExecutableVersionRecord -Path $nvmExe
-        Add-UniqueInstallation -List $nvmInstallations -Path $nvmExe -Version $nvmFileVersion -Active $false -Source filesystem
+        $nvmFileVersion = Get-ExecutableVersionRecord -Path $legacyNvmExe
+        Add-UniqueInstallation -List $nvmInstallations -Path $legacyNvmExe -Version $nvmFileVersion -Active $false -Source filesystem
         $nvmVersion = $nvmFileVersion
-        $warnings.Add((New-AuditIssue -Code 'NVM_COMMAND_UNRESOLVED' -Message 'NVM for Windows is installed but the nvm command is not resolvable.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.environment')))
+        $warnings.Add((New-AuditIssue -Code 'NVM_LEGACY_COMMAND_UNRESOLVED' -Message 'A legacy NVM for Windows installation is visible through NVM_HOME but the nvm command is not resolvable. Workstation targets NVM v2.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.environment')))
     }
     elseif (-not [string]::IsNullOrWhiteSpace($nvmHome) -or -not [string]::IsNullOrWhiteSpace($nvmSymlink)) {
         $nvmState = 'partial'
         $nvmInstalled = $null
         $hasPartial = $true
-        $warnings.Add((New-AuditIssue -Code 'NVM_CONFIGURATION_PARTIAL' -Message 'NVM environment configuration exists but an NVM installation could not be confirmed.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.environment')))
+        $warnings.Add((New-AuditIssue -Code 'NVM_LEGACY_CONFIGURATION_DETECTED' -Message 'Legacy NVM_HOME/NVM_SYMLINK configuration exists but a current NVM for Windows v2 installation could not be confirmed.' -Severity warning -ComponentId 'nvm-windows' -EvidenceIds @('javascript.environment')))
     }
 }
 
