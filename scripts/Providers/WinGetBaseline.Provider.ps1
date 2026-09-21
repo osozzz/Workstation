@@ -133,7 +133,7 @@ else {
         'source',
         'list',
         '--disable-interactivity'
-    ) -TimeoutSeconds 30
+    ) -TimeoutSeconds 30 -SensitiveOutput
 
     $sourceEvidenceId = 'winget.sources'
     $evidence.Add((New-AuditEvidence -EvidenceId $sourceEvidenceId -Type command -Source 'winget source list --disable-interactivity' -ExitCode $sourceResult.ExitCode -Captured $sourceResult.Captured -Redacted:$sourceResult.Redacted -Attributes @{
