@@ -77,6 +77,12 @@
       "process": "   ",
       "user": null,
       "machine": null
+    },
+    {
+      "name": "DOTNET_ROOT_X86",
+      "process": "%DOTNET_ROOT%\\x86",
+      "user": null,
+      "machine": null
     }
   ]
 }
