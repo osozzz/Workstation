@@ -156,7 +156,7 @@ try {
         $actualValue = [int]$summary.attributes.$name
 
         if ($actualValue -ne $expectedValue) {
-            throw "Unexpected $name: expected $expectedValue, got $actualValue."
+            throw "Unexpected ${name}: expected $expectedValue, got $actualValue."
         }
     }
 
