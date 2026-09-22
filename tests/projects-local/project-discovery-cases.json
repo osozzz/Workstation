@@ -1,0 +1,27 @@
+{
+  "maxDepth": 3,
+  "expected": {
+    "configuredRootCount": 6,
+    "readyRootCount": 3,
+    "duplicateRootCount": 1,
+    "missingRootCount": 1,
+    "rejectedBroadRootCount": 1,
+    "candidateCount": 4,
+    "repositoryCount": 2,
+    "expectedCandidateLabels": [
+      "repoA",
+      "nestedRepo",
+      "pythonPackage",
+      "repoB"
+    ],
+    "forbiddenCandidateLabels": [
+      "tooDeep",
+      "outside"
+    ],
+    "warningCodes": [
+      "PROJECT_ROOT_DUPLICATE",
+      "PROJECT_ROOT_MISSING",
+      "PROJECT_ROOT_TOO_BROAD"
+    ]
+  }
+}
