@@ -40,6 +40,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "python-dotnet-rust-go.precedence",
     "environment.baseline",
     "winget.baseline",
+    "projects.local",
 }
 
 EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
@@ -49,6 +50,7 @@ EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "jvm-mobile.precedence",
     "python-dotnet-rust-go.precedence",
     "environment.baseline",
+    "projects.local",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (
@@ -695,6 +697,68 @@ def validate_real_report(
         fail(
             "Python/.NET/Rust/Go precedence must preserve GOTOOLCHAIN=local "
             "when Go environment evidence is available."
+        )
+
+    projects = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "projects.local"
+    )
+    if projects["components"]:
+        fail(
+            "Local project discovery must remain evidence-only in #64 and "
+            "own zero components."
+        )
+
+    projects_summary = next(
+        (
+            item
+            for item in projects["evidence"]
+            if item["evidenceId"] == "projects.local.summary"
+        ),
+        None,
+    )
+    if projects_summary is None:
+        fail("Controlled audit is missing projects.local summary evidence.")
+
+    project_attributes = projects_summary["attributes"]
+    for key in ("readOnly", "boundedToConfiguredRoots"):
+        if project_attributes.get(key) is not True:
+            fail(f"projects.local must preserve {key}=true.")
+
+    for key in (
+        "wholeDiskTraversal",
+        "implicitHomeTraversal",
+        "followsReparsePoints",
+        "filesystemMutation",
+        "projectClassificationOwned",
+        "gitHealthOwned",
+    ):
+        if project_attributes.get(key) is not False:
+            fail(f"projects.local must preserve {key}=false.")
+
+    if project_attributes.get("configurationState") != "loaded":
+        fail(
+            "Controlled integration audit must exercise projects.local with "
+            "a loaded temporary local configuration."
+        )
+
+    if project_attributes.get("readyRootCount", 0) < 1:
+        fail(
+            "Controlled integration audit must provide at least one ready "
+            "development root."
+        )
+
+    if project_attributes.get("candidateCount", 0) < 1:
+        fail(
+            "Controlled integration audit must discover at least one bounded "
+            "synthetic project candidate."
+        )
+
+    if project_attributes.get("repositoryCount", 0) < 1:
+        fail(
+            "Controlled integration audit must discover at least one bounded "
+            "synthetic Git repository marker."
         )
 
     environment = next(
