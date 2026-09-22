@@ -4,6 +4,8 @@ param(
 
     [switch]$IncludeWingetInventory,
 
+    [string]$LocalConfigurationPath = (Join-Path $PSScriptRoot '..\config\workstation.local.json'),
+
     [string]$ProviderDirectory = (Join-Path $PSScriptRoot 'Providers'),
 
     [string[]]$AdditionalProviderPath = @(),
@@ -22,6 +24,71 @@ function Ensure-Directory {
 
     if (-not (Test-Path -LiteralPath $Path)) {
         New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+}
+
+function Get-LocalAuditConfiguration {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path
+    )
+
+    $defaultMaxDepth = 6
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return [pscustomobject][ordered]@{
+            state             = 'missing'
+            developmentRoots  = @()
+            maxDiscoveryDepth = $defaultMaxDepth
+            errorMessage      = $null
+        }
+    }
+
+    try {
+        $configuration = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        $developmentRoots = @()
+        $maxDiscoveryDepth = $defaultMaxDepth
+
+        $projectsProperty = $configuration.PSObject.Properties['projects']
+        if ($projectsProperty -and $null -ne $projectsProperty.Value) {
+            $projects = $projectsProperty.Value
+
+            $rootsProperty = $projects.PSObject.Properties['developmentRoots']
+            if ($rootsProperty) {
+                foreach ($root in @($rootsProperty.Value)) {
+                    if ($null -eq $root -or $root -isnot [string]) {
+                        throw 'projects.developmentRoots must contain only string path values.'
+                    }
+                    $developmentRoots += [string]$root
+                }
+            }
+
+            $depthProperty = $projects.PSObject.Properties['maxDiscoveryDepth']
+            if ($depthProperty -and $null -ne $depthProperty.Value) {
+                [int]$parsedDepth = 0
+                if (-not [int]::TryParse($depthProperty.Value.ToString(), [ref]$parsedDepth) -or $parsedDepth -lt 1 -or $parsedDepth -gt 32) {
+                    throw 'projects.maxDiscoveryDepth must be an integer from 1 through 32.'
+                }
+                $maxDiscoveryDepth = $parsedDepth
+            }
+        }
+
+        return [pscustomobject][ordered]@{
+            state             = 'loaded'
+            developmentRoots  = @($developmentRoots)
+            maxDiscoveryDepth = $maxDiscoveryDepth
+            errorMessage      = $null
+        }
+    }
+    catch {
+        return [pscustomobject][ordered]@{
+            state             = 'invalid'
+            developmentRoots  = @()
+            maxDiscoveryDepth = $defaultMaxDepth
+            errorMessage      = $_.Exception.Message
+        }
     }
 }
 
@@ -184,11 +251,18 @@ $environmentVariableNames = @(
     'DOTNET_ROOT_X86'
 )
 
+$localConfiguration = Get-LocalAuditConfiguration -Path $LocalConfigurationPath
+
 $context = [pscustomobject][ordered]@{
-    ObservedAt               = $observedAt
-    ToolVersion              = $toolVersion
-    IncludeWingetInventory   = [bool]$IncludeWingetInventory
-    EnvironmentVariableNames = $environmentVariableNames
+    ObservedAt                   = $observedAt
+    ToolVersion                  = $toolVersion
+    IncludeWingetInventory       = [bool]$IncludeWingetInventory
+    EnvironmentVariableNames     = $environmentVariableNames
+    LocalConfigurationState      = $localConfiguration.state
+    LocalConfigurationSource     = [IO.Path]::GetFileName($LocalConfigurationPath)
+    LocalConfigurationError      = $localConfiguration.errorMessage
+    DevelopmentRoots             = @($localConfiguration.developmentRoots)
+    ProjectDiscoveryMaxDepth     = [int]$localConfiguration.maxDiscoveryDepth
 }
 
 $reportWarnings = New-Object System.Collections.Generic.List[object]

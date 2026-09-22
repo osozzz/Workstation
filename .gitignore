@@ -1,5 +1,6 @@
 # Machine-specific audit output
 reports/
+config/workstation.local.json
 
 # Logs and temporary files
 *.log
