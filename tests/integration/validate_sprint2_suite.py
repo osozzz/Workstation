@@ -37,6 +37,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "path.precedence",
     "javascript.precedence",
     "jvm-mobile.precedence",
+    "python-dotnet-rust-go.precedence",
     "environment.baseline",
     "winget.baseline",
 }
@@ -46,6 +47,7 @@ EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "path.precedence",
     "javascript.precedence",
     "jvm-mobile.precedence",
+    "python-dotnet-rust-go.precedence",
     "environment.baseline",
 }
 
@@ -610,6 +612,90 @@ def validate_real_report(
                 "JVM/mobile precedence controlled audit is missing dependency "
                 f"evidence for {dependency_name}."
             )
+
+    runtime_precedence = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "python-dotnet-rust-go.precedence"
+    )
+    if runtime_precedence["components"]:
+        fail(
+            "Python/.NET/Rust/Go precedence provider must remain derived and "
+            "own no components."
+        )
+
+    runtime_summary = next(
+        (
+            item
+            for item in runtime_precedence["evidence"]
+            if item["evidenceId"]
+            == "python-dotnet-rust-go-precedence.summary"
+        ),
+        None,
+    )
+    if runtime_summary is None:
+        fail(
+            "Controlled audit is missing Python/.NET/Rust/Go precedence "
+            "summary evidence."
+        )
+
+    runtime_attributes = runtime_summary["attributes"]
+    if runtime_attributes.get("readOnly") is not True:
+        fail(
+            "Python/.NET/Rust/Go precedence analysis must remain explicitly "
+            "read-only."
+        )
+    for key in (
+        "duplicatedRuntimeDiscovery",
+        "directEnvironmentAccess",
+        "filesystemProbes",
+        "dotnetArchitectureAssumed",
+        "goToolchainAutoDownloadAllowed",
+    ):
+        if runtime_attributes.get(key) is not False:
+            fail(
+                "Python/.NET/Rust/Go precedence analysis must preserve "
+                f"{key}=false."
+            )
+
+    runtime_dependencies = runtime_attributes.get("dependencies", {})
+    for dependency_name in (
+        "pythonEcosystem",
+        "dotnetToolchain",
+        "rustGoToolchains",
+        "pathPrecedence",
+        "environmentBaseline",
+    ):
+        if runtime_dependencies.get(dependency_name) is not True:
+            fail(
+                "Python/.NET/Rust/Go precedence controlled audit is missing "
+                f"dependency evidence for {dependency_name}."
+            )
+
+    runtime_go = next(
+        (
+            item
+            for item in runtime_precedence["evidence"]
+            if item["evidenceId"] == "python-dotnet-rust-go-precedence.go"
+        ),
+        None,
+    )
+    if runtime_go is None:
+        fail(
+            "Controlled audit is missing Python/.NET/Rust/Go Go relationship "
+            "evidence."
+        )
+    if runtime_go["attributes"].get("autoDownloadAllowed") is not False:
+        fail(
+            "Python/.NET/Rust/Go precedence must not allow Go toolchain "
+            "auto-download."
+        )
+    observed_guard = runtime_go["attributes"].get("GOTOOLCHAIN")
+    if observed_guard not in (None, "", "local"):
+        fail(
+            "Python/.NET/Rust/Go precedence must preserve GOTOOLCHAIN=local "
+            "when Go environment evidence is available."
+        )
 
     environment = next(
         provider
