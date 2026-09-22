@@ -105,6 +105,11 @@ jobs:
         run: |
           ./tests/runtime-precedence/validate_runtime_precedence.ps1
 
+      - name: Validate Sprint 3 PATH environment integration gate
+        shell: pwsh
+        run: |
+          python ./tests/sprint3-integration/validate_sprint3_suite.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -751,10 +756,10 @@ jobs:
               throw "Expected all 15 built-in providers to continue after an additional provider path failure."
           }
 
-      - name: Run controlled Sprint 2 integration audit
+      - name: Run controlled Sprint 3 integration audit
         shell: pwsh
         run: |
-          $integrationRoot = Join-Path $env:RUNNER_TEMP 'workstation-sprint2-integration'
+          $integrationRoot = Join-Path $env:RUNNER_TEMP 'workstation-sprint3-integration'
           if (Test-Path -LiteralPath $integrationRoot) {
               Remove-Item -LiteralPath $integrationRoot -Recurse -Force
           }
@@ -765,11 +770,11 @@ jobs:
               $result = & ./scripts/Audit-Workstation.ps1 -OutputDirectory $integrationRoot -PassThru
 
               if (-not (Test-Path -LiteralPath $result.JsonPath)) {
-                  throw "Controlled Sprint 2 audit did not generate JSON output."
+                  throw "Controlled Sprint 3 audit did not generate JSON output."
               }
 
               if (-not (Test-Path -LiteralPath $result.MarkdownPath)) {
-                  throw "Controlled Sprint 2 audit did not generate Markdown output."
+                  throw "Controlled Sprint 3 audit did not generate Markdown output."
               }
 
               $workspacePrefix = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\') + '\'
@@ -786,7 +791,12 @@ jobs:
 
               python ./tests/integration/validate_sprint2_suite.py --report "$($result.JsonPath)"
               if ($LASTEXITCODE -ne 0) {
-                  throw "Controlled Sprint 2 audit validation failed."
+                  throw "Controlled Sprint 3 audit validation failed."
+              }
+
+              python ./tests/sprint3-integration/validate_sprint3_suite.py --report "$($result.JsonPath)"
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Controlled Sprint 3 PATH/environment integration validation failed."
               }
           }
           finally {
@@ -796,7 +806,7 @@ jobs:
           }
 
           if (Test-Path -LiteralPath $integrationRoot) {
-              throw "Controlled Sprint 2 audit output must be deleted after validation."
+              throw "Controlled Sprint 3 audit output must be deleted after validation."
           }
 
       - name: Validate JSON configuration

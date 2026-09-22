@@ -29,6 +29,11 @@ try {
         throw 'Expected machine, user, and process PATH scope models.'
     }
 
+    $scopeOrder = @($model.scopes | ForEach-Object { [string]$_.scope })
+    if (($scopeOrder -join '|') -ne 'machine|user|process') {
+        throw "PATH scope ordering must remain deterministic: machine -> user -> process. Found '$($scopeOrder -join ' -> ')'."
+    }
+
     $machine = @($model.scopes | Where-Object scope -eq 'machine')[0]
     $user = @($model.scopes | Where-Object scope -eq 'user')[0]
     $process = @($model.scopes | Where-Object scope -eq 'process')[0]
