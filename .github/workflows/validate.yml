@@ -110,6 +110,11 @@ jobs:
         run: |
           python ./tests/sprint3-integration/validate_sprint3_suite.py
 
+      - name: Validate bounded local project discovery
+        shell: pwsh
+        run: |
+          ./tests/projects-local/validate_projects_local.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -243,11 +248,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 16) {
-              throw "Expected fifteen built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 17) {
+              throw "Expected sixteen built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'python-dotnet-rust-go.precedence', 'environment.baseline', 'winget.baseline', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'python-dotnet-rust-go.precedence', 'environment.baseline', 'winget.baseline', 'projects.local', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -752,22 +757,38 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 15) {
-              throw "Expected all 15 built-in providers to continue after an additional provider path failure."
+          if ($missingProviderResult.Report.summary.providerCount -ne 16) {
+              throw "Expected all 16 built-in providers to continue after an additional provider path failure."
           }
 
       - name: Run controlled Sprint 3 integration audit
         shell: pwsh
         run: |
           $integrationRoot = Join-Path $env:RUNNER_TEMP 'workstation-sprint3-integration'
-          if (Test-Path -LiteralPath $integrationRoot) {
-              Remove-Item -LiteralPath $integrationRoot -Recurse -Force
+          $projectRoot = Join-Path $env:RUNNER_TEMP 'workstation-project-discovery-integration'
+          $localConfigPath = Join-Path $env:RUNNER_TEMP 'workstation.local.integration.json'
+
+          foreach ($path in @($integrationRoot, $projectRoot, $localConfigPath)) {
+              if (Test-Path -LiteralPath $path) {
+                  Remove-Item -LiteralPath $path -Recurse -Force
+              }
           }
 
           New-Item -ItemType Directory -Path $integrationRoot -Force | Out-Null
+          $syntheticRepo = Join-Path $projectRoot 'SyntheticRepo'
+          New-Item -ItemType Directory -Path (Join-Path $syntheticRepo '.git') -Force | Out-Null
+          '{}' | Set-Content -LiteralPath (Join-Path $syntheticRepo 'package.json') -Encoding UTF8
+
+          @{
+              schemaVersion = '1.0'
+              projects = @{
+                  developmentRoots = @($projectRoot)
+                  maxDiscoveryDepth = 4
+              }
+          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $localConfigPath -Encoding UTF8
 
           try {
-              $result = & ./scripts/Audit-Workstation.ps1 -OutputDirectory $integrationRoot -PassThru
+              $result = & ./scripts/Audit-Workstation.ps1 -OutputDirectory $integrationRoot -LocalConfigurationPath $localConfigPath -PassThru
 
               if (-not (Test-Path -LiteralPath $result.JsonPath)) {
                   throw "Controlled Sprint 3 audit did not generate JSON output."
@@ -800,13 +821,17 @@ jobs:
               }
           }
           finally {
-              if (Test-Path -LiteralPath $integrationRoot) {
-                  Remove-Item -LiteralPath $integrationRoot -Recurse -Force
+              foreach ($path in @($integrationRoot, $projectRoot, $localConfigPath)) {
+                  if (Test-Path -LiteralPath $path) {
+                      Remove-Item -LiteralPath $path -Recurse -Force
+                  }
               }
           }
 
-          if (Test-Path -LiteralPath $integrationRoot) {
-              throw "Controlled Sprint 3 audit output must be deleted after validation."
+          foreach ($path in @($integrationRoot, $projectRoot, $localConfigPath)) {
+              if (Test-Path -LiteralPath $path) {
+                  throw "Controlled integration temporary state must be deleted after validation: $path"
+              }
           }
 
       - name: Validate JSON configuration
