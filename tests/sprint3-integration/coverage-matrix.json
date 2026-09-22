@@ -1,0 +1,78 @@
+{
+  "issue": 7,
+  "title": "Implement PATH and environment intelligence",
+  "criteria": [
+    {
+      "id": "path-normalization",
+      "text": "PATH entries are normalized before comparison.",
+      "evidence": [
+        "tests/path/path-model-cases.json",
+        "tests/path/validate_path_model.ps1"
+      ]
+    },
+    {
+      "id": "missing-and-duplicates",
+      "text": "Missing/nonexistent and duplicate entries are detected.",
+      "evidence": [
+        "tests/path/path-model-cases.json",
+        "tests/environment/environment-model-cases.json",
+        "tests/path/validate_path_model.ps1",
+        "tests/environment/validate_environment_model.ps1"
+      ]
+    },
+    {
+      "id": "unresolved-variables",
+      "text": "Unresolved variables are reported.",
+      "evidence": [
+        "tests/path/path-model-cases.json",
+        "tests/environment/environment-model-cases.json",
+        "tests/path/validate_path_model.ps1",
+        "tests/environment/validate_environment_model.ps1"
+      ]
+    },
+    {
+      "id": "command-precedence",
+      "text": "Command-precedence conflicts are explained.",
+      "evidence": [
+        "tests/path-precedence/command-path-cases.json",
+        "tests/path-precedence/validate_command_path_precedence.ps1"
+      ]
+    },
+    {
+      "id": "javascript-conflicts",
+      "text": "Node/NVM/npm/pnpm conflicts are detected.",
+      "evidence": [
+        "tests/javascript-precedence/javascript-precedence-cases.json",
+        "tests/javascript-precedence/validate_javascript_precedence.ps1"
+      ]
+    },
+    {
+      "id": "jvm-mobile-and-python-conflicts",
+      "text": "Flutter/Dart, Python, Java, and Android precedence/collisions are detected.",
+      "evidence": [
+        "tests/jvm-mobile-precedence/jvm-mobile-precedence-cases.json",
+        "tests/jvm-mobile-precedence/validate_jvm_mobile_precedence.ps1",
+        "tests/runtime-precedence/runtime-precedence-cases.json",
+        "tests/runtime-precedence/validate_runtime_precedence.ps1"
+      ]
+    },
+    {
+      "id": "relevant-environment-variables",
+      "text": "Relevant JavaScript, JVM/mobile, .NET, Rust, Go, and Python environment variables are inspected.",
+      "evidence": [
+        "tests/environment/environment-model-cases.json",
+        "tests/environment/validate_environment_model.ps1",
+        "scripts/Core/Audit.Core.psm1",
+        "scripts/Audit-Workstation.ps1"
+      ]
+    },
+    {
+      "id": "no-arbitrary-environment-dump",
+      "text": "Arbitrary environment-variable dumping remains prohibited.",
+      "evidence": [
+        "tests/environment/validate_environment_model.ps1",
+        "docs/policies/audit-safety.md"
+      ]
+    }
+  ]
+}
