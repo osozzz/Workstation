@@ -224,6 +224,7 @@ function ConvertTo-ProjectDiscoveryRoot {
 function Get-CandidateMarkers {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [object[]]$Items
     )
 
