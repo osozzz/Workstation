@@ -117,6 +117,7 @@ function Get-RegexValue {
 function Add-Constraint {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [System.Collections.Generic.List[object]]$List,
         [Parameter(Mandatory)][string]$Ecosystem,
         [Parameter(Mandatory)][string]$Source,
