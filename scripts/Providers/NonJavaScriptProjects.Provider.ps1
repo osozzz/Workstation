@@ -294,10 +294,13 @@ for ($index = 0; $index -lt $candidates.Count; $index++) {
         foreach ($file in $dotnetFiles) { $markers.Add([string]$file.Name) }
     }
 
-    $globalJson = Read-SafeJson -Path (Join-Path $projectPath 'global.json')
-    if ($globalJson.state -eq 'read') {
+    $globalJsonPath = Join-Path $projectPath 'global.json'
+    $globalJson = Read-SafeJson -Path $globalJsonPath
+    if (Test-Path -LiteralPath $globalJsonPath -PathType Leaf) {
         if (-not $types.Contains('dotnet')) { $types.Add('dotnet') }
         $markers.Add('global.json')
+    }
+    if ($globalJson.state -eq 'read') {
         $sdk = Get-JsonProperty -Object $globalJson.value -Name 'sdk'
         $sdkVersion = [string](Get-JsonProperty -Object $sdk -Name 'version')
         Add-Constraint -List $constraints -Ecosystem 'dotnet' -Source 'global.json#sdk.version' -Value $sdkVersion
