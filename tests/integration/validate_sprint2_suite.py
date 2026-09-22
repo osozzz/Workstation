@@ -42,6 +42,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "winget.baseline",
     "projects.local",
     "projects.javascript-web",
+    "projects.non-javascript",
 }
 
 EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
@@ -53,6 +54,7 @@ EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "environment.baseline",
     "projects.local",
     "projects.javascript-web",
+    "projects.non-javascript",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (
@@ -699,6 +701,53 @@ def validate_real_report(
         fail(
             "Python/.NET/Rust/Go precedence must preserve GOTOOLCHAIN=local "
             "when Go environment evidence is available."
+        )
+
+    non_javascript_projects = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "projects.non-javascript"
+    )
+    if non_javascript_projects["components"]:
+        fail(
+            "Non-JavaScript project detection must remain evidence-only and "
+            "own zero components."
+        )
+
+    non_javascript_summary = next(
+        (
+            item
+            for item in non_javascript_projects["evidence"]
+            if item["evidenceId"] == "projects.non-javascript.summary"
+        ),
+        None,
+    )
+    if non_javascript_summary is None:
+        fail(
+            "Controlled audit is missing projects.non-javascript summary evidence."
+        )
+
+    non_javascript_attributes = non_javascript_summary["attributes"]
+    for key in ("readOnly", "reusedProjectsLocalDiscovery", "canonicalFilesOnly"):
+        if non_javascript_attributes.get(key) is not True:
+            fail(f"projects.non-javascript must preserve {key}=true.")
+
+    for key in (
+        "independentFilesystemTraversal",
+        "executesProjectCode",
+        "buildOrRestoreInvoked",
+        "dependencyResolutionInvoked",
+        "environmentCreated",
+        "packageInstallationInvoked",
+        "globalRuntimeEvidenceModified",
+    ):
+        if non_javascript_attributes.get(key) is not False:
+            fail(f"projects.non-javascript must preserve {key}=false.")
+
+    if non_javascript_attributes.get("projectCount", 0) < 1:
+        fail(
+            "Controlled integration audit must classify at least one "
+            "non-JavaScript project."
         )
 
     javascript_projects = next(
