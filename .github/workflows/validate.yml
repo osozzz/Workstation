@@ -115,6 +115,11 @@ jobs:
         run: |
           ./tests/projects-local/validate_projects_local.ps1
 
+      - name: Validate JavaScript and web project detection
+        shell: pwsh
+        run: |
+          ./tests/projects-javascript/validate_javascript_projects.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -248,11 +253,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 17) {
-              throw "Expected sixteen built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 18) {
+              throw "Expected seventeen built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'python-dotnet-rust-go.precedence', 'environment.baseline', 'winget.baseline', 'projects.local', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'python-dotnet-rust-go.precedence', 'environment.baseline', 'winget.baseline', 'projects.local', 'projects.javascript-web', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -757,8 +762,8 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 16) {
-              throw "Expected all 16 built-in providers to continue after an additional provider path failure."
+          if ($missingProviderResult.Report.summary.providerCount -ne 17) {
+              throw "Expected all 17 built-in providers to continue after an additional provider path failure."
           }
 
       - name: Run controlled Sprint 3 integration audit
