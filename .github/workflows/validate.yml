@@ -120,6 +120,11 @@ jobs:
         run: |
           ./tests/projects-javascript/validate_javascript_projects.ps1
 
+      - name: Validate non-JavaScript project detection
+        shell: pwsh
+        run: |
+          ./tests/projects-non-javascript/validate_non_javascript_projects.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -253,11 +258,11 @@ jobs:
               throw "Expected normalized audit schema 1.0.0."
           }
 
-          if ($result.Report.summary.providerCount -ne 18) {
-              throw "Expected seventeen built-in providers plus the synthetic failure provider."
+          if ($result.Report.summary.providerCount -ne 19) {
+              throw "Expected eighteen built-in providers plus the synthetic failure provider."
           }
 
-          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'python-dotnet-rust-go.precedence', 'environment.baseline', 'winget.baseline', 'projects.local', 'projects.javascript-web', 'synthetic.failure')) {
+          foreach ($providerId in @('host.system', 'javascript.toolchain', 'java.jvm', 'mobile.flutter-android', 'python.ecosystem', 'dotnet.toolchain', 'rust-go.toolchains', 'developer.clis', 'inventory.commands', 'path.precedence', 'javascript.precedence', 'jvm-mobile.precedence', 'python-dotnet-rust-go.precedence', 'environment.baseline', 'winget.baseline', 'projects.local', 'projects.javascript-web', 'projects.non-javascript', 'synthetic.failure')) {
               if (-not ($result.Report.providers | Where-Object providerId -eq $providerId)) {
                   throw "Expected provider '$providerId' in the aggregate report."
               }
@@ -762,8 +767,8 @@ jobs:
           if (-not ($missingProviderResult.Report.errors | Where-Object code -eq 'PROVIDER_PATH_NOT_FOUND')) {
               throw "Expected missing additional provider paths to be isolated as report-level errors."
           }
-          if ($missingProviderResult.Report.summary.providerCount -ne 17) {
-              throw "Expected all 17 built-in providers to continue after an additional provider path failure."
+          if ($missingProviderResult.Report.summary.providerCount -ne 18) {
+              throw "Expected all 18 built-in providers to continue after an additional provider path failure."
           }
 
       - name: Run controlled Sprint 3 integration audit
@@ -783,6 +788,11 @@ jobs:
           $syntheticRepo = Join-Path $projectRoot 'SyntheticRepo'
           New-Item -ItemType Directory -Path (Join-Path $syntheticRepo '.git') -Force | Out-Null
           '{}' | Set-Content -LiteralPath (Join-Path $syntheticRepo 'package.json') -Encoding UTF8
+          @'
+          module synthetic.example/integration
+
+          go 1.25.0
+          '@ | Set-Content -LiteralPath (Join-Path $syntheticRepo 'go.mod') -Encoding UTF8
 
           @{
               schemaVersion = '1.0'
