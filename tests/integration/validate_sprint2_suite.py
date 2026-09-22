@@ -41,6 +41,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "environment.baseline",
     "winget.baseline",
     "projects.local",
+    "projects.javascript-web",
 }
 
 EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
@@ -51,6 +52,7 @@ EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "python-dotnet-rust-go.precedence",
     "environment.baseline",
     "projects.local",
+    "projects.javascript-web",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (
@@ -697,6 +699,52 @@ def validate_real_report(
         fail(
             "Python/.NET/Rust/Go precedence must preserve GOTOOLCHAIN=local "
             "when Go environment evidence is available."
+        )
+
+    javascript_projects = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "projects.javascript-web"
+    )
+    if javascript_projects["components"]:
+        fail(
+            "JavaScript/web project detection must remain evidence-only and "
+            "own zero components."
+        )
+
+    javascript_projects_summary = next(
+        (
+            item
+            for item in javascript_projects["evidence"]
+            if item["evidenceId"] == "projects.javascript-web.summary"
+        ),
+        None,
+    )
+    if javascript_projects_summary is None:
+        fail(
+            "Controlled audit is missing projects.javascript-web summary evidence."
+        )
+
+    javascript_project_attributes = javascript_projects_summary["attributes"]
+    for key in ("readOnly", "reusedProjectsLocalDiscovery", "canonicalFilesOnly"):
+        if javascript_project_attributes.get(key) is not True:
+            fail(f"projects.javascript-web must preserve {key}=true.")
+
+    for key in (
+        "independentFilesystemTraversal",
+        "nodeModulesInspected",
+        "executesProjectCode",
+        "installsDependencies",
+        "packageManagersInvoked",
+        "globalRuntimeEvidenceModified",
+    ):
+        if javascript_project_attributes.get(key) is not False:
+            fail(f"projects.javascript-web must preserve {key}=false.")
+
+    if javascript_project_attributes.get("projectCount", 0) < 1:
+        fail(
+            "Controlled integration audit must classify at least one "
+            "JavaScript/web project."
         )
 
     projects = next(
