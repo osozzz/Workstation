@@ -4,6 +4,22 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 0.5.0 — 2026-09-22
+
+### PATH & Environment Intelligence
+
+- Added normalized Machine, User, and effective Process PATH modeling with deterministic scope ordering, duplicate detection, dead-entry detection, unresolved-reference handling, and persistent cross-scope comparison.
+- Added a synchronized 16-variable approved environment allowlist covering JavaScript, JVM/mobile, Python, .NET, Rust, and Go tooling while explicitly prohibiting arbitrary environment-variable enumeration.
+- Added derived command-to-PATH precedence analysis that preserves active and shadowed command-resolution evidence, maps only provable Process PATH origins, and leaves non-PATH or unmapped origins explicit instead of fabricating positions.
+- Added JavaScript precedence intelligence for NVM/Node/npm/pnpm, including stale roots, NVM symlink bypass, command collisions, and evidence-backed PNPM_HOME mismatches.
+- Added JVM/mobile precedence intelligence for JAVA_HOME, FLUTTER_ROOT, Flutter-bundled versus standalone Dart, ANDROID_HOME, ANDROID_SDK_ROOT, ADB/platform-tools, and approved PUB_CACHE evidence.
+- Added Python/.NET/Rust/Go precedence intelligence for PYENV_ROOT, DOTNET_ROOT variants, CARGO_HOME, RUSTUP_HOME, GOROOT, and GOPATH while avoiding .NET architecture inference and preserving GOTOOLCHAIN=local safety.
+- Added dedicated aligned/conflicting synthetic fixtures for all Sprint 3 ecosystem precedence providers; all derived precedence providers own zero components and reuse prior evidence instead of rediscovering runtimes.
+- Added the Sprint 3 release integration gate and machine-readable acceptance coverage matrix for parent issue #7, covering PATH normalization, missing/duplicate/unresolved state, command precedence, ecosystem conflicts, approved environment inspection, and arbitrary-environment-dump prevention.
+- Validated all 15 built-in providers together, including provider failure isolation, read-only behavior, synchronized environment evidence, non-fabricated PATH origins, and the controlled Windows real-machine audit.
+- Kept controlled JSON/Markdown reports outside the repository workspace and deleted them after validation.
+- Preserved the project rule that the first authoritative workstation baseline remains deferred until v1.0.0.
+
 ## 0.4.0 — 2026-09-21
 
 ### Runtime & SDK detection
