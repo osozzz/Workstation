@@ -19,7 +19,11 @@ if ($Describe) {
 }
 
 $corePath = Join-Path $PSScriptRoot '..\Core\Audit.Core.psm1'
+$versionCorePath = Join-Path $PSScriptRoot '..\Core\VersionIntelligence.Core.psm1'
+$javascriptVersionCorePath = Join-Path $PSScriptRoot '..\Core\JavaScriptVersionIntelligence.Core.psm1'
 Import-Module $corePath -Force
+Import-Module $versionCorePath -Force
+Import-Module $javascriptVersionCorePath -Force
 
 $warnings = New-Object System.Collections.Generic.List[object]
 $errors = New-Object System.Collections.Generic.List[object]
@@ -991,6 +995,88 @@ if ($null -ne $nvmCurrentVersion -and $null -ne $nodeComponent.activeVersion) {
 $npmComponent = New-CommandComponent -ComponentId 'npm' -Name 'npm' -Command 'npm' -Arguments @('--version')
 $pnpmComponent = New-CommandComponent -ComponentId 'pnpm' -Name 'pnpm' -Command 'pnpm' -Arguments @('--version')
 $corepackComponent = New-CommandComponent -ComponentId 'corepack' -Name 'Corepack' -Command 'corepack' -Arguments @('--version')
+
+$versionIntelligenceOffline = $false
+$offlineProperty = $Context.PSObject.Properties['VersionIntelligenceOffline']
+if ($offlineProperty -and $null -ne $offlineProperty.Value) {
+    $versionIntelligenceOffline = [bool]$offlineProperty.Value
+}
+
+$versionIntelligenceTransport = $null
+$transportProperty = $Context.PSObject.Properties['VersionIntelligenceTransport']
+if ($transportProperty -and $transportProperty.Value -is [scriptblock]) {
+    $versionIntelligenceTransport = [scriptblock]$transportProperty.Value
+}
+
+try {
+    $versionCheckedAt = [DateTimeOffset]::Parse([string]$Context.ObservedAt)
+}
+catch {
+    $versionCheckedAt = [DateTimeOffset]::UtcNow
+}
+
+function Get-JavaScriptVersionSource {
+    param(
+        [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][uri]$Uri,
+        [Parameter(Mandatory)][string]$EvidenceId
+    )
+
+    $parameters = @{
+        Source = $Source
+        Uri = $Uri
+        CheckedAt = $versionCheckedAt
+        Offline = $versionIntelligenceOffline
+    }
+
+    if ($null -ne $versionIntelligenceTransport) {
+        $parameters['Transport'] = $versionIntelligenceTransport
+    }
+
+    $sourceResult = Invoke-AuditVersionSource @parameters
+    $evidence.Add((New-AuditEvidence -EvidenceId $EvidenceId -Type api -Source $Source -Captured $null -Attributes (Get-AuditVersionSourceEvidenceAttributes -SourceResult $sourceResult)))
+    return ConvertFrom-AuditVersionSourceJson -SourceResult $sourceResult
+}
+
+if ($nodeComponent.state -in @('present', 'partial')) {
+    $nodeSource = Get-JavaScriptVersionSource -Source 'nodejs-release-index' -Uri 'https://nodejs.org/dist/index.json' -EvidenceId 'javascript.version-intelligence.node-source'
+    $nodeVersionResult = Resolve-NodeVersionIntelligence -DecodedSource $nodeSource -InstalledVersion $nodeComponent.activeVersion
+    $nodeComponent.versionIntelligence = $nodeVersionResult.intelligence
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.version-intelligence.node' -Type derived -Source 'Node release-channel interpretation' -Captured $null -Attributes @{
+        installedVersion = $(if ($nodeComponent.activeVersion) { $nodeComponent.activeVersion.normalized } else { $null })
+        latestLts = $(if ($nodeVersionResult.latestLts) { $nodeVersionResult.latestLts.normalized } else { $null })
+        latestCurrent = $(if ($nodeVersionResult.latestCurrent) { $nodeVersionResult.latestCurrent.normalized } else { $null })
+        installedBehindLts = $nodeVersionResult.installedBehindLts
+        installedBehindCurrent = $nodeVersionResult.installedBehindCurrent
+        policyDefaultChannel = $nodeVersionResult.policyDefaultChannel
+        currentIsMandatoryReplacement = $nodeVersionResult.currentIsMandatoryReplacement
+    }))
+}
+
+if ($npmComponent.state -in @('present', 'partial')) {
+    $npmSource = Get-JavaScriptVersionSource -Source 'npm-registry:npm' -Uri 'https://registry.npmjs.org/npm/latest' -EvidenceId 'javascript.version-intelligence.npm-source'
+    $npmVersionResult = Resolve-NpmPackageVersionIntelligence -PackageName npm -DecodedSource $npmSource -InstalledVersion $npmComponent.activeVersion
+    $npmComponent.versionIntelligence = $npmVersionResult.intelligence
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.version-intelligence.npm' -Type derived -Source 'npm stable-version interpretation' -Captured $null -Attributes @{
+        installedVersion = $(if ($npmComponent.activeVersion) { $npmComponent.activeVersion.normalized } else { $null })
+        latestStable = $(if ($npmVersionResult.latestStable) { $npmVersionResult.latestStable.normalized } else { $null })
+        updateAvailable = $npmVersionResult.updateAvailable
+    }))
+}
+
+if ($pnpmComponent.state -in @('present', 'partial')) {
+    $pnpmSource = Get-JavaScriptVersionSource -Source 'npm-registry:pnpm' -Uri 'https://registry.npmjs.org/pnpm/latest' -EvidenceId 'javascript.version-intelligence.pnpm-source'
+    $pnpmVersionResult = Resolve-NpmPackageVersionIntelligence -PackageName pnpm -DecodedSource $pnpmSource -InstalledVersion $pnpmComponent.activeVersion
+    $pnpmComponent.versionIntelligence = $pnpmVersionResult.intelligence
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.version-intelligence.pnpm' -Type derived -Source 'pnpm stable-version interpretation' -Captured $null -Attributes @{
+        installedVersion = $(if ($pnpmComponent.activeVersion) { $pnpmComponent.activeVersion.normalized } else { $null })
+        latestStable = $(if ($pnpmVersionResult.latestStable) { $pnpmVersionResult.latestStable.normalized } else { $null })
+        updateAvailable = $pnpmVersionResult.updateAvailable
+    }))
+}
 
 $components.Add($nodeComponent)
 $components.Add($npmComponent)
