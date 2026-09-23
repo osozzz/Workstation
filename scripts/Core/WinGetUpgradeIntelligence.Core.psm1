@@ -252,7 +252,9 @@ function Get-WinGetUpgradeLookupState {
         [Parameter(Mandatory)][string]$CommandStatus,
         [AllowNull()][string]$Output,
         [Parameter(Mandatory)][psobject]$Table,
-        [Parameter(Mandatory)][object[]]$UpgradeRecords
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [object[]]$UpgradeRecords
     )
 
     $clean = Remove-WinGetControlSequences -Text $Output
