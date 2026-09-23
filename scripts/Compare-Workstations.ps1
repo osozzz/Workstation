@@ -1,63 +1,36 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][string]$Reference,
-    [Parameter(Mandatory)][string]$Target
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Reference,
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Target
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ref = Get-Content -LiteralPath $Reference -Raw | ConvertFrom-Json
-$tar = Get-Content -LiteralPath $Target -Raw | ConvertFrom-Json
+$corePath = Join-Path $PSScriptRoot 'Core\Comparison.Core.psm1'
+Import-Module $corePath -Force
 
-function ToolMap($report) {
-    $map = @{}
-    foreach ($tool in $report.Tools) { $map[$tool.Label] = $tool }
-    return $map
-}
+function Read-NormalizedAuditReport {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Path,
+        [Parameter(Mandatory)][ValidateSet('reference', 'target')][string]$Role
+    )
 
-$refTools = ToolMap $ref
-$tarTools = ToolMap $tar
-$labels = @($refTools.Keys + $tarTools.Keys | Sort-Object -Unique)
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "$Role report was not found: $Path"
+    }
 
-Write-Host "Reference: $($ref.Computer.Name)  [$($ref.GeneratedAt)]" -ForegroundColor Cyan
-Write-Host "Target:    $($tar.Computer.Name)  [$($tar.GeneratedAt)]" -ForegroundColor Cyan
-Write-Host ''
-
-$rows = foreach ($label in $labels) {
-    $a = $refTools[$label]
-    $b = $tarTools[$label]
-    $aVersion = if ($a) { $a.VersionOutput } else { $null }
-    $bVersion = if ($b) { $b.VersionOutput } else { $null }
-    [pscustomobject]@{
-        Tool = $label
-        ReferenceInstalled = if ($a) { $a.Installed } else { $false }
-        TargetInstalled = if ($b) { $b.Installed } else { $false }
-        SameVersionOutput = ($aVersion -eq $bVersion)
-        ReferenceVersion = $aVersion
-        TargetVersion = $bVersion
+    try {
+        return Get-Content -LiteralPath $Path -Raw -ErrorAction Stop |
+            ConvertFrom-Json -Depth 100 -ErrorAction Stop
+    }
+    catch {
+        throw "$Role report is not valid JSON: $Path"
     }
 }
 
-$rows | Format-Table Tool,ReferenceInstalled,TargetInstalled,SameVersionOutput -AutoSize
+$referenceReport = Read-NormalizedAuditReport -Path $Reference -Role reference
+$targetReport = Read-NormalizedAuditReport -Path $Target -Role target
 
-Write-Host ''
-Write-Host 'Differences:' -ForegroundColor Yellow
-$diffs = @($rows | Where-Object { -not $_.SameVersionOutput -or $_.ReferenceInstalled -ne $_.TargetInstalled })
-if ($diffs.Count -eq 0) {
-    Write-Host 'No tool-version differences found.' -ForegroundColor Green
-} else {
-    foreach ($d in $diffs) {
-        Write-Host "`n[$($d.Tool)]" -ForegroundColor Yellow
-        Write-Host "  Reference: $($d.ReferenceVersion)"
-        Write-Host "  Target:    $($d.TargetVersion)"
-    }
-}
-
-Write-Host ''
-Write-Host 'PATH health:' -ForegroundColor Yellow
-foreach ($scope in @('Machine','User','Process')) {
-    $r = $ref.PathHealth.$scope
-    $t = $tar.PathHealth.$scope
-    Write-Host ("{0,-8} Reference dup/missing: {1}/{2} | Target: {3}/{4}" -f $scope,$r.DuplicateCount,$r.MissingCount,$t.DuplicateCount,$t.MissingCount)
-}
+New-WorkstationComparison -ReferenceReport $referenceReport -TargetReport $targetReport
