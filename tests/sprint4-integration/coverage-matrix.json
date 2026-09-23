@@ -1,0 +1,86 @@
+{
+  "issue": 8,
+  "milestone": "v0.6.0 — Project & Git Discovery",
+  "criteria": [
+    {
+      "id": "development-roots-configurable",
+      "acceptance": "Development roots are configurable through local-only machine configuration.",
+      "evidence": [
+        "config/workstation.local.example.json",
+        "config/README.md",
+        "scripts/Audit-Workstation.ps1",
+        "tests/projects-local/validate_projects_local.ps1"
+      ]
+    },
+    {
+      "id": "bounded-git-repository-discovery",
+      "acceptance": "Git repositories are discovered without blindly traversing the entire disk.",
+      "evidence": [
+        "scripts/Providers/ProjectsLocal.Provider.ps1",
+        "tests/projects-local/project-discovery-cases.json",
+        "tests/projects-local/validate_projects_local.ps1"
+      ]
+    },
+    {
+      "id": "javascript-web-project-detection",
+      "acceptance": "Node/package projects and Angular/Next/Prisma projects are identified from canonical files.",
+      "evidence": [
+        "scripts/Providers/JavaScriptWebProjects.Provider.ps1",
+        "tests/projects-javascript/validate_javascript_projects.ps1"
+      ]
+    },
+    {
+      "id": "non-javascript-project-detection",
+      "acceptance": "Flutter/Dart, Python, Rust, Go, .NET, Maven, and Gradle projects are identified from canonical files.",
+      "evidence": [
+        "scripts/Providers/NonJavaScriptProjects.Provider.ps1",
+        "tests/projects-non-javascript/validate_non_javascript_projects.ps1"
+      ]
+    },
+    {
+      "id": "runtime-package-manager-pins",
+      "acceptance": "Runtime/package-manager pins such as .nvmrc, .node-version, engines, packageManager, global.json, and equivalents are reported.",
+      "evidence": [
+        "scripts/Providers/JavaScriptWebProjects.Provider.ps1",
+        "scripts/Providers/NonJavaScriptProjects.Provider.ps1",
+        "tests/projects-javascript/validate_javascript_projects.ps1",
+        "tests/projects-non-javascript/validate_non_javascript_projects.ps1"
+      ]
+    },
+    {
+      "id": "git-repository-health",
+      "acceptance": "Git detects dirty trees, staged/untracked changes, detached HEAD, missing upstream, ahead/behind, and unpushed commits.",
+      "evidence": [
+        "scripts/Providers/GitRepositoryHealth.Provider.ps1",
+        "tests/git-repository-health/validate_git_repository_health.ps1"
+      ]
+    },
+    {
+      "id": "branch-worktree-hygiene",
+      "acceptance": "Merged branches, gone upstreams, stale branches, and stale/prunable worktrees are surfaced.",
+      "evidence": [
+        "scripts/Providers/GitBranchWorktreeHygiene.Provider.ps1",
+        "tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1",
+        "docs/governance/repository-governance.md"
+      ]
+    },
+    {
+      "id": "branch-naming-deviations",
+      "acceptance": "Branch-naming deviations are reported.",
+      "evidence": [
+        "scripts/Providers/GitBranchWorktreeHygiene.Provider.ps1",
+        "tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1",
+        "docs/governance/repository-governance.md"
+      ]
+    },
+    {
+      "id": "cleanup-advisory-only",
+      "acceptance": "Cleanup candidates are reported only; nothing is deleted.",
+      "evidence": [
+        "scripts/Providers/GitBranchWorktreeHygiene.Provider.ps1",
+        "tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1",
+        "docs/policies/audit-safety.md"
+      ]
+    }
+  ]
+}
