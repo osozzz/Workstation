@@ -140,9 +140,9 @@ function ConvertFrom-WinGetTable {
 
         $trimmed = $line.Trim()
         if (
-            $trimmed -match '^(?i)(No applicable upgrade found|No se encontr[oó] ninguna actualizaci[oó]n aplicable)' -or
-            $trimmed -match '^(?i)\d+\s+(upgrades?|actualizaciones?)\s+(available|disponibles?)' -or
-            $trimmed -match '^(?i)(The following packages have|Los siguientes paquetes)'
+            $trimmed -match '(?i)^(No applicable upgrade found|No se encontr[oó] ninguna actualizaci[oó]n aplicable)' -or
+            $trimmed -match '(?i)^\d+\s+(upgrades?|actualizaciones?)\s+(available|disponibles?)' -or
+            $trimmed -match '(?i)^(The following packages have|Los siguientes paquetes)'
         ) {
             continue
         }
@@ -190,7 +190,7 @@ function Test-WinGetVersionReliable {
         return $false
     }
 
-    if ($Version -match '^(?i)(Unknown|Desconocida|Desconocido)$') {
+    if ($Version -match '(?i)^(Unknown|Desconocida|Desconocido)$') {
         return $false
     }
 
