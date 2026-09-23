@@ -437,10 +437,10 @@ function Resolve-JavaVersionIntelligence {
     }
 
     $candidatePool = if ($expectedDistributionCandidates.Count -gt 0) {
-        @($expectedDistributionCandidates)
+        $expectedDistributionCandidates.ToArray()
     }
     else {
-        @($sameMajorCandidates)
+        $sameMajorCandidates.ToArray()
     }
 
     if ($candidatePool.Count -eq 0) {
