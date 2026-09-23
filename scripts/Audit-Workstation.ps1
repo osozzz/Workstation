@@ -36,13 +36,15 @@ function Get-LocalAuditConfiguration {
     )
 
     $defaultMaxDepth = 6
+    $defaultGitBranchStaleDays = 90
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         return [pscustomobject][ordered]@{
-            state             = 'missing'
-            developmentRoots  = @()
-            maxDiscoveryDepth = $defaultMaxDepth
-            errorMessage      = $null
+            state               = 'missing'
+            developmentRoots    = @()
+            maxDiscoveryDepth   = $defaultMaxDepth
+            gitBranchStaleDays  = $defaultGitBranchStaleDays
+            errorMessage        = $null
         }
     }
 
@@ -50,6 +52,7 @@ function Get-LocalAuditConfiguration {
         $configuration = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
         $developmentRoots = @()
         $maxDiscoveryDepth = $defaultMaxDepth
+        $gitBranchStaleDays = $defaultGitBranchStaleDays
 
         $projectsProperty = $configuration.PSObject.Properties['projects']
         if ($projectsProperty -and $null -ne $projectsProperty.Value) {
@@ -75,19 +78,40 @@ function Get-LocalAuditConfiguration {
             }
         }
 
+        $gitProperty = $configuration.PSObject.Properties['git']
+        if ($gitProperty -and $null -ne $gitProperty.Value) {
+            $gitConfiguration = $gitProperty.Value
+            $staleDaysProperty = $gitConfiguration.PSObject.Properties['branchStaleDays']
+
+            if ($staleDaysProperty -and $null -ne $staleDaysProperty.Value) {
+                [int]$parsedStaleDays = 0
+                if (
+                    -not [int]::TryParse($staleDaysProperty.Value.ToString(), [ref]$parsedStaleDays) -or
+                    $parsedStaleDays -lt 1 -or
+                    $parsedStaleDays -gt 3650
+                ) {
+                    throw 'git.branchStaleDays must be an integer from 1 through 3650.'
+                }
+
+                $gitBranchStaleDays = $parsedStaleDays
+            }
+        }
+
         return [pscustomobject][ordered]@{
-            state             = 'loaded'
-            developmentRoots  = @($developmentRoots)
-            maxDiscoveryDepth = $maxDiscoveryDepth
-            errorMessage      = $null
+            state               = 'loaded'
+            developmentRoots    = @($developmentRoots)
+            maxDiscoveryDepth   = $maxDiscoveryDepth
+            gitBranchStaleDays  = $gitBranchStaleDays
+            errorMessage        = $null
         }
     }
     catch {
         return [pscustomobject][ordered]@{
-            state             = 'invalid'
-            developmentRoots  = @()
-            maxDiscoveryDepth = $defaultMaxDepth
-            errorMessage      = $_.Exception.Message
+            state               = 'invalid'
+            developmentRoots    = @()
+            maxDiscoveryDepth   = $defaultMaxDepth
+            gitBranchStaleDays  = $defaultGitBranchStaleDays
+            errorMessage        = $_.Exception.Message
         }
     }
 }
@@ -263,6 +287,7 @@ $context = [pscustomobject][ordered]@{
     LocalConfigurationError      = $localConfiguration.errorMessage
     DevelopmentRoots             = @($localConfiguration.developmentRoots)
     ProjectDiscoveryMaxDepth     = [int]$localConfiguration.maxDiscoveryDepth
+    GitBranchStaleDays           = [int]$localConfiguration.gitBranchStaleDays
 }
 
 $reportWarnings = New-Object System.Collections.Generic.List[object]
