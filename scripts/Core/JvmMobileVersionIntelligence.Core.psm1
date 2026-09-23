@@ -376,8 +376,8 @@ function Resolve-JavaVersionIntelligence {
 
     $resultValue = Get-OptionalPropertyValue -InputObject $DecodedSource.data -Name 'result'
     $packages = @($resultValue)
-    $sameMajorCandidates = New-Object System.Collections.Generic.List[object]
-    $expectedDistributionCandidates = New-Object System.Collections.Generic.List[object]
+    $sameMajorCandidates = @()
+    $expectedDistributionCandidates = @()
 
     foreach ($package in $packages) {
         $majorValue = Get-OptionalPropertyValue -InputObject $package -Name 'major_version'
@@ -423,13 +423,13 @@ function Resolve-JavaVersionIntelligence {
             version = $versionRecord
             parts = $parts.parts
         }
-        $sameMajorCandidates.Add($candidate)
+        $sameMajorCandidates += $candidate
 
         if (
             -not [string]::IsNullOrWhiteSpace($ExpectedDistribution) -and
             [string]::Equals($distribution, $ExpectedDistribution, [StringComparison]::OrdinalIgnoreCase)
         ) {
-            $expectedDistributionCandidates.Add($candidate)
+            $expectedDistributionCandidates += $candidate
         }
     }
 
