@@ -1138,7 +1138,7 @@ foreach ($spec in $javascriptCliSpecs) {
 
 $angularComponents = @($components | Where-Object { $_.componentId -eq 'angular-cli' } | Select-Object -First 1)
 if ($angularComponents.Count -eq 1 -and $angularComponents[0].state -in @('present', 'partial')) {
-    $angularSource = Get-JavaScriptVersionSource -Source 'npm-registry-dist-tags:@angular/cli' -Uri 'https://registry.npmjs.org/-/package/%40angular%2Fcli/dist-tags' -EvidenceId 'javascript.version-intelligence.angular-cli-source'
+    $angularSource = Get-JavaScriptVersionSource -Source 'npm-registry-dist-tags:@angular/cli' -Uri 'https://registry.npmjs.org/-/package/@angular%2fcli/dist-tags' -EvidenceId 'javascript.version-intelligence.angular-cli-source'
     $angularVersionResult = Resolve-AngularCliVersionIntelligence -DecodedSource $angularSource -InstalledVersion $angularComponents[0].activeVersion
     $angularComponents[0].versionIntelligence = $angularVersionResult.intelligence
 
