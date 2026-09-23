@@ -184,6 +184,9 @@ def validate_committed_asset_privacy() -> None:
             if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
                 continue
 
+            if path.resolve() == Path(__file__).resolve():
+                continue
+
             checked_files += 1
             raw = read_text(path).lower()
 
