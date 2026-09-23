@@ -72,9 +72,12 @@ Assert-True ($policy.node.defaultTrack -eq 'lts') 'Node default track must remai
 Assert-True ($policy.versioning.projectCompatibilityOverridesGlobal -eq $true) 'Project compatibility must override global version intelligence.'
 Assert-True ($policy.versioning.prereleasePolicy -eq 'explicit-opt-in-only') 'Prerelease adoption must remain explicit opt-in.'
 
-$gitignore = Get-Content -LiteralPath $gitignorePath -Raw
-Assert-True ($gitignore -match '(?m)^reports/$') 'Generated audit reports must remain ignored by Git.'
-Assert-True ($gitignore -match '(?m)^config/workstation\.local\.json$') 'Machine-local workstation configuration must remain ignored by Git.'
+$gitignoreLines = @(
+    Get-Content -LiteralPath $gitignorePath |
+        ForEach-Object { $_.Trim() }
+)
+Assert-True ($gitignoreLines -contains 'reports/') 'Generated audit reports must remain ignored by Git.'
+Assert-True ($gitignoreLines -contains 'config/workstation.local.json') 'Machine-local workstation configuration must remain ignored by Git.'
 
 $safetyRoots = @(
     'tests\version-intelligence-runtime',
