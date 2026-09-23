@@ -714,7 +714,8 @@ jobs:
               throw "Expected normalized WinGet component."
           }
 
-          foreach ($source in @($wingetProvider.evidence | ForEach-Object { $_.source })) {
+          foreach ($commandEvidence in @($wingetProvider.evidence | Where-Object type -eq 'command')) {
+              $source = [string]$commandEvidence.source
               if ($source -match '(?i)winget\s+upgrade' -and $source -ne 'winget upgrade --disable-interactivity') {
                   throw "WinGet upgrade intelligence must remain a read-only non-interactive lookup."
               }
