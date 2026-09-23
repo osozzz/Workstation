@@ -155,6 +155,11 @@ jobs:
         run: |
           ./tests/javascript-ecosystem-version-intelligence/validate_javascript_ecosystem_version_intelligence.ps1
 
+      - name: Validate Flutter and Java version intelligence
+        shell: pwsh
+        run: |
+          ./tests/jvm-mobile-version-intelligence/validate_jvm_mobile_version_intelligence.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
