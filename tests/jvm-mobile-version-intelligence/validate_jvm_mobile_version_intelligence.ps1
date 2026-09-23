@@ -208,11 +208,11 @@ Assert-True ($offlineJava.directReplacement -eq $false) 'Offline Java must not f
 
 $javaSource = Get-Content -LiteralPath $javaProvider -Raw
 $flutterSource = Get-Content -LiteralPath $flutterProvider -Raw
+$jvmMobileSource = Get-Content -LiteralPath $jvmMobileCore -Raw
 
 foreach ($marker in @(
     'JvmMobileVersionIntelligence.Core.psm1',
     'New-FoojayJavaVersionSource',
-    'foojay-disco',
     'java.version-intelligence.source',
     'java.version-intelligence',
     'directReplacement',
@@ -221,6 +221,17 @@ foreach ($marker in @(
 )) {
     if ($javaSource -notmatch [Regex]::Escape($marker)) {
         throw "Missing Java provider marker: $marker"
+    }
+}
+
+foreach ($marker in @(
+    'foojay-disco',
+    'https://api.foojay.io/disco/v3.0/packages',
+    'Get-FoojayDistributionSlug',
+    'Resolve-JavaVersionIntelligence'
+)) {
+    if ($jvmMobileSource -notmatch [Regex]::Escape($marker)) {
+        throw "Missing JVM/mobile core marker: $marker"
     }
 }
 
