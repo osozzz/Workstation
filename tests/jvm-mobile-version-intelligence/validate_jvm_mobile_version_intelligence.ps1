@@ -206,6 +206,25 @@ Assert-True ($offlineJava.installedDistribution -eq 'Temurin') 'Offline Java mus
 Assert-True ($offlineJava.architecture -eq 'x64') 'Offline Java must preserve architecture context.'
 Assert-True ($offlineJava.directReplacement -eq $false) 'Offline Java must not fabricate replacement semantics.'
 
+$offlineProviderContext = [pscustomobject][ordered]@{
+    ObservedAt = '2026-09-23T17:15:00+00:00'
+    VersionIntelligenceOffline = $true
+    VersionIntelligenceTransport = { param($request) throw 'Offline mode must not invoke remote transport.' }
+    PreviousProviderResults = @()
+}
+
+$offlineJavaProviderResult = & $javaProvider -Context $offlineProviderContext
+if ($offlineJavaProviderResult.status -eq 'failed') {
+    $messages = @($offlineJavaProviderResult.errors | ForEach-Object { $_.message }) -join ' | '
+    throw "Java provider must survive offline version intelligence: $messages"
+}
+
+$offlineMobileProviderResult = & $flutterProvider -Context $offlineProviderContext
+if ($offlineMobileProviderResult.status -eq 'failed') {
+    $messages = @($offlineMobileProviderResult.errors | ForEach-Object { $_.message }) -join ' | '
+    throw "Flutter/mobile provider must survive offline version intelligence: $messages"
+}
+
 $javaSource = Get-Content -LiteralPath $javaProvider -Raw
 $flutterSource = Get-Content -LiteralPath $flutterProvider -Raw
 $jvmMobileSource = Get-Content -LiteralPath $jvmMobileCore -Raw
