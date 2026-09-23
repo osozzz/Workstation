@@ -249,23 +249,23 @@ foreach ($marker in @(
     }
 }
 
-foreach ($forbidden in @(
-    'flutter upgrade',
-    'flutter channel',
-    'flutter downgrade',
-    'sdk install',
-    'sdk use',
-    'sdk default',
-    'winget install',
-    'winget upgrade',
-    'choco install',
-    'scoop install'
-)) {
-    if ($javaSource -match [Regex]::Escape($forbidden)) {
-        throw "Forbidden Java mutation marker: $forbidden"
+$forbiddenMutationPatterns = @(
+    '(?i)\bflutter\s+(upgrade|channel|downgrade|precache)\b',
+    '(?i)\bsdk\s+(install|use|default|uninstall)\b',
+    '(?i)\bwinget\s+(install|upgrade|uninstall)\b',
+    '(?i)\bchoco\s+(install|upgrade|uninstall)\b',
+    '(?i)\bscoop\s+(install|update|uninstall)\b'
+)
+
+foreach ($pattern in $forbiddenMutationPatterns) {
+    if ($javaSource -match $pattern) {
+        throw "Forbidden Java mutation pattern: $pattern"
     }
-    if ($flutterSource -match [Regex]::Escape($forbidden)) {
-        throw "Forbidden Flutter mutation marker: $forbidden"
+    if ($flutterSource -match $pattern) {
+        throw "Forbidden Flutter mutation pattern: $pattern"
+    }
+    if ($jvmMobileSource -match $pattern) {
+        throw "Forbidden JVM/mobile core mutation pattern: $pattern"
     }
 }
 
