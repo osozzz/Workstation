@@ -200,54 +200,54 @@ else {
             $warnings.Add((New-AuditIssue -Code 'WINGET_INVENTORY_PARSE_UNKNOWN' -Message 'WinGet inventory completed, but its table output could not be normalized reliably.' -Severity warning -ComponentId 'winget' -EvidenceIds @($inventoryEvidenceId, 'winget.inventory.normalized')))
         }
 
-        $upgrade = Invoke-AuditCommand -Command 'winget' -Arguments @(
-            'upgrade',
-            '--disable-interactivity'
-        ) -TimeoutSeconds 90
-
-        $upgradeEvidenceId = 'winget.upgrades'
-        $evidence.Add((New-AuditEvidence -EvidenceId $upgradeEvidenceId -Type command -Source 'winget upgrade --disable-interactivity' -ExitCode $upgrade.ExitCode -Captured $upgrade.Captured -Redacted:$upgrade.Redacted -Attributes @{
-            status    = $upgrade.Status
-            truncated = $upgrade.Truncated
-            timedOut  = $upgrade.TimedOut
-        }))
-
-        $upgradeTable = ConvertFrom-WinGetTable -Text $upgrade.Captured
-        $upgradeRecords = @(ConvertTo-WinGetPackageRecords -Table $upgradeTable -Mode upgrade -CheckedAt $wingetCheckedAt)
-        $upgradeState = Get-WinGetUpgradeLookupState -CommandStatus $upgrade.Status -Output $upgrade.Captured -Table $upgradeTable -UpgradeRecords $upgradeRecords
-
-        $evidence.Add((New-AuditEvidence -EvidenceId 'winget.upgrades.normalized' -Type derived -Source 'normalized winget upgrade output' -Captured $null -Attributes @{
-            status       = $upgradeState
-            checkedAt    = $wingetCheckedAt
-            upgradeCount = $upgradeRecords.Count
-            upgrades     = $upgradeRecords
-            reviewOnly   = $true
-        }))
-
-        switch ($upgradeState) {
-            'agreement-required' {
-                $componentState = 'partial'
-                $hasPartial = $true
-                $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_AGREEMENT_REQUIRED' -Message 'WinGet upgrade lookup requires source agreement acceptance; the audit did not accept agreements automatically.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
-            }
-            'source-unavailable' {
-                $componentState = 'partial'
-                $hasPartial = $true
-                $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_SOURCE_UNAVAILABLE' -Message 'WinGet upgrade lookup could not use one or more package sources; local WinGet detection and inventory evidence were preserved.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
-            }
-            'command-failed' {
-                $componentState = 'partial'
-                $hasPartial = $true
-                $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_QUERY_FAILED' -Message 'WinGet upgrade lookup did not complete successfully; no package changes were attempted.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
-            }
-            'unknown' {
-                $componentState = 'partial'
-                $hasPartial = $true
-                $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_STATE_UNKNOWN' -Message 'WinGet upgrade lookup completed, but its output could not be classified reliably.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
-            }
-        }
     }
 
+    $upgrade = Invoke-AuditCommand -Command 'winget' -Arguments @(
+        'upgrade',
+        '--disable-interactivity'
+    ) -TimeoutSeconds 90
+
+    $upgradeEvidenceId = 'winget.upgrades'
+    $evidence.Add((New-AuditEvidence -EvidenceId $upgradeEvidenceId -Type command -Source 'winget upgrade --disable-interactivity' -ExitCode $upgrade.ExitCode -Captured $upgrade.Captured -Redacted:$upgrade.Redacted -Attributes @{
+        status    = $upgrade.Status
+        truncated = $upgrade.Truncated
+        timedOut  = $upgrade.TimedOut
+    }))
+
+    $upgradeTable = ConvertFrom-WinGetTable -Text $upgrade.Captured
+    $upgradeRecords = @(ConvertTo-WinGetPackageRecords -Table $upgradeTable -Mode upgrade -CheckedAt $wingetCheckedAt)
+    $upgradeState = Get-WinGetUpgradeLookupState -CommandStatus $upgrade.Status -Output $upgrade.Captured -Table $upgradeTable -UpgradeRecords $upgradeRecords
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'winget.upgrades.normalized' -Type derived -Source 'normalized winget upgrade output' -Captured $null -Attributes @{
+        status       = $upgradeState
+        checkedAt    = $wingetCheckedAt
+        upgradeCount = $upgradeRecords.Count
+        upgrades     = $upgradeRecords
+        reviewOnly   = $true
+    }))
+
+    switch ($upgradeState) {
+        'agreement-required' {
+            $componentState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_AGREEMENT_REQUIRED' -Message 'WinGet upgrade lookup requires source agreement acceptance; the audit did not accept agreements automatically.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
+        }
+        'source-unavailable' {
+            $componentState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_SOURCE_UNAVAILABLE' -Message 'WinGet upgrade lookup could not use one or more package sources; local WinGet detection and inventory evidence were preserved.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
+        }
+        'command-failed' {
+            $componentState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_QUERY_FAILED' -Message 'WinGet upgrade lookup did not complete successfully; no package changes were attempted.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
+        }
+        'unknown' {
+            $componentState = 'partial'
+            $hasPartial = $true
+            $warnings.Add((New-AuditIssue -Code 'WINGET_UPGRADE_STATE_UNKNOWN' -Message 'WinGet upgrade lookup completed, but its output could not be classified reliably.' -Severity warning -ComponentId 'winget' -EvidenceIds @($upgradeEvidenceId, 'winget.upgrades.normalized')))
+        }
+    }
     $components.Add([pscustomobject][ordered]@{
         componentId         = 'winget'
         name                = 'WinGet'
