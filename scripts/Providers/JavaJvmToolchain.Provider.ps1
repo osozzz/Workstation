@@ -783,11 +783,18 @@ if ($javaInstalled -and $null -ne $activeJavaVersion) {
     else {
         $activeDistribution = Get-JavaDistribution -Vendor $activeVendor -Path $activeJavaRoot
 
-        if ($javacResult.Found -and $null -ne $activeJavacVersion) {
-            $javaMajor = Get-JavaMajorVersion -Version $activeJavaVersion
-            $javacMajor = Get-JavaMajorVersion -Version $activeJavacVersion
-            if ($null -ne $javaMajor -and $javaMajor -eq $javacMajor) {
-                $activeKind = 'jdk'
+        if ($javacResult.Found -and $null -ne $activeJavacVersion -and -not [string]::IsNullOrWhiteSpace($activeJavaRoot)) {
+            $activeJavacResolution = @(
+                $javacResult.Resolutions |
+                    Where-Object active |
+                    Select-Object -First 1
+            )
+
+            if ($activeJavacResolution.Count -eq 1) {
+                $activeJavacRoot = Get-JavaRootFromExecutable -Path ([string]$activeJavacResolution[0].path)
+                if (Test-PathEquals -Left $activeJavacRoot -Right $activeJavaRoot) {
+                    $activeKind = 'jdk'
+                }
             }
         }
     }
