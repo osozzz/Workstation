@@ -150,6 +150,11 @@ jobs:
         run: |
           ./tests/javascript-version-intelligence/validate_javascript_version_intelligence.ps1
 
+      - name: Validate Angular TypeScript and Prisma version intelligence
+        shell: pwsh
+        run: |
+          ./tests/javascript-ecosystem-version-intelligence/validate_javascript_ecosystem_version_intelligence.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
