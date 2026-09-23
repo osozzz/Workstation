@@ -247,7 +247,9 @@ for ($index = 0; $index -lt $repositories.Count; $index++) {
         }
 
         $repositoryModels.Add($model)
-        $evidence.Add((New-AuditEvidence -EvidenceId $evidenceId -Type derived -Source 'projects.local repository candidate' -Captured $null -Attributes $model))
+        $evidence.Add((New-AuditEvidence -EvidenceId $evidenceId -Type derived -Source 'projects.local repository candidate' -Captured $null -Attributes @{
+            repository = $model
+        }))
         $warnings.Add((New-AuditIssue -Code 'GIT_REPOSITORY_PATH_UNAVAILABLE' -Message "Discovered repository index $index is no longer available for inspection." -Severity warning -EvidenceIds @($evidenceId)))
         continue
     }
