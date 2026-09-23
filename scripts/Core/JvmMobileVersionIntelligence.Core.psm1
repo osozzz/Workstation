@@ -436,14 +436,7 @@ function Resolve-JavaVersionIntelligence {
         }
     }
 
-    $candidatePool = if ($expectedDistributionCandidates.Count -gt 0) {
-        $expectedDistributionCandidates.ToArray()
-    }
-    else {
-        $sameMajorCandidates.ToArray()
-    }
-
-    if ($candidatePool.Count -eq 0) {
+    if ($sameMajorCandidates.Count -eq 0) {
         $message = if ($baseResult['higherMajorObserved']) {
             'Java source data contains newer majors, but none are treated as a direct replacement for the installed major.'
         }
@@ -452,6 +445,13 @@ function Resolve-JavaVersionIntelligence {
         }
         $baseResult['intelligence'] = New-AuditVersionIntelligence -Status unknown -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $message
         return [pscustomobject]$baseResult
+    }
+
+    $candidatePool = if ($expectedDistributionCandidates.Count -gt 0) {
+        $expectedDistributionCandidates.ToArray()
+    }
+    else {
+        $sameMajorCandidates.ToArray()
     }
 
     $selected = $candidatePool[0]
