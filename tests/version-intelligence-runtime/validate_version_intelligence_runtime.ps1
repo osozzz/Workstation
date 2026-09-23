@@ -133,7 +133,7 @@ foreach ($forbiddenName in @(
 }
 
 $evidence = New-AuditEvidence -EvidenceId 'version-source.synthetic' -Type api -Source $source.source -Captured $null -Attributes $attributes
-Assert-True ($null -eq $evidence.captured) 'Version source evidence must not persist raw response content.'
+Assert-True ([string]::IsNullOrEmpty([string]$evidence.captured)) 'Version source evidence must not persist raw response content.'
 
 $malformedTransport = {
     param($request)
