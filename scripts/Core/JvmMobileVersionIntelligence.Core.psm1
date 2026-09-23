@@ -1,9 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$versionCorePath = Join-Path $PSScriptRoot 'VersionIntelligence.Core.psm1'
-Import-Module $versionCorePath -Force
-
 function Get-OptionalPropertyValue {
     param(
         [AllowNull()][object]$InputObject,
