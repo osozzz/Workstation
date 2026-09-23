@@ -4,9 +4,9 @@ A Windows developer-workstation toolkit for auditing, comparing, and standardizi
 
 ## Current phase
 
-**v0.7.0 — Version Intelligence**
+**v0.8.0 — Cross-PC Comparison**
 
-`v0.6.0 — Project & Git Discovery` is complete and published. The repository is now extending the read-only audit with ecosystem-aware installed-versus-latest version intelligence, release-channel semantics, source/timestamp evidence, and offline-safe unavailable states.
+`v0.7.0 — Version Intelligence` is complete. The repository is now extending the read-only audit with schema-aware cross-PC comparison across normalized toolchains, active/default versions, PATH/environment health, applications, project/runtime constraints, Git health, and version intelligence.
 
 The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
 
