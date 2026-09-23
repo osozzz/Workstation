@@ -1,7 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'Audit.Core.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'VersionIntelligence.Core.psm1') -Force
 
 function ConvertTo-ComparableVersion {
@@ -40,7 +39,11 @@ function ConvertTo-VersionRecord {
     }
 
     $normalized = $Value.Trim().TrimStart('v', 'V')
-    return New-AuditVersionRecord -Raw $Value.Trim() -Normalized $normalized -Channel $Channel
+    return [pscustomobject][ordered]@{
+        raw = $Value.Trim()
+        normalized = $normalized
+        channel = $Channel
+    }
 }
 
 function Test-VersionBehind {
