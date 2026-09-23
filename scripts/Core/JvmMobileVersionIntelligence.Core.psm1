@@ -199,7 +199,7 @@ function New-FoojayJavaVersionSource {
     $contextArchitecture = if ($architectureSlug) { $architectureSlug } else { 'any-architecture' }
 
     return [pscustomobject][ordered]@{
-        source = "foojay-disco:java-$MajorVersion:$contextDistribution:$PackageType:$contextArchitecture"
+        source = "foojay-disco:java-${MajorVersion}:${contextDistribution}:${PackageType}:${contextArchitecture}"
         uri = [uri]("https://api.foojay.io/disco/v3.0/packages?" + ($pairs -join '&'))
         expectedDistribution = $distributionSlug
         architecture = $architectureSlug
@@ -216,14 +216,24 @@ function Resolve-FlutterVersionIntelligence {
         [AllowNull()][string]$InstalledChannel
     )
 
+    $installedOnStable = [string]::Equals(
+        [string]$InstalledChannel,
+        'stable',
+        [StringComparison]::OrdinalIgnoreCase
+    )
+    $channelSwitchRequired = (
+        -not [string]::IsNullOrWhiteSpace([string]$InstalledChannel) -and
+        -not $installedOnStable
+    )
+
     if ($DecodedSource.status -eq 'unavailable') {
         return [pscustomobject][ordered]@{
             intelligence = New-AuditVersionIntelligence -Status unavailable -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
             latestStable = $null
             updateAvailable = $null
             installedChannel = $InstalledChannel
-            installedOnStable = $false
-            channelSwitchRequired = $false
+            installedOnStable = $installedOnStable
+            channelSwitchRequired = $channelSwitchRequired
         }
     }
 
@@ -298,15 +308,6 @@ function Resolve-FlutterVersionIntelligence {
         }
     }
 
-    $installedOnStable = [string]::Equals(
-        [string]$InstalledChannel,
-        'stable',
-        [StringComparison]::OrdinalIgnoreCase
-    )
-    $channelSwitchRequired = (
-        -not [string]::IsNullOrWhiteSpace([string]$InstalledChannel) -and
-        -not $installedOnStable
-    )
     $updateAvailable = if ($installedOnStable) {
         Test-VersionBehind -InstalledVersion $InstalledVersion -LatestVersion $latestStable
     }
