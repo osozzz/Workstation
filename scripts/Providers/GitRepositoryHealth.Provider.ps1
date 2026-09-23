@@ -28,11 +28,17 @@ $evidence = New-Object System.Collections.Generic.List[object]
 function Get-PreviousProvider {
     param([Parameter(Mandatory)][string]$ProviderId)
 
-    return @(
+    $matches = @(
         @($Context.PreviousProviderResults) |
             Where-Object providerId -eq $ProviderId |
             Select-Object -First 1
-    )[0]
+    )
+
+    if ($matches.Count -gt 0) {
+        return $matches[0]
+    }
+
+    return $null
 }
 
 function Invoke-ReadOnlyGit {
