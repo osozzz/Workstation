@@ -445,10 +445,10 @@ function Resolve-JavaVersionIntelligence {
     }
 
     $candidatePool = if ($expectedDistributionCandidates.Count -gt 0) {
-        $expectedDistributionCandidates.ToArray()
+        $expectedDistributionCandidates
     }
     else {
-        $sameMajorCandidates.ToArray()
+        $sameMajorCandidates
     }
 
     $selected = $candidatePool[0]
