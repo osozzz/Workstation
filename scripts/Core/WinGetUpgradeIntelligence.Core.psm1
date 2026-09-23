@@ -14,7 +14,7 @@ function Remove-WinGetControlSequences {
 }
 
 function Get-WinGetHeaderColumns {
-    param([Parameter(Mandatory)][string]$Header)
+    param([Parameter(Mandatory)][AllowEmptyString()][string]$Header)
 
     $definitions = @(
         [pscustomobject]@{ key = 'name';      pattern = '(?i)(?:^|\s)(Name|Nombre)(?=\s|$)' },
