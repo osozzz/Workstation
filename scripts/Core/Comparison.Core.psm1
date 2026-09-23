@@ -213,12 +213,12 @@ function New-ComparisonDifference {
     return [pscustomobject][ordered]@{
         category       = $Category
         kind           = $Kind
-        providerId     = $ProviderId
-        componentId    = $ComponentId
-        subjectId      = $SubjectId
+        providerId     = $(if ([string]::IsNullOrEmpty($ProviderId)) { $null } else { $ProviderId })
+        componentId    = $(if ([string]::IsNullOrEmpty($ComponentId)) { $null } else { $ComponentId })
+        subjectId      = $(if ([string]::IsNullOrEmpty($SubjectId)) { $null } else { $SubjectId })
         relation       = $Relation
-        referenceState = $ReferenceState
-        targetState    = $TargetState
+        referenceState = $(if ([string]::IsNullOrEmpty($ReferenceState)) { $null } else { $ReferenceState })
+        targetState    = $(if ([string]::IsNullOrEmpty($TargetState)) { $null } else { $TargetState })
         referenceValue = $ReferenceValue
         targetValue    = $TargetValue
     }
