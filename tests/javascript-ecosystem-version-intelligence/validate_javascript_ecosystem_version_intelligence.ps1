@@ -117,7 +117,7 @@ $source = Get-Content -LiteralPath $providerPath -Raw
 
 foreach ($marker in @(
     'npm-registry-dist-tags:@angular/cli',
-    'https://registry.npmjs.org/-/package/%40angular%2Fcli/dist-tags',
+    'https://registry.npmjs.org/-/package/@angular%2fcli/dist-tags',
     'npm-registry-dist-tags:typescript',
     'https://registry.npmjs.org/-/package/typescript/dist-tags',
     'npm-registry-dist-tags:prisma',
