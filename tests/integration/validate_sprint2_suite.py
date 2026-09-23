@@ -43,6 +43,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "projects.local",
     "projects.javascript-web",
     "projects.non-javascript",
+    "git.repository-health",
 }
 
 EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
@@ -55,6 +56,7 @@ EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "projects.local",
     "projects.javascript-web",
     "projects.non-javascript",
+    "git.repository-health",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (
@@ -856,6 +858,69 @@ def validate_real_report(
         fail(
             "Controlled integration audit must discover at least one bounded "
             "synthetic Git repository marker."
+        )
+
+    git_health = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "git.repository-health"
+    )
+    if git_health["components"]:
+        fail(
+            "Git repository health must remain evidence-only and own zero "
+            "components."
+        )
+
+    git_health_summary = next(
+        (
+            item
+            for item in git_health["evidence"]
+            if item["evidenceId"] == "git.repository-health.summary"
+        ),
+        None,
+    )
+    if git_health_summary is None:
+        fail(
+            "Controlled audit is missing git.repository-health summary evidence."
+        )
+
+    git_health_attributes = git_health_summary["attributes"]
+    for key in (
+        "readOnly",
+        "usesOnlyDiscoveredRepositories",
+        "optionalLocksDisabled",
+    ):
+        if git_health_attributes.get(key) is not True:
+            fail(f"git.repository-health must preserve {key}=true.")
+
+    for key in (
+        "performsFilesystemTraversal",
+        "networkAccessRequired",
+        "fetchPerformed",
+        "pullPerformed",
+        "pushPerformed",
+        "checkoutPerformed",
+        "resetPerformed",
+        "cleanPerformed",
+        "stashPerformed",
+        "commitPerformed",
+        "gitConfigurationCollected",
+        "remoteUrlsCollected",
+        "credentialHelpersCollected",
+    ):
+        if git_health_attributes.get(key) is not False:
+            fail(f"git.repository-health must preserve {key}=false.")
+
+    if git_health_attributes.get("repositoryCount", 0) < 1:
+        fail(
+            "Controlled integration audit must provide at least one discovered "
+            "Git repository to git.repository-health."
+        )
+
+    if git_health_attributes.get("inspectedRepositoryCount", 0) < 1:
+        fail(
+            "Controlled integration audit must inspect at least one discovered "
+            "Git repository."
         )
 
     environment = next(
