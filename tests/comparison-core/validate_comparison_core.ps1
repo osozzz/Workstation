@@ -288,7 +288,37 @@ catch {
 }
 Assert-True $mutableModeRejected 'Comparison input must remain read-only.'
 
+$tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('workstation-comparison-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+
+try {
+    $referencePath = Join-Path $tempRoot 'reference.json'
+    $targetPath = Join-Path $tempRoot 'target.json'
+
+    $referenceReport |
+        ConvertTo-Json -Depth 20 |
+        Set-Content -LiteralPath $referencePath -Encoding UTF8
+
+    $targetReport |
+        ConvertTo-Json -Depth 20 |
+        Set-Content -LiteralPath $targetPath -Encoding UTF8
+
+    $scriptComparison = & $comparisonScriptPath -Reference $referencePath -Target $targetPath
+
+    Assert-True ($scriptComparison.schemaVersion -eq '1.0.0') 'Comparison entrypoint must return the normalized comparison envelope.'
+    Assert-True ($scriptComparison.direction -eq 'reference-to-target') 'Comparison entrypoint must preserve reference-to-target direction.'
+    Assert-True ($scriptComparison.summary.differenceCount -eq 8) 'Comparison entrypoint must route through normalized core semantics.'
+}
+finally {
+    if (Test-Path -LiteralPath $tempRoot) {
+        Remove-Item -LiteralPath $tempRoot -Recurse -Force
+    }
+}
+
+Assert-True (-not (Test-Path -LiteralPath $tempRoot)) 'Synthetic comparison input files must be deleted after validation.'
+
 $coreSource = Get-Content -LiteralPath $corePath -Raw
+$entrypointSource = Get-Content -LiteralPath $comparisonScriptPath -Raw
 
 foreach ($legacyMarker in @(
     '.Tools',
@@ -298,6 +328,10 @@ foreach ($legacyMarker in @(
 )) {
     if ($coreSource -match [Regex]::Escape($legacyMarker)) {
         throw "Comparison core must not depend on legacy report marker '$legacyMarker'."
+    }
+
+    if ($entrypointSource -match [Regex]::Escape($legacyMarker)) {
+        throw "Comparison entrypoint must not depend on legacy report marker '$legacyMarker'."
     }
 }
 
