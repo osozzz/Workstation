@@ -4,6 +4,8 @@ param(
 
     [switch]$IncludeWingetInventory,
 
+    [switch]$OfflineVersionIntelligence,
+
     [string]$LocalConfigurationPath = (Join-Path $PSScriptRoot '..\config\workstation.local.json'),
 
     [string]$ProviderDirectory = (Join-Path $PSScriptRoot 'Providers'),
@@ -281,6 +283,7 @@ $context = [pscustomobject][ordered]@{
     ObservedAt                   = $observedAt
     ToolVersion                  = $toolVersion
     IncludeWingetInventory       = [bool]$IncludeWingetInventory
+    VersionIntelligenceOffline    = [bool]$OfflineVersionIntelligence
     EnvironmentVariableNames     = $environmentVariableNames
     LocalConfigurationState      = $localConfiguration.state
     LocalConfigurationSource     = [IO.Path]::GetFileName($LocalConfigurationPath)
