@@ -135,6 +135,11 @@ jobs:
         run: |
           ./tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1
 
+      - name: Validate Sprint 4 Project and Git Discovery integration gate
+        shell: pwsh
+        run: |
+          python ./tests/sprint4-integration/validate_sprint4_suite.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
@@ -781,10 +786,10 @@ jobs:
               throw "Expected all 20 built-in providers to continue after an additional provider path failure."
           }
 
-      - name: Run controlled Sprint 3 integration audit
+      - name: Run controlled Sprint 4 integration audit
         shell: pwsh
         run: |
-          $integrationRoot = Join-Path $env:RUNNER_TEMP 'workstation-sprint3-integration'
+          $integrationRoot = Join-Path $env:RUNNER_TEMP 'workstation-sprint4-integration'
           $projectRoot = Join-Path $env:RUNNER_TEMP 'workstation-project-discovery-integration'
           $localConfigPath = Join-Path $env:RUNNER_TEMP 'workstation.local.integration.json'
 
@@ -803,7 +808,13 @@ jobs:
           }
           git -C $syntheticRepo config user.name 'Synthetic Workstation CI'
           git -C $syntheticRepo config user.email 'synthetic@example.invalid'
-          '{}' | Set-Content -LiteralPath (Join-Path $syntheticRepo 'package.json') -Encoding UTF8
+          @{
+              name = 'synthetic-integration'
+              engines = @{
+                  node = '>=20'
+              }
+              packageManager = 'pnpm@10.0.0'
+          } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $syntheticRepo 'package.json') -Encoding UTF8
           @'
           module synthetic.example/integration
 
@@ -830,11 +841,11 @@ jobs:
               $result = & ./scripts/Audit-Workstation.ps1 -OutputDirectory $integrationRoot -LocalConfigurationPath $localConfigPath -PassThru
 
               if (-not (Test-Path -LiteralPath $result.JsonPath)) {
-                  throw "Controlled Sprint 3 audit did not generate JSON output."
+                  throw "Controlled Sprint 4 audit did not generate JSON output."
               }
 
               if (-not (Test-Path -LiteralPath $result.MarkdownPath)) {
-                  throw "Controlled Sprint 3 audit did not generate Markdown output."
+                  throw "Controlled Sprint 4 audit did not generate Markdown output."
               }
 
               $workspacePrefix = [IO.Path]::GetFullPath($env:GITHUB_WORKSPACE).TrimEnd('\') + '\'
@@ -851,12 +862,17 @@ jobs:
 
               python ./tests/integration/validate_sprint2_suite.py --report "$($result.JsonPath)"
               if ($LASTEXITCODE -ne 0) {
-                  throw "Controlled Sprint 3 audit validation failed."
+                  throw "Controlled aggregate audit validation failed."
               }
 
               python ./tests/sprint3-integration/validate_sprint3_suite.py --report "$($result.JsonPath)"
               if ($LASTEXITCODE -ne 0) {
                   throw "Controlled Sprint 3 PATH/environment integration validation failed."
+              }
+
+              python ./tests/sprint4-integration/validate_sprint4_suite.py --report "$($result.JsonPath)"
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Controlled Sprint 4 Project/Git integration validation failed."
               }
           }
           finally {
