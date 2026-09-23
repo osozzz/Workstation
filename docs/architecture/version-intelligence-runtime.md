@@ -94,3 +94,12 @@ Synthetic transports represent:
 - explicit offline mode.
 
 This keeps release-channel parsers deterministic while production providers can later use public official/package-registry HTTPS endpoints.
+
+
+## Audit offline mode
+
+`scripts/Audit-Workstation.ps1 -OfflineVersionIntelligence` keeps all local detection active while preventing remote version-source requests.
+
+This mode is used by CI and is useful for disconnected or restricted environments. Installed/runtime evidence remains available; installed components that would normally query remote latest-version sources expose `versionIntelligence.status = unavailable` with explicit source/check metadata rather than failing the provider or complete audit.
+
+Normal audit execution without this switch may query the public HTTPS sources owned by the relevant ecosystem provider.
