@@ -1,7 +1,27 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Import-Module (Join-Path $PSScriptRoot 'VersionIntelligence.Core.psm1') -Force
+function New-JavaScriptVersionIntelligence {
+    param(
+        [Parameter(Mandatory)][ValidateSet('known','unknown','unavailable')][string]$Status,
+        [AllowNull()][object]$LatestStable,
+        [AllowNull()][object]$LatestLts,
+        [AllowNull()][object]$LatestCurrent,
+        [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][string]$CheckedAt,
+        [AllowNull()][string]$Message
+    )
+
+    [pscustomobject][ordered]@{
+        status = $Status
+        latestStable = $LatestStable
+        latestLts = $LatestLts
+        latestCurrent = $LatestCurrent
+        source = $Source
+        checkedAt = $CheckedAt
+        message = $Message
+    }
+}
 
 function ConvertTo-ComparableVersion {
     param([AllowNull()][string]$Value)
@@ -75,7 +95,7 @@ function Resolve-NodeVersionIntelligence {
 
     if ($DecodedSource.status -eq 'unavailable') {
         return [pscustomobject][ordered]@{
-            intelligence = New-AuditVersionIntelligence -Status unavailable -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
+            intelligence = New-JavaScriptVersionIntelligence -Status unavailable -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
             latestLts = $null
             latestCurrent = $null
             installedBehindLts = $null
@@ -87,7 +107,7 @@ function Resolve-NodeVersionIntelligence {
 
     if ($DecodedSource.status -ne 'known' -or $null -eq $DecodedSource.data) {
         return [pscustomobject][ordered]@{
-            intelligence = New-AuditVersionIntelligence -Status unknown -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
+            intelligence = New-JavaScriptVersionIntelligence -Status unknown -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
             latestLts = $null
             latestCurrent = $null
             installedBehindLts = $null
@@ -143,7 +163,7 @@ function Resolve-NodeVersionIntelligence {
 
     if ($null -eq $latestLts -and $null -eq $latestCurrent) {
         return [pscustomobject][ordered]@{
-            intelligence = New-AuditVersionIntelligence -Status unknown -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message 'Node release metadata did not contain interpretable stable release records.'
+            intelligence = New-JavaScriptVersionIntelligence -Status unknown -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message 'Node release metadata did not contain interpretable stable release records.'
             latestLts = $null
             latestCurrent = $null
             installedBehindLts = $null
@@ -153,7 +173,7 @@ function Resolve-NodeVersionIntelligence {
         }
     }
 
-    $intelligence = New-AuditVersionIntelligence -Status known -LatestLts $latestLts -LatestCurrent $latestCurrent -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message 'Node LTS remains the configured default channel; Current is reported separately and is not a mandatory replacement.'
+    $intelligence = New-JavaScriptVersionIntelligence -Status known -LatestStable $null -LatestLts $latestLts -LatestCurrent $latestCurrent -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message 'Node LTS remains the configured default channel; Current is reported separately and is not a mandatory replacement.'
 
     return [pscustomobject][ordered]@{
         intelligence = $intelligence
@@ -176,7 +196,7 @@ function Resolve-NpmPackageVersionIntelligence {
 
     if ($DecodedSource.status -eq 'unavailable') {
         return [pscustomobject][ordered]@{
-            intelligence = New-AuditVersionIntelligence -Status unavailable -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
+            intelligence = New-JavaScriptVersionIntelligence -Status unavailable -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
             latestStable = $null
             updateAvailable = $null
         }
@@ -184,7 +204,7 @@ function Resolve-NpmPackageVersionIntelligence {
 
     if ($DecodedSource.status -ne 'known' -or $null -eq $DecodedSource.data) {
         return [pscustomobject][ordered]@{
-            intelligence = New-AuditVersionIntelligence -Status unknown -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
+            intelligence = New-JavaScriptVersionIntelligence -Status unknown -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $DecodedSource.message
             latestStable = $null
             updateAvailable = $null
         }
@@ -200,7 +220,7 @@ function Resolve-NpmPackageVersionIntelligence {
 
     if ($null -eq $latest) {
         return [pscustomobject][ordered]@{
-            intelligence = New-AuditVersionIntelligence -Status unknown -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message "$PackageName registry metadata did not contain an interpretable stable version."
+            intelligence = New-JavaScriptVersionIntelligence -Status unknown -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message "$PackageName registry metadata did not contain an interpretable stable version."
             latestStable = $null
             updateAvailable = $null
         }
@@ -218,7 +238,7 @@ function Resolve-NpmPackageVersionIntelligence {
     }
 
     return [pscustomobject][ordered]@{
-        intelligence = New-AuditVersionIntelligence -Status known -LatestStable $latest -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $message
+        intelligence = New-JavaScriptVersionIntelligence -Status known -LatestStable $latest -LatestLts $null -LatestCurrent $null -Source $DecodedSource.source -CheckedAt $DecodedSource.checkedAt -Message $message
         latestStable = $latest
         updateAvailable = $updateAvailable
     }
