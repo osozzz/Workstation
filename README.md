@@ -4,9 +4,9 @@ A Windows developer-workstation toolkit for auditing, comparing, and standardizi
 
 ## Current phase
 
-**v0.6.0 — Project & Git Discovery**
+**v0.7.0 — Version Intelligence**
 
-`v0.5.0 — PATH & Environment Intelligence` is complete and published. The repository is now extending the read-only audit with bounded local project discovery, project-local runtime/package-manager constraints, and Git repository/worktree hygiene detection.
+`v0.6.0 — Project & Git Discovery` is complete and published. The repository is now extending the read-only audit with ecosystem-aware installed-versus-latest version intelligence, release-channel semantics, source/timestamp evidence, and offline-safe unavailable states.
 
 The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
 
