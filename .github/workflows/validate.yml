@@ -140,6 +140,11 @@ jobs:
         run: |
           python ./tests/sprint4-integration/validate_sprint4_suite.py
 
+      - name: Validate shared version intelligence source runtime
+        shell: pwsh
+        run: |
+          ./tests/version-intelligence-runtime/validate_version_intelligence_runtime.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
