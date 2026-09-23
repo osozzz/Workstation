@@ -1136,6 +1136,55 @@ foreach ($spec in $javascriptCliSpecs) {
     $components.Add((New-CommandComponent -ComponentId $spec.Id -Name $spec.Label -Command $spec.Command -Arguments $spec.Args -EvidencePrefix 'javascript.cli' -AdditionalInstallations $packageManagerInstallations))
 }
 
+$angularComponents = @($components | Where-Object { $_.componentId -eq 'angular-cli' } | Select-Object -First 1)
+if ($angularComponents.Count -eq 1 -and $angularComponents[0].state -in @('present', 'partial')) {
+    $angularSource = Get-JavaScriptVersionSource -Source 'npm-registry-dist-tags:@angular/cli' -Uri 'https://registry.npmjs.org/-/package/%40angular%2Fcli/dist-tags' -EvidenceId 'javascript.version-intelligence.angular-cli-source'
+    $angularVersionResult = Resolve-AngularCliVersionIntelligence -DecodedSource $angularSource -InstalledVersion $angularComponents[0].activeVersion
+    $angularComponents[0].versionIntelligence = $angularVersionResult.intelligence
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.version-intelligence.angular-cli' -Type derived -Source 'Angular CLI stable-channel interpretation' -Captured $null -Attributes @{
+        installedVersion = $(if ($angularComponents[0].activeVersion) { $angularComponents[0].activeVersion.normalized } else { $null })
+        latestStable = $(if ($angularVersionResult.latestStable) { $angularVersionResult.latestStable.normalized } else { $null })
+        updateAvailable = $angularVersionResult.updateAvailable
+        majorMigrationRequiresExplicitAction = $angularVersionResult.majorMigrationRequiresExplicitAction
+        projectCompatibilityOverridesGlobal = $angularVersionResult.projectCompatibilityOverridesGlobal
+    }))
+}
+
+$typescriptComponents = @($components | Where-Object { $_.componentId -eq 'typescript' } | Select-Object -First 1)
+if ($typescriptComponents.Count -eq 1 -and $typescriptComponents[0].state -in @('present', 'partial')) {
+    $typescriptSource = Get-JavaScriptVersionSource -Source 'npm-registry-dist-tags:typescript' -Uri 'https://registry.npmjs.org/-/package/typescript/dist-tags' -EvidenceId 'javascript.version-intelligence.typescript-source'
+    $typescriptVersionResult = Resolve-TypeScriptVersionIntelligence -DecodedSource $typescriptSource -InstalledVersion $typescriptComponents[0].activeVersion
+    $typescriptComponents[0].versionIntelligence = $typescriptVersionResult.intelligence
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.version-intelligence.typescript' -Type derived -Source 'TypeScript stable and prerelease channel interpretation' -Captured $null -Attributes @{
+        installedVersion = $(if ($typescriptComponents[0].activeVersion) { $typescriptComponents[0].activeVersion.normalized } else { $null })
+        latestStable = $(if ($typescriptVersionResult.latestStable) { $typescriptVersionResult.latestStable.normalized } else { $null })
+        latestPrerelease = $(if ($typescriptVersionResult.latestPrerelease) { $typescriptVersionResult.latestPrerelease.normalized } else { $null })
+        prereleaseTag = $typescriptVersionResult.prereleaseTag
+        stableUpdateAvailable = $typescriptVersionResult.stableUpdateAvailable
+        prereleaseRequiresExplicitOptIn = $typescriptVersionResult.prereleaseRequiresExplicitOptIn
+        projectCompatibilityOverridesGlobal = $typescriptVersionResult.projectCompatibilityOverridesGlobal
+    }))
+}
+
+$prismaComponents = @($components | Where-Object { $_.componentId -eq 'prisma' } | Select-Object -First 1)
+if ($prismaComponents.Count -eq 1 -and $prismaComponents[0].state -in @('present', 'partial')) {
+    $prismaSource = Get-JavaScriptVersionSource -Source 'npm-registry-dist-tags:prisma' -Uri 'https://registry.npmjs.org/-/package/prisma/dist-tags' -EvidenceId 'javascript.version-intelligence.prisma-source'
+    $prismaVersionResult = Resolve-PrismaVersionIntelligence -DecodedSource $prismaSource -InstalledVersion $prismaComponents[0].activeVersion
+    $prismaComponents[0].versionIntelligence = $prismaVersionResult.intelligence
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'javascript.version-intelligence.prisma' -Type derived -Source 'Prisma stable and release-candidate channel interpretation' -Captured $null -Attributes @{
+        installedVersion = $(if ($prismaComponents[0].activeVersion) { $prismaComponents[0].activeVersion.normalized } else { $null })
+        latestStable = $(if ($prismaVersionResult.latestStable) { $prismaVersionResult.latestStable.normalized } else { $null })
+        latestReleaseCandidate = $(if ($prismaVersionResult.latestReleaseCandidate) { $prismaVersionResult.latestReleaseCandidate.normalized } else { $null })
+        releaseCandidateTag = $prismaVersionResult.releaseCandidateTag
+        stableUpdateAvailable = $prismaVersionResult.stableUpdateAvailable
+        releaseCandidateRequiresExplicitOptIn = $prismaVersionResult.releaseCandidateRequiresExplicitOptIn
+        projectPinsOverrideGlobal = $prismaVersionResult.projectPinsOverrideGlobal
+    }))
+}
+
 $primaryComponents = @(
     $components |
         Where-Object { $_.componentId -in @('node', 'npm', 'pnpm', 'corepack', 'nvm-windows') }
