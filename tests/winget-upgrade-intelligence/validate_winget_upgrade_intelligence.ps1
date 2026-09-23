@@ -32,6 +32,8 @@ $header = New-WinGetLine -Name 'Name' -Id 'Id' -Version 'Version' -Available 'Av
 $separator = '-' * $header.Length
 
 $inventoryText = @(
+    '',
+    '   ',
     $header,
     $separator,
     (New-WinGetLine -Name 'Git' -Id 'Git.Git' -Version '2.53.0' -Available '2.54.0' -Source 'winget'),
