@@ -6,6 +6,7 @@ $ErrorActionPreference = 'Stop'
 
 $root = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $corePath = Join-Path $root 'scripts\Core\Comparison.Core.psm1'
+$comparisonScriptPath = Join-Path $root 'scripts\Compare-Workstations.ps1'
 
 Import-Module $corePath -Force
 
