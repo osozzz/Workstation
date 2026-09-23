@@ -36,3 +36,15 @@ The audit system detects these conditions. Future repair tooling may automate cl
 The project owner remains responsible for repository work.
 
 Automated tools must not add authorship/co-authorship trailers, generated-by notices, promotional attribution, badges, or equivalent provenance metadata unless explicitly required for a specific dependency or legal reason.
+
+
+## Audit hygiene semantics
+
+Git hygiene findings are advisory and read-only.
+
+- A local branch is **stale** when the age of its tip commit is greater than or equal to the configured `git.branchStaleDays` threshold. The default threshold is 90 days.
+- A branch being stale does not imply that it is merged or safe to delete.
+- A **merged cleanup candidate** must be locally proven merged into the selected merge target and must not be the current branch, a detected default/protected branch, or checked out in any worktree.
+- Branch naming checks use the repository governance prefixes `feat/`, `fix/`, `docs/`, `test/`, `refactor/`, `chore/`, `ci/`, `build/`, `perf/`, and `security/`. Current/default/protected branches are exempt.
+- A worktree is **prunable** only when Git itself reports it as prunable through read-only `git worktree list --porcelain` metadata.
+- A prunable worktree finding is not authorization to run `git worktree prune` or delete its directory.
