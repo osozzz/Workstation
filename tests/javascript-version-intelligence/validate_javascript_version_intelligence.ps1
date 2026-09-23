@@ -14,6 +14,19 @@ Import-Module $auditCore -Force
 Import-Module $versionCore -Force
 Import-Module $jsVersionCore -Force
 
+function New-TestVersionRecord {
+    param(
+        [Parameter(Mandatory)][string]$Version,
+        [AllowNull()][string]$Channel
+    )
+
+    [pscustomobject][ordered]@{
+        raw = $Version
+        normalized = $Version.TrimStart('v', 'V')
+        channel = $Channel
+    }
+}
+
 function Assert-True {
     param([bool]$Condition,[string]$Message)
     if (-not $Condition) { throw $Message }
@@ -37,7 +50,7 @@ $nodeData = @(
     [pscustomobject]@{version='v23.9.0';lts=$false},
     [pscustomobject]@{version='v22.20.0';lts='Jod'}
 )
-$installedNode = New-AuditVersionRecord -Raw 'v24.10.0' -Normalized '24.10.0' -Channel lts
+$installedNode = New-TestVersionRecord -Version 'v24.10.0' -Channel lts
 $node = Resolve-NodeVersionIntelligence -DecodedSource (New-Decoded -Source 'nodejs-release-index' -Data $nodeData) -InstalledVersion $installedNode
 
 Assert-True ($node.intelligence.status -eq 'known') 'Node intelligence must be known.'
@@ -48,14 +61,14 @@ Assert-True ($node.currentIsMandatoryReplacement -eq $false) 'Node Current must 
 Assert-True ($node.installedBehindLts -eq $true) 'Synthetic Node install should be behind LTS.'
 Assert-True ($node.intelligence.message -match 'not a mandatory replacement') 'Node message must preserve LTS-default semantics.'
 
-$currentNode = Resolve-NodeVersionIntelligence -DecodedSource (New-Decoded -Source 'nodejs-release-index' -Data $nodeData) -InstalledVersion (New-AuditVersionRecord -Raw '24.12.0' -Normalized '24.12.0' -Channel lts)
+$currentNode = Resolve-NodeVersionIntelligence -DecodedSource (New-Decoded -Source 'nodejs-release-index' -Data $nodeData) -InstalledVersion (New-TestVersionRecord -Version '24.12.0' -Channel lts)
 Assert-True ($currentNode.installedBehindLts -eq $false) 'Already-current LTS must not be reported behind LTS.'
 
-$npm = Resolve-NpmPackageVersionIntelligence -PackageName npm -DecodedSource (New-Decoded -Source 'npm-registry:npm' -Data ([pscustomobject]@{version='11.20.0'})) -InstalledVersion (New-AuditVersionRecord -Raw '11.19.1' -Normalized '11.19.1' -Channel $null)
+$npm = Resolve-NpmPackageVersionIntelligence -PackageName npm -DecodedSource (New-Decoded -Source 'npm-registry:npm' -Data ([pscustomobject]@{version='11.20.0'})) -InstalledVersion (New-TestVersionRecord -Version '11.19.1' -Channel $null)
 Assert-True ($npm.intelligence.latestStable.normalized -eq '11.20.0') 'Expected npm latest stable.'
 Assert-True ($npm.updateAvailable -eq $true) 'Expected npm update available.'
 
-$pnpm = Resolve-NpmPackageVersionIntelligence -PackageName pnpm -DecodedSource (New-Decoded -Source 'npm-registry:pnpm' -Data ([pscustomobject]@{version='12.4.2'})) -InstalledVersion (New-AuditVersionRecord -Raw '12.4.2' -Normalized '12.4.2' -Channel $null)
+$pnpm = Resolve-NpmPackageVersionIntelligence -PackageName pnpm -DecodedSource (New-Decoded -Source 'npm-registry:pnpm' -Data ([pscustomobject]@{version='12.4.2'})) -InstalledVersion (New-TestVersionRecord -Version '12.4.2' -Channel $null)
 Assert-True ($pnpm.updateAvailable -eq $false) 'Already-current pnpm must not report an update.'
 
 $offlineNode = Resolve-NodeVersionIntelligence -DecodedSource (New-Decoded -Source 'nodejs-release-index' -Data $null -Status unavailable) -InstalledVersion $installedNode
