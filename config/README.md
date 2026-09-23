@@ -18,3 +18,10 @@ The audit does not fall back to scanning an entire drive or the user profile whe
 Filesystem roots such as `C:\` are rejected as too broad, and reparse-point roots/descendants are not followed by `projects.local`.
 
 Real machine paths remain local report evidence and must not be committed.
+
+
+Current local-only Git hygiene settings:
+
+- `git.branchStaleDays`: branch-tip age threshold used by the Git hygiene provider; valid range is 1-3650 days and the default is 90.
+
+A stale branch is an advisory finding based on the tip commit age. Staleness alone never authorizes branch deletion or makes a branch a cleanup candidate.
