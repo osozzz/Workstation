@@ -183,7 +183,7 @@ $httpFailure = Invoke-AuditVersionSource -Source 'http-failure-source' -Uri 'htt
 Assert-True ($httpFailure.status -eq 'unavailable') 'Non-success HTTP source must degrade to unavailable.'
 Assert-True ($httpFailure.failureKind -eq 'http-status') 'Expected normalized HTTP failure kind.'
 Assert-True ($httpFailure.statusCode -eq 503) 'Expected HTTP failure status code.'
-Assert-True ($null -eq $httpFailure.body) 'HTTP failure bodies must not be retained.'
+Assert-True ([string]::IsNullOrEmpty([string]$httpFailure.body)) 'HTTP failure bodies must not be retained.'
 
 $offlineTransport = {
     param($request)
