@@ -165,6 +165,11 @@ jobs:
         run: |
           ./tests/winget-upgrade-intelligence/validate_winget_upgrade_intelligence.ps1
 
+      - name: Validate Sprint 5 Version Intelligence integration gate
+        shell: pwsh
+        run: |
+          ./tests/sprint5-integration/validate_sprint5_version_intelligence.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
