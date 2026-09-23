@@ -704,16 +704,32 @@ jobs:
           }
 
           $wingetProvider = $result.Report.providers | Where-Object providerId -eq 'winget.baseline'
-          if (-not ($wingetProvider.components | Where-Object componentId -eq 'winget')) {
+          if ($wingetProvider.status -eq 'failed') {
+              $wingetMessages = @($wingetProvider.errors | ForEach-Object { $_.message }) -join ' | '
+              throw "WinGet provider failed during smoke test: $wingetMessages"
+          }
+
+          $wingetComponent = $wingetProvider.components | Where-Object componentId -eq 'winget'
+          if (-not $wingetComponent) {
               throw "Expected normalized WinGet component."
           }
 
           foreach ($source in @($wingetProvider.evidence | ForEach-Object { $_.source })) {
-              if ($source -match '(?i)winget\s+upgrade') {
-                  throw "WinGet platform detection must not run upgrade intelligence."
+              if ($source -match '(?i)winget\s+upgrade' -and $source -ne 'winget upgrade --disable-interactivity') {
+                  throw "WinGet upgrade intelligence must remain a read-only non-interactive lookup."
               }
-              if ($source -match '(?i)--accept-source-agreements') {
-                  throw "WinGet platform detection must not accept source agreements."
+              if ($source -match '(?i)--accept-(source|package)-agreements') {
+                  throw "WinGet platform detection must not accept package or source agreements."
+              }
+          }
+
+          if ($wingetComponent.installed -eq $true) {
+              $wingetUpgradeEvidence = $wingetProvider.evidence | Where-Object evidenceId -eq 'winget.upgrades.normalized'
+              if (-not $wingetUpgradeEvidence) {
+                  throw "Expected normalized WinGet upgrade intelligence when WinGet is installed."
+              }
+              if ($wingetUpgradeEvidence.attributes.reviewOnly -ne $true) {
+                  throw "WinGet upgrade intelligence must remain explicitly review-only."
               }
           }
 
