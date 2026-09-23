@@ -221,17 +221,40 @@ def validate_source_ownership() -> None:
             "override the CIM Windows caption."
         )
 
-    if "winget upgrade" in winget_source:
+    if not re.search(
+        r"invoke-auditcommand\s+-command\s+['\"]winget['\"]"
+        r"[\s\S]{0,160}['\"]upgrade['\"]"
+        r"[\s\S]{0,160}['\"]--disable-interactivity['\"]",
+        winget_source,
+    ):
         fail(
-            "WinGetBaseline.Provider.ps1 must not own installed-vs-latest "
-            "upgrade intelligence."
+            "WinGetBaseline.Provider.ps1 must preserve the read-only "
+            "non-interactive upgrade availability lookup."
         )
 
-    if "--accept-source-agreements" in winget_source:
+    if re.search(
+        r"['\"]upgrade['\"][\s\S]{0,160}['\"]--all['\"]",
+        winget_source,
+    ):
         fail(
-            "WinGetBaseline.Provider.ps1 must not accept source agreements "
-            "during a read-only audit."
+            "WinGetBaseline.Provider.ps1 must not invoke bulk package upgrades."
         )
+
+    for forbidden in (
+        "--accept-source-agreements",
+        "--accept-package-agreements",
+        "'install'",
+        '"install"',
+        "'uninstall'",
+        '"uninstall"',
+        "'repair'",
+        '"repair"',
+    ):
+        if forbidden in winget_source:
+            fail(
+                "WinGetBaseline.Provider.ps1 contains a forbidden mutation "
+                f"or agreement marker: {forbidden}"
+            )
 
     if re.search(r"\bid\s*=\s*['\"]winget['\"]", command_source):
         fail(
