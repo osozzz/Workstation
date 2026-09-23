@@ -160,6 +160,11 @@ jobs:
         run: |
           ./tests/jvm-mobile-version-intelligence/validate_jvm_mobile_version_intelligence.ps1
 
+      - name: Validate WinGet upgrade intelligence
+        shell: pwsh
+        run: |
+          ./tests/winget-upgrade-intelligence/validate_winget_upgrade_intelligence.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
