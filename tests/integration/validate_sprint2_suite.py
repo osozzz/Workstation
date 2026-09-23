@@ -44,6 +44,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "projects.javascript-web",
     "projects.non-javascript",
     "git.repository-health",
+    "git.branch-worktree-hygiene",
 }
 
 EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
@@ -57,6 +58,7 @@ EXPECTED_SPECIALIZED_PROVIDER_IDS = EXPECTED_REPORT_PROVIDER_IDS - {
     "projects.javascript-web",
     "projects.non-javascript",
     "git.repository-health",
+    "git.branch-worktree-hygiene",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (
@@ -921,6 +923,81 @@ def validate_real_report(
         fail(
             "Controlled integration audit must inspect at least one discovered "
             "Git repository."
+        )
+
+    git_hygiene = next(
+        provider
+        for provider in providers
+        if provider["providerId"] == "git.branch-worktree-hygiene"
+    )
+    if git_hygiene["components"]:
+        fail(
+            "Git branch/worktree hygiene must remain evidence-only and own "
+            "zero components."
+        )
+
+    git_hygiene_summary = next(
+        (
+            item
+            for item in git_hygiene["evidence"]
+            if item["evidenceId"] == "git.branch-worktree-hygiene.summary"
+        ),
+        None,
+    )
+    if git_hygiene_summary is None:
+        fail(
+            "Controlled audit is missing git.branch-worktree-hygiene summary "
+            "evidence."
+        )
+
+    git_hygiene_attributes = git_hygiene_summary["attributes"]
+    for key in (
+        "readOnly",
+        "reusesRepositoryHealth",
+        "defaultBranchDetectionUsesLocalRefsOnly",
+        "optionalLocksDisabled",
+        "advisoryOnly",
+    ):
+        if git_hygiene_attributes.get(key) is not True:
+            fail(f"git.branch-worktree-hygiene must preserve {key}=true.")
+
+    for key in (
+        "independentRepositoryDiscovery",
+        "networkAccessRequired",
+        "branchDeletionPerformed",
+        "worktreePrunePerformed",
+        "worktreeRemovePerformed",
+        "checkoutPerformed",
+        "resetPerformed",
+        "historyRewritePerformed",
+        "gitConfigurationModified",
+        "remoteUrlsCollected",
+        "credentialHelpersCollected",
+    ):
+        if git_hygiene_attributes.get(key) is not False:
+            fail(f"git.branch-worktree-hygiene must preserve {key}=false.")
+
+    if git_hygiene_attributes.get("repositoryCount", 0) < 1:
+        fail(
+            "Controlled integration audit must provide at least one repository "
+            "to git.branch-worktree-hygiene."
+        )
+
+    if git_hygiene_attributes.get("branchCount", 0) < 1:
+        fail(
+            "Controlled integration audit must enumerate at least one local "
+            "branch for Git hygiene."
+        )
+
+    if git_hygiene_attributes.get("worktreeCount", 0) < 1:
+        fail(
+            "Controlled integration audit must enumerate the main worktree."
+        )
+
+    if git_hygiene_attributes.get("staleThresholdDays") != 90:
+        fail(
+            "Controlled integration audit must preserve the configured/default "
+            "90-day Git branch stale threshold."
         )
 
     environment = next(
