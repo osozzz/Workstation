@@ -4,6 +4,26 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 0.7.0 — 2026-09-23
+
+### Version Intelligence
+
+- Added a shared version-intelligence runtime for bounded HTTPS source lookups, explicit source identity, checked-at timestamps, deterministic transport injection, and safe normalization of offline, unreachable, HTTP-failure, malformed, and truncated source states.
+- Added Node.js version intelligence that reports installed/default evidence alongside Latest LTS and Latest Current while keeping LTS as the configured default track and never treating Current as a mandatory replacement.
+- Added npm and pnpm installed-versus-latest intelligence with explicit update availability while reusing existing global toolchain detection.
+- Added Angular CLI latest-stable intelligence, TypeScript stable/prerelease channel separation, and Prisma stable/release-candidate channel separation with explicit opt-in/major-migration safeguards.
+- Preserved project-local compatibility constraints and version pins separately from global latest-version information so global intelligence cannot overwrite project evidence.
+- Added Flutter stable-channel intelligence without channel switching or SDK mutation.
+- Added Java intelligence scoped to installed major, distribution/vendor, package type, architecture, and relevant release context; higher majors or different vendors are informative rather than naive direct replacements.
+- Added WinGet installed-application and available-upgrade intelligence using non-interactive, review-only inspection with explicit current, upgrade-available, source-unavailable, agreement-required, command-failure, and unknown states.
+- Kept WinGet intelligence free of agreement acceptance, bulk upgrade, install, uninstall, and repair behavior.
+- Added deterministic Sprint 5 fixture suites for shared source behavior, JavaScript ecosystems, JVM/mobile ecosystems, and WinGet upgrade parsing.
+- Added the Sprint 5 integration gate across all 20 built-in providers, including controlled early-provider failure isolation, offline-safe version intelligence, project-local Node/pnpm pin preservation, source/timestamp invariants, WinGet review-only evidence, and temporary report safety.
+- Validated that remote/version-source failures do not block local detection or later providers.
+- Updated the repository tool version to `0.7.0` so generated audit reports identify the Version Intelligence release correctly.
+- Preserved the project rule that version intelligence informs decisions only; workstation mutation and automatic migrations remain outside the read-only audit milestone.
+
+
 ## 0.6.0 — 2026-09-23
 
 ### Project & Git Discovery
