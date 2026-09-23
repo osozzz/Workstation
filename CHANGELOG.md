@@ -4,6 +4,28 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 0.6.0 — 2026-09-23
+
+### Project & Git Discovery
+
+- Added machine-local development-root configuration through ignored `config/workstation.local.json`, with a committed empty template and bounded project-discovery depth.
+- Added `projects.local` bounded discovery that normalizes configured roots, detects duplicates/missing/inaccessible roots, rejects filesystem-root traversal, skips reparse-point descendants, and never falls back to whole-disk or implicit user-profile scanning.
+- Added JavaScript/web project detection for Node/package projects plus Angular, Next.js, and Prisma markers using canonical project files only.
+- Added project-local Node/package-manager constraint reporting from `.nvmrc`, `.node-version`, `engines`, `packageManager`, lockfiles, and conflicting pin signals without inspecting `node_modules` or invoking package managers.
+- Added non-JavaScript project detection for Flutter/Dart, Python, Rust, Go, .NET, Maven, and Gradle using canonical manifests, project files, wrapper metadata, and explicit local runtime/toolchain constraints.
+- Preserved project-local runtime/package-manager evidence separately from global runtime/toolchain evidence and kept all Sprint 4 project-classification providers evidence-only with zero normalized component ownership.
+- Added read-only Git repository health detection for clean/dirty state, staged/unstaged/untracked/conflicted changes, detached HEAD, missing upstream, locally known ahead/behind/diverged state, and unpushed commits.
+- Added Git branch/worktree hygiene intelligence for locally merged cleanup candidates, gone-upstream branches, explicit stale-age evidence, documented branch-prefix deviations, linked/dirty worktrees, and Git-reported prunable worktrees.
+- Added configurable `git.branchStaleDays` local policy with a 90-day default and documented advisory-only stale/cleanup semantics.
+- Added `git --no-optional-locks` inspection and explicit safeguards preventing fetch, pull, push, checkout, reset, clean, stash, commit, branch deletion, worktree prune/remove, history rewrite, Git configuration mutation, remote-URL collection, or credential-helper inspection.
+- Added dedicated synthetic fixtures across bounded project discovery, JavaScript/web classification, non-JavaScript classification, repository health, and branch/worktree hygiene.
+- Added the Sprint 4 integration gate and machine-readable acceptance coverage matrix for parent issue #8, mapping all nine acceptance criteria 1:1 to committed validation evidence.
+- Validated all 20 built-in providers together, including provider/path failure isolation, bounded ownership, project-path privacy, project-local pin preservation, and controlled Windows integration.
+- Validated a single controlled report through Sprint 2, Sprint 3, and Sprint 4 release gates in sequence.
+- Kept synthetic repositories, local configuration, and generated JSON/Markdown reports under runner temporary storage and deleted them after validation.
+- Preserved the project rule that the first authoritative workstation baseline remains deferred until v1.0.0.
+
+
 ## 0.5.0 — 2026-09-22
 
 ### PATH & Environment Intelligence
