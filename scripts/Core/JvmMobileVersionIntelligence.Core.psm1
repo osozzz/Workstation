@@ -243,8 +243,8 @@ function Resolve-FlutterVersionIntelligence {
             latestStable = $null
             updateAvailable = $null
             installedChannel = $InstalledChannel
-            installedOnStable = $false
-            channelSwitchRequired = $false
+            installedOnStable = $installedOnStable
+            channelSwitchRequired = $channelSwitchRequired
         }
     }
 
@@ -303,8 +303,8 @@ function Resolve-FlutterVersionIntelligence {
             latestStable = $null
             updateAvailable = $null
             installedChannel = $InstalledChannel
-            installedOnStable = $false
-            channelSwitchRequired = $false
+            installedOnStable = $installedOnStable
+            channelSwitchRequired = $channelSwitchRequired
         }
     }
 
