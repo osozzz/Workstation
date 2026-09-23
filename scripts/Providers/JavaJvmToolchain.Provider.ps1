@@ -19,13 +19,60 @@ if ($Describe) {
 }
 
 $corePath = Join-Path $PSScriptRoot '..\Core\Audit.Core.psm1'
+$versionCorePath = Join-Path $PSScriptRoot '..\Core\VersionIntelligence.Core.psm1'
+$jvmMobileVersionCorePath = Join-Path $PSScriptRoot '..\Core\JvmMobileVersionIntelligence.Core.psm1'
 Import-Module $corePath -Force
+Import-Module $versionCorePath -Force
+Import-Module $jvmMobileVersionCorePath -Force
 
 $warnings = New-Object System.Collections.Generic.List[object]
 $errors = New-Object System.Collections.Generic.List[object]
 $evidence = New-Object System.Collections.Generic.List[object]
 $components = New-Object System.Collections.Generic.List[object]
 $hasPartial = $false
+
+$versionIntelligenceOffline = $false
+$offlineProperty = $Context.PSObject.Properties['VersionIntelligenceOffline']
+if ($offlineProperty -and $null -ne $offlineProperty.Value) {
+    $versionIntelligenceOffline = [bool]$offlineProperty.Value
+}
+
+$versionIntelligenceTransport = $null
+$transportProperty = $Context.PSObject.Properties['VersionIntelligenceTransport']
+if ($transportProperty -and $transportProperty.Value -is [scriptblock]) {
+    $versionIntelligenceTransport = [scriptblock]$transportProperty.Value
+}
+
+try {
+    $versionCheckedAt = [DateTimeOffset]::Parse([string]$Context.ObservedAt)
+}
+catch {
+    $versionCheckedAt = [DateTimeOffset]::UtcNow
+}
+
+function Get-JavaVersionSource {
+    param(
+        [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][uri]$Uri,
+        [Parameter(Mandatory)][string]$EvidenceId
+    )
+
+    $parameters = @{
+        Source = $Source
+        Uri = $Uri
+        CheckedAt = $versionCheckedAt
+        Offline = $versionIntelligenceOffline
+        MaximumResponseBytes = 262144
+    }
+
+    if ($null -ne $versionIntelligenceTransport) {
+        $parameters['Transport'] = $versionIntelligenceTransport
+    }
+
+    $sourceResult = Invoke-AuditVersionSource @parameters
+    $evidence.Add((New-AuditEvidence -EvidenceId $EvidenceId -Type api -Source $Source -Captured $null -Attributes (Get-AuditVersionSourceEvidenceAttributes -SourceResult $sourceResult)))
+    return ConvertFrom-AuditVersionSourceJson -SourceResult $sourceResult
+}
 
 function New-NotApplicableVersionIntelligence {
     return [pscustomobject][ordered]@{
@@ -704,6 +751,96 @@ if (-not [string]::IsNullOrWhiteSpace($javaHome)) {
     }
 }
 
+$javaVersionIntelligence = New-NotApplicableVersionIntelligence
+
+if ($javaInstalled -and $null -ne $activeJavaVersion) {
+    $activeMetadata = @(
+        $metadataByPath |
+            Where-Object {
+                -not [string]::IsNullOrWhiteSpace($activeJavaRoot) -and
+                (Test-PathEquals -Left ([string]$_.path) -Right $activeJavaRoot)
+            } |
+            Select-Object -First 1
+    )
+
+    $activeVendor = [string](Get-PropertyValue -InputObject $javaProperties -Name 'java.vendor')
+    $activeDistribution = $null
+    $activeKind = 'jre'
+    $activeArchitecture = [string](Get-PropertyValue -InputObject $javaProperties -Name 'os.arch')
+
+    if ($activeMetadata.Count -eq 1) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$activeMetadata[0].vendor)) {
+            $activeVendor = [string]$activeMetadata[0].vendor
+        }
+        $activeDistribution = [string]$activeMetadata[0].distribution
+        if (-not [string]::IsNullOrWhiteSpace([string]$activeMetadata[0].kind)) {
+            $activeKind = [string]$activeMetadata[0].kind
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$activeMetadata[0].architecture)) {
+            $activeArchitecture = [string]$activeMetadata[0].architecture
+        }
+    }
+    else {
+        $activeDistribution = Get-JavaDistribution -Vendor $activeVendor -Path $activeJavaRoot
+
+        if ($javacResult.Found -and $null -ne $activeJavacVersion -and -not [string]::IsNullOrWhiteSpace($activeJavaRoot)) {
+            $activeJavacResolution = @(
+                $javacResult.Resolutions |
+                    Where-Object active |
+                    Select-Object -First 1
+            )
+
+            if ($activeJavacResolution.Count -eq 1) {
+                $activeJavacRoot = Get-JavaRootFromExecutable -Path ([string]$activeJavacResolution[0].path)
+                if (Test-PathEquals -Left $activeJavacRoot -Right $activeJavaRoot) {
+                    $activeKind = 'jdk'
+                }
+            }
+        }
+    }
+
+    $activeMajor = Get-JavaMajorVersion -Version $activeJavaVersion
+    if ($null -ne $activeMajor) {
+        $sourceSpec = New-FoojayJavaVersionSource -MajorVersion $activeMajor -Distribution $activeDistribution -PackageType $activeKind -Architecture $activeArchitecture
+        $decodedSource = Get-JavaVersionSource -Source $sourceSpec.source -Uri $sourceSpec.uri -EvidenceId 'java.version-intelligence.source'
+        $javaVersionResult = Resolve-JavaVersionIntelligence -DecodedSource $decodedSource -InstalledVersion $activeJavaVersion -InstalledMajor $activeMajor -InstalledDistribution $activeDistribution -ExpectedDistribution $sourceSpec.expectedDistribution -PackageType $activeKind -Architecture $activeArchitecture
+        $javaVersionIntelligence = $javaVersionResult.intelligence
+
+        $evidence.Add((New-AuditEvidence -EvidenceId 'java.version-intelligence' -Type derived -Source 'Java same-major and distribution-context interpretation' -Captured $null -Attributes @{
+            installedVersion = $activeJavaVersion.normalized
+            installedMajor = $activeMajor
+            installedVendor = $activeVendor
+            installedDistribution = $activeDistribution
+            installedPackageType = $activeKind
+            installedArchitecture = $activeArchitecture
+            expectedDistribution = $sourceSpec.expectedDistribution
+            latestSameMajor = $(if ($javaVersionResult.latestSameMajor) { $javaVersionResult.latestSameMajor.normalized } else { $null })
+            selectedDistribution = $javaVersionResult.selectedDistribution
+            updateAvailable = $javaVersionResult.updateAvailable
+            directReplacement = $javaVersionResult.directReplacement
+            distributionMatched = $javaVersionResult.distributionMatched
+            packageTypeMatched = $javaVersionResult.packageTypeMatched
+            architectureMatched = $javaVersionResult.architectureMatched
+            higherMajorObserved = $javaVersionResult.higherMajorObserved
+            otherDistributionObserved = $javaVersionResult.otherDistributionObserved
+            installedContexts = @(
+                $metadataByPath |
+                    ForEach-Object {
+                        [pscustomobject][ordered]@{
+                            version = $(if ($null -ne $_.version) { $_.version.normalized } else { $null })
+                            majorVersion = $_.majorVersion
+                            vendor = $_.vendor
+                            distribution = $_.distribution
+                            kind = $_.kind
+                            architecture = $_.architecture
+                            active = $(if (-not [string]::IsNullOrWhiteSpace($activeJavaRoot)) { Test-PathEquals -Left ([string]$_.path) -Right $activeJavaRoot } else { $false })
+                        }
+                    }
+            )
+        }))
+    }
+}
+
 $components.Add([pscustomobject][ordered]@{
     componentId         = 'java'
     name                = 'Java Runtime'
@@ -713,7 +850,7 @@ $components.Add([pscustomobject][ordered]@{
     discoveredVersions  = $javaVersions.ToArray()
     installations       = $javaInstallations
     commandResolutions  = @($javaResult.Resolutions)
-    versionIntelligence = New-NotApplicableVersionIntelligence
+    versionIntelligence = $javaVersionIntelligence
 })
 
 $jdkMetadata = @($metadataByPath | Where-Object kind -eq 'jdk')

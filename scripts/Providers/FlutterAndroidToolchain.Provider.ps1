@@ -19,13 +19,60 @@ if ($Describe) {
 }
 
 $corePath = Join-Path $PSScriptRoot '..\Core\Audit.Core.psm1'
+$versionCorePath = Join-Path $PSScriptRoot '..\Core\VersionIntelligence.Core.psm1'
+$jvmMobileVersionCorePath = Join-Path $PSScriptRoot '..\Core\JvmMobileVersionIntelligence.Core.psm1'
 Import-Module $corePath -Force
+Import-Module $versionCorePath -Force
+Import-Module $jvmMobileVersionCorePath -Force
 
 $warnings = New-Object System.Collections.Generic.List[object]
 $errors = New-Object System.Collections.Generic.List[object]
 $evidence = New-Object System.Collections.Generic.List[object]
 $components = New-Object System.Collections.Generic.List[object]
 $hasPartial = $false
+
+$versionIntelligenceOffline = $false
+$offlineProperty = $Context.PSObject.Properties['VersionIntelligenceOffline']
+if ($offlineProperty -and $null -ne $offlineProperty.Value) {
+    $versionIntelligenceOffline = [bool]$offlineProperty.Value
+}
+
+$versionIntelligenceTransport = $null
+$transportProperty = $Context.PSObject.Properties['VersionIntelligenceTransport']
+if ($transportProperty -and $transportProperty.Value -is [scriptblock]) {
+    $versionIntelligenceTransport = [scriptblock]$transportProperty.Value
+}
+
+try {
+    $versionCheckedAt = [DateTimeOffset]::Parse([string]$Context.ObservedAt)
+}
+catch {
+    $versionCheckedAt = [DateTimeOffset]::UtcNow
+}
+
+function Get-FlutterVersionSource {
+    param(
+        [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][uri]$Uri,
+        [Parameter(Mandatory)][string]$EvidenceId
+    )
+
+    $parameters = @{
+        Source = $Source
+        Uri = $Uri
+        CheckedAt = $versionCheckedAt
+        Offline = $versionIntelligenceOffline
+        MaximumResponseBytes = 1048576
+    }
+
+    if ($null -ne $versionIntelligenceTransport) {
+        $parameters['Transport'] = $versionIntelligenceTransport
+    }
+
+    $sourceResult = Invoke-AuditVersionSource @parameters
+    $evidence.Add((New-AuditEvidence -EvidenceId $EvidenceId -Type api -Source $Source -Captured $null -Attributes (Get-AuditVersionSourceEvidenceAttributes -SourceResult $sourceResult)))
+    return ConvertFrom-AuditVersionSourceJson -SourceResult $sourceResult
+}
 
 function New-NotApplicableVersionIntelligence {
     return [pscustomobject][ordered]@{
@@ -695,6 +742,23 @@ if (
     $warnings.Add((New-AuditIssue -Code 'FLUTTER_ROOT_COMMAND_MISMATCH' -Message 'FLUTTER_ROOT points to a different Flutter SDK than the active flutter command.' -Severity warning -ComponentId 'flutter' -EvidenceIds @('mobile.environment', 'mobile.flutter.version')))
 }
 
+$flutterVersionIntelligence = New-NotApplicableVersionIntelligence
+
+if ($flutterInstalled) {
+    $flutterSource = Get-FlutterVersionSource -Source 'flutter-sdk-archive:windows' -Uri 'https://storage.googleapis.com/flutter_infra_release/releases/releases_windows.json' -EvidenceId 'mobile.version-intelligence.flutter-source'
+    $flutterVersionResult = Resolve-FlutterVersionIntelligence -DecodedSource $flutterSource -InstalledVersion $flutterVersion -InstalledChannel $flutterChannel
+    $flutterVersionIntelligence = $flutterVersionResult.intelligence
+
+    $evidence.Add((New-AuditEvidence -EvidenceId 'mobile.version-intelligence.flutter' -Type derived -Source 'Flutter stable-channel interpretation' -Captured $null -Attributes @{
+        installedVersion = $(if ($flutterVersion) { $flutterVersion.normalized } else { $null })
+        installedChannel = $flutterChannel
+        latestStable = $(if ($flutterVersionResult.latestStable) { $flutterVersionResult.latestStable.normalized } else { $null })
+        updateAvailable = $flutterVersionResult.updateAvailable
+        installedOnStable = $flutterVersionResult.installedOnStable
+        channelSwitchRequired = $flutterVersionResult.channelSwitchRequired
+    }))
+}
+
 $components.Add([pscustomobject][ordered]@{
     componentId         = 'flutter'
     name                = 'Flutter SDK'
@@ -704,7 +768,7 @@ $components.Add([pscustomobject][ordered]@{
     discoveredVersions  = @(if ($null -ne $flutterVersion) { $flutterVersion })
     installations       = $flutterInstallations.ToArray()
     commandResolutions  = @($flutterResult.Resolutions)
-    versionIntelligence = New-NotApplicableVersionIntelligence
+    versionIntelligence = $flutterVersionIntelligence
 })
 
 $bundledDartVersion = if ($flutterResult.Found) { Get-FlutterBundledDartVersion -Text $flutterResult.Captured } else { $null }
