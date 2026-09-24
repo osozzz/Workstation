@@ -6,9 +6,10 @@ A Windows developer-workstation toolkit for auditing, comparing, and standardizi
 
 **v0.9.0 — Audit Hardening**
 
-0.8.0 — Cross-PC Comparison is complete and published. The repository is now hardening the complete read-only audit with static analysis, provider and contract tests, normalized schema validation, deterministic fixtures, failure-path coverage, PowerShell compatibility verification, stable CI checks, and report redaction/security testing.
+`v0.8.0 — Cross-PC Comparison` is complete and published. The repository is now hardening the complete read-only audit with static analysis, provider and contract tests, normalized schema validation, deterministic fixtures, failure-path coverage, PowerShell compatibility verification, stable CI checks, and report redaction/security testing.
 
 The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
+
 ## Repository model
 
 This public repository stores reusable scripts, policies, configuration, schemas, validation assets, and documentation only.
