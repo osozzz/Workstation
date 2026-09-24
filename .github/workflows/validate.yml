@@ -206,6 +206,11 @@ jobs:
         run: |
           ./tests/git-health-comparison/validate_git_health_comparison.ps1
 
+      - name: Validate Sprint 6 Cross-PC Comparison integration gate
+        shell: pwsh
+        run: |
+          ./tests/sprint6-integration/validate_sprint6_cross_pc_comparison.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
