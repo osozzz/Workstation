@@ -75,8 +75,8 @@ function Assert-WorkstationComparisonReport {
         throw "$Role report must declare audit.mode as read-only."
     }
 
-    $host = Get-ComparisonOptionalPropertyValue -InputObject $Report -Name 'host'
-    if ($null -eq $host) {
+    $hostIdentity = Get-ComparisonOptionalPropertyValue -InputObject $Report -Name 'host'
+    if ($null -eq $hostIdentity) {
         throw "$Role report does not contain normalized host identity."
     }
 
