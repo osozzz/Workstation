@@ -170,6 +170,12 @@ jobs:
         run: |
           ./tests/sprint5-integration/validate_sprint5_version_intelligence.ps1
 
+      - name: Validate normalized comparison contract
+        shell: pwsh
+        run: |
+          ./tests/comparison-core/validate_comparison_core.ps1
+          python ./tests/comparison-core/validate_comparison_schema.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
