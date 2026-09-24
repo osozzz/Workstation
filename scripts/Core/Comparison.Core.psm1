@@ -330,7 +330,7 @@ function Get-ComparisonValueHash {
 function Add-ComparisonValueDifference {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
         [Parameter(Mandatory)][ValidateSet('provider', 'component', 'version', 'path', 'environment', 'application', 'project', 'git')][string]$Category,
         [Parameter(Mandatory)][ValidatePattern('^[a-z0-9]+(?:[._-][a-z0-9]+)*$')][string]$Kind,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
@@ -384,7 +384,7 @@ function Add-ComparisonValueDifference {
 function Add-ComparisonSetDifferences {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
         [Parameter(Mandatory)][ValidateSet('component', 'version')][string]$Category,
         [Parameter(Mandatory)][ValidatePattern('^[a-z0-9]+(?:[._-][a-z0-9]+)*$')][string]$Kind,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
@@ -450,7 +450,7 @@ function Add-ComparisonSetDifferences {
 function Add-ComparisonComponentVersionDifferences {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ComponentId,
         [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceComponent,
