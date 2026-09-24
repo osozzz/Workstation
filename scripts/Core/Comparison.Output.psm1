@@ -188,12 +188,13 @@ function ConvertTo-WorkstationComparisonText {
     $lines.Add("Target: $(ConvertTo-ComparisonEndpointText -Endpoint $Comparison.target)")
     $lines.Add("Status: $([string]$Comparison.summary.status)")
     $lines.Add("Differences: $([int]$Comparison.summary.differenceCount)")
-    $lines.Add(
-        'Semantic states: unavailable={0}, unknown={1}, not-applicable={2}' -f
+    $semanticValues = @(
         [int]$Comparison.summary.unavailableCount,
         [int]$Comparison.summary.unknownCount,
         [int]$Comparison.summary.notApplicableCount
     )
+    $semanticLine = 'Semantic states: unavailable={0}, unknown={1}, not-applicable={2}' -f $semanticValues
+    $lines.Add($semanticLine)
     $lines.Add('')
 
     $groups = @(
