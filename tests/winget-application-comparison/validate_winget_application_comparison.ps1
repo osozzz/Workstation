@@ -277,7 +277,7 @@ $targetReport = New-SyntheticReport -Name target -Providers @($targetProvider)
 $comparison = New-WorkstationComparison -ReferenceReport $referenceReport -TargetReport $targetReport
 $applicationDifferences = @($comparison.differences | Where-Object category -eq 'application')
 
-Assert-True ($applicationDifferences.Count -eq 5) 'Primary WinGet comparison must emit exactly five application differences.'
+Assert-True ($applicationDifferences.Count -eq 6) 'Primary WinGet comparison must emit exactly six application differences.'
 Assert-True (@($applicationDifferences | Where-Object kind -eq 'presence').Count -eq 2) 'Reference-only and target-only installed applications must be distinguishable.'
 Assert-True (@($applicationDifferences | Where-Object kind -eq 'installed-version').Count -eq 1) 'Reliable installed-version drift must be compared independently.'
 Assert-True (@($applicationDifferences | Where-Object kind -eq 'upgrade-availability').Count -eq 2) 'Upgrade package-set drift must remain separate from installed presence.'
