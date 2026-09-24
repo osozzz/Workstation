@@ -560,14 +560,14 @@ function Resolve-AuditEnvironmentReferences {
     $unapprovedReferences = [System.Collections.Generic.List[string]]::new()
 
     for ($pass = 0; $pass -lt 8; $pass++) {
-        $matches = @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))
-        if ($matches.Count -eq 0) {
+        $resultMatches = @([regex]::Matches($expanded, '%(?<name>[^%]+)%'))
+        if ($resultMatches.Count -eq 0) {
             break
         }
 
         $changed = $false
 
-        foreach ($match in $matches) {
+        foreach ($match in $resultMatches) {
             $referenceName = [string]$match.Groups['name'].Value
 
             if ($script:AuditEnvironmentAllowList -notcontains $referenceName) {
@@ -1175,7 +1175,7 @@ function Get-AuditCommandPathAnalysis {
                     $normalizedDirectory = ConvertTo-AuditPathEntry -Scope process -Position 0 -Entry $pathDirectory -EnvironmentValues @{}
                     $pathComparisonKey = [string]$normalizedDirectory.comparisonKey
 
-                    $matches = @(
+                    $resultMatches = @(
                         $ProcessPathEntries |
                             Where-Object {
                                 -not [string]::IsNullOrWhiteSpace([string]$_.comparisonKey) -and
@@ -1184,13 +1184,13 @@ function Get-AuditCommandPathAnalysis {
                             Sort-Object position
                     )
 
-                    if ($matches.Count -eq 1) {
-                        $pathPosition = [int]$matches[0].position
+                    if ($resultMatches.Count -eq 1) {
+                        $pathPosition = [int]$resultMatches[0].position
                         $candidatePathPositions = @($pathPosition)
                         $pathMappingStatus = 'mapped'
                     }
-                    elseif ($matches.Count -gt 1) {
-                        $candidatePathPositions = @($matches | ForEach-Object { [int]$_.position })
+                    elseif ($resultMatches.Count -gt 1) {
+                        $candidatePathPositions = @($resultMatches | ForEach-Object { [int]$_.position })
                         $pathPosition = [int]$candidatePathPositions[0]
                         $pathMappingStatus = 'mapped-equivalent-duplicates'
                     }
