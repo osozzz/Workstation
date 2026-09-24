@@ -417,6 +417,31 @@ $localUnavailableComparison = New-WorkstationComparison -ReferenceReport $refere
 Assert-True (@($localUnavailableComparison.differences | Where-Object category -eq 'project').Count -eq 0) 'Unavailable bounded discovery must not fabricate all projects as missing.'
 Assert-True (@($localUnavailableComparison.differences | Where-Object { $_.providerId -eq 'runtime.synthetic' -and $_.category -eq 'version' }).Count -eq 1) 'Unavailable project discovery must not block unrelated runtime comparison.'
 
+$duplicateReferenceCandidates = @(
+    (New-SyntheticCandidate -Path 'C:\RootA\Duplicate' -RelativePath 'Duplicate' -RepositoryMarker $true -RootIndexes @(0)),
+    (New-SyntheticCandidate -Path 'C:\RootB\Duplicate' -RelativePath 'Duplicate' -RepositoryMarker $true -RootIndexes @(1))
+)
+$duplicateTargetCandidates = @(
+    (New-SyntheticCandidate -Path 'D:\OtherA\Duplicate' -RelativePath 'Duplicate' -RepositoryMarker $true -RootIndexes @(9)),
+    (New-SyntheticCandidate -Path 'D:\OtherB\Duplicate' -RelativePath 'Duplicate' -RepositoryMarker $true -RootIndexes @(3))
+)
+
+$duplicateReferenceReport = New-SyntheticReport -Name duplicate-reference -Providers @(
+    (New-ProjectsLocalProvider -Candidates $duplicateReferenceCandidates),
+    (New-ClassificationProvider -Kind javascript -Projects @()),
+    (New-ClassificationProvider -Kind non-javascript -Projects @()),
+    (New-SyntheticRuntimeProvider -Version '22.0.0')
+)
+$duplicateTargetReport = New-SyntheticReport -Name duplicate-target -Providers @(
+    (New-ProjectsLocalProvider -Candidates $duplicateTargetCandidates),
+    (New-ClassificationProvider -Kind javascript -Projects @()),
+    (New-ClassificationProvider -Kind non-javascript -Projects @()),
+    (New-SyntheticRuntimeProvider -Version '22.0.0')
+)
+
+$duplicateComparison = New-WorkstationComparison -ReferenceReport $duplicateReferenceReport -TargetReport $duplicateTargetReport
+Assert-True (@($duplicateComparison.differences | Where-Object category -eq 'project').Count -eq 0) 'Ambiguous duplicate path-safe identities must be suppressed instead of matched by configured-root order.'
+
 $coreSource = Get-Content -LiteralPath $corePath -Raw
 foreach ($required in @(
     'projects.local.discovery',
