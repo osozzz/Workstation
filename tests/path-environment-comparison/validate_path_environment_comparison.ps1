@@ -489,9 +489,7 @@ $coreSource = Get-Content -LiteralPath $corePath -Raw
 
 foreach ($requiredMarker in @(
     'environment.allowlist.boundary',
-    'path.machine.health',
-    'path.user.health',
-    'path.process.health',
+    'path.$scope.health',
     'path.persistent.cross-scope-duplicates',
     'path-precedence.command.*',
     'allowlisted-variable',
