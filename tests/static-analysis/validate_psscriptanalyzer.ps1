@@ -30,6 +30,7 @@ if (-not (Test-Path -LiteralPath $scriptsRoot -PathType Container)) {
 function Assert-NoAnalyzerFindings {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [object[]]$Diagnostics,
 
         [Parameter(Mandatory)]
