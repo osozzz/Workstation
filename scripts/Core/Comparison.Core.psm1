@@ -679,7 +679,7 @@ Export-ModuleMember -Function @(
         [object[]]$TargetValues = @()
     )
 
-    $referenceMap = @{}
+    $referenceMap = [System.Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
     foreach ($value in @($ReferenceValues)) {
         if ($null -eq $value) {
             continue
@@ -689,7 +689,7 @@ Export-ModuleMember -Function @(
         $referenceMap[$canonical] = $value
     }
 
-    $targetMap = @{}
+    $targetMap = [System.Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
     foreach ($value in @($TargetValues)) {
         if ($null -eq $value) {
             continue
@@ -699,10 +699,13 @@ Export-ModuleMember -Function @(
         $targetMap[$canonical] = $value
     }
 
-    $keys = @(
-        @($referenceMap.Keys) + @($targetMap.Keys) |
-            Sort-Object -Unique
-    )
+    $keys = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($key in $referenceMap.Keys) {
+        $null = $keys.Add($key)
+    }
+    foreach ($key in $targetMap.Keys) {
+        $null = $keys.Add($key)
+    }
 
     foreach ($key in $keys) {
         $referenceExists = $referenceMap.ContainsKey($key)
