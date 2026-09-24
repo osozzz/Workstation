@@ -4,6 +4,26 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 0.8.0 — 2026-09-24
+
+### Cross-PC Comparison
+
+- Added a schema-aware normalized comparison contract with explicit `reference -> target` direction, stable provider/component identity, semantic provider/component states, and deterministic difference ordering.
+- Added normalized component and version comparison for installed/missing state, active/default versions, discovered-version sets, installations, command resolutions, and version-intelligence channels without relying on raw terminal output.
+- Added PATH and safe environment comparison for scope ordering, duplicate/missing/unresolved entries, approved environment-variable values, persistent cross-scope duplicates, and normalized command precedence.
+- Added WinGet/application comparison using reliable package IDs, separate installed-version drift from upgrade availability, and explicit current, upgrade-available, source-unavailable, agreement-required, command-failed, and unknown states.
+- Added project/runtime-constraint comparison using path-safe project identity, normalized project types, runtime constraints, package-manager pins, and provider-availability semantics without exposing machine-specific absolute paths.
+- Added Git-health comparison for inspection state, branch/upstream configuration, ahead/behind divergence, working-tree state, branch hygiene, and worktree hygiene while excluding absolute repository/worktree paths, commit/object IDs, remote URLs, raw status output, and modified filenames from comparison output.
+- Added deterministic machine-readable `comparison.json` output and human-readable `comparison.txt` rendering derived only from the normalized comparison result.
+- Preserved unavailable, unknown, not-applicable, partial, reference-only, and target-only semantics in both structured and human-readable outputs.
+- Kept machine-specific comparison reports local under the ignored `reports/` boundary; controlled CI outputs are written only to ephemeral storage and removed after validation.
+- Added the complete Sprint 6 integration gate using one synthetic reference/target pair across all comparison categories, with 18 deterministic known differences.
+- Validated supported audit-schema minor compatibility and explicit failure for unsupported schema majors.
+- Validated that an unavailable provider on one machine does not block unrelated comparison categories.
+- Kept the comparison runtime read-only: no install, update, remove, repair, environment mutation, provider rediscovery, Git fetch/pull/checkout/reset/clean, or synchronization behavior is performed.
+- Updated the repository tool version to `0.8.0` for the Cross-PC Comparison release.
+
+
 ## 0.7.0 — 2026-09-23
 
 ### Version Intelligence
