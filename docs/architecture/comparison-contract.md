@@ -184,6 +184,31 @@ Classification providers in `not-applicable` state remain readable as valid empt
 
 The comparator does not read project files, expand configured discovery roots, traverse the filesystem, execute project code, run package managers, mutate Git, or alter the bounded discovery contract.
 
+## Git health comparison
+
+Issue #100 compares normalized Git repository and worktree health already produced by the Sprint 4 providers.
+
+Git comparison consumes:
+
+- `git.repository-health.repository.*` for repository inspection state, current branch/upstream state, ahead/behind divergence, and safe working-tree counts;
+- `git.branch-worktree-hygiene.repository.*` for branch/worktree hygiene summaries;
+- `projects.local.discovery` only to derive the same path-safe cross-PC repository identity used by project comparison.
+
+Absolute repository/worktree paths, object IDs, commit hashes, raw status output, file names, and remote URLs are not emitted as Git comparison values.
+
+Repository differences are separated by concern:
+
+- `inspection-state` preserves inspected, unavailable, and unknown repository evidence;
+- `branch-upstream` compares current branch and normalized upstream configuration without remote URLs;
+- `divergence` compares locally known ahead/behind/diverged facts only when the evidence is available;
+- `worktree-state` compares clean/dirty state and aggregate staged, unstaged, untracked, and conflicted counts;
+- `branch-hygiene` compares aggregate stale, gone-upstream, naming-deviation, and advisory cleanup counts;
+- `worktree-hygiene` compares aggregate main/linked, dirty-linked, prunable, cleanup-candidate, and unavailable worktree counts.
+
+Git-health providers in partial state remain readable. Failed or unavailable providers suppress specialized Git drift without blocking unrelated comparison categories. Repository-level unavailable evidence is preserved explicitly instead of being treated as a clean or missing repository.
+
+The comparison runtime does not execute Git commands and never performs fetch, pull, push, checkout, branch deletion, reset, clean, prune, worktree removal, configuration mutation, or history rewriting.
+
 ## Initial Sprint 6 core coverage
 
 Issue #95 establishes only the common comparison mechanics:
@@ -202,7 +227,7 @@ The following are intentionally deferred:
 - PATH and safe environment comparison: implemented by #97;
 - WinGet/application comparison: implemented by #98;
 - project/runtime-constraint comparison: implemented by #99;
-- Git-health comparison: #100;
+- Git-health comparison: implemented by #100;
 - human-readable/local report rendering: #101;
 - complete Sprint 6 integration gate: #102.
 
