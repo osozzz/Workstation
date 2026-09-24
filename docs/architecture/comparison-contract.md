@@ -236,6 +236,27 @@ Generated workstation audit and comparison artifacts remain local under the igno
 
 Output generation writes only the requested report files and performs no workstation configuration, package, PATH/environment, project, or Git mutation.
 
+## Sprint 6 integration gate
+
+Issue #102 is the release gate for normalized Cross-PC Comparison.
+
+The gate runs one deterministic synthetic reference/target comparison through the complete Sprint 6 stack and asserts known drift across:
+
+- provider/component state and active versions;
+- PATH and approved environment variables;
+- normalized WinGet application inventory;
+- path-safe project identity, runtime constraints, and package-manager pins;
+- normalized Git divergence and worktree hygiene;
+- structured JSON and human-readable local outputs.
+
+The synthetic pair also covers partial, missing, unavailable, unknown, and not-applicable semantics in the same comparison. An unavailable unrelated provider is present while all other comparison categories are asserted, confirming provider failure isolation.
+
+Audit schema minor-version compatibility is validated within the supported major, while an unsupported schema major must fail explicitly.
+
+Controlled output files are written only to ephemeral storage outside the repository workspace and deleted after validation. The gate checks the ignored `reports/` boundary and scans committed fixture/runtime sources for unsafe real-account markers and comparison-side mutation/discovery commands.
+
+This integration gate is additive to the existing individual Sprint 6 validators; the repository validation workflow must keep all prior audit/provider suites green before v0.8.0 is considered ready.
+
 ## Initial Sprint 6 core coverage
 
 Issue #95 establishes only the common comparison mechanics:
