@@ -1025,6 +1025,720 @@ function Add-ComparisonPathPrecedenceDifferences {
     }
 }
 
+
+function Get-ComparisonWinGetEvidenceState {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Evidence
+    )
+
+    if ($null -eq $Evidence) {
+        return $null
+    }
+
+    $attributes = Get-ComparisonOptionalPropertyValue -InputObject $Evidence -Name 'attributes'
+    if ($null -eq $attributes) {
+        return $null
+    }
+
+    $status = Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'status'
+    if ([string]::IsNullOrWhiteSpace([string]$status)) {
+        return $null
+    }
+
+    return [string]$status
+}
+
+function Get-ComparisonWinGetStateRelation {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][string]$ReferenceState,
+        [AllowNull()][string]$TargetState
+    )
+
+    if ([string]$ReferenceState -eq [string]$TargetState) {
+        return 'equal'
+    }
+
+    if ([string]::IsNullOrWhiteSpace([string]$ReferenceState)) {
+        return 'target-only'
+    }
+
+    if ([string]::IsNullOrWhiteSpace([string]$TargetState)) {
+        return 'reference-only'
+    }
+
+    if ($ReferenceState -eq 'unknown' -or $TargetState -eq 'unknown') {
+        return 'unknown'
+    }
+
+    $unavailableStates = @(
+        'unavailable',
+        'source-unavailable',
+        'agreement-required',
+        'command-failed'
+    )
+    if ($ReferenceState -in $unavailableStates -or $TargetState -in $unavailableStates) {
+        return 'unavailable'
+    }
+
+    return 'different'
+}
+
+function Add-ComparisonWinGetEvidenceStateDifference {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidatePattern('^[a-z0-9]+(?:[._-][a-z0-9]+)*
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceProvider,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetProvider
+    )
+
+    switch ($ProviderId) {
+        'environment.baseline' {
+            Add-ComparisonEnvironmentBaselineDifferences -Differences $Differences -ReferenceProvider $ReferenceProvider -TargetProvider $TargetProvider
+        }
+        'path.precedence' {
+            Add-ComparisonPathPrecedenceDifferences -Differences $Differences -ReferenceProvider $ReferenceProvider -TargetProvider $TargetProvider
+        }
+    }
+}
+
+function New-WorkstationComparison {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceReport,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetReport
+    )
+
+    $referenceSchema = Assert-WorkstationComparisonReport -Report $ReferenceReport -Role reference
+    $targetSchema = Assert-WorkstationComparisonReport -Report $TargetReport -Role target
+
+    if ($referenceSchema.major -ne $targetSchema.major) {
+        throw "Reference and target audit schema majors differ: $($referenceSchema.major) vs $($targetSchema.major)."
+    }
+
+    $referenceProviders = Get-ComparisonProviderIndex -Report $ReferenceReport -Role reference
+    $targetProviders = Get-ComparisonProviderIndex -Report $TargetReport -Role target
+
+    $providerIds = @(
+        @($referenceProviders.Keys) + @($targetProviders.Keys) |
+            Sort-Object -Unique
+    )
+
+    $differences = [System.Collections.Generic.List[object]]::new()
+
+    foreach ($providerId in $providerIds) {
+        $referenceExists = $referenceProviders.ContainsKey($providerId)
+        $targetExists = $targetProviders.ContainsKey($providerId)
+        $referenceProvider = if ($referenceExists) { $referenceProviders[$providerId] } else { $null }
+        $targetProvider = if ($targetExists) { $targetProviders[$providerId] } else { $null }
+
+        $referenceStatus = if ($referenceExists) { [string]$referenceProvider.status } else { $null }
+        $targetStatus = if ($targetExists) { [string]$targetProvider.status } else { $null }
+
+        $relationParameters = @{
+            ReferenceExists = $referenceExists
+            TargetExists    = $targetExists
+            ReferenceState  = $referenceStatus
+            TargetState     = $targetStatus
+        }
+        $providerRelation = Get-ComparisonRelation @relationParameters
+
+        if ($providerRelation -ne 'equal') {
+            $providerKind = if ($referenceExists -and $targetExists) { 'status' } else { 'presence' }
+            $parameters = @{
+                Category       = 'provider'
+                Kind           = $providerKind
+                ProviderId     = $providerId
+                Relation       = $providerRelation
+                ReferenceState = $referenceStatus
+                TargetState    = $targetStatus
+            }
+            $differences.Add((New-ComparisonDifference @parameters))
+        }
+
+        if (-not ($referenceExists -and $targetExists)) {
+            continue
+        }
+
+        $pathEnvironmentParameters = @{
+            Differences       = $differences
+            ProviderId        = $providerId
+            ReferenceProvider = $referenceProvider
+            TargetProvider    = $targetProvider
+        }
+        Add-ComparisonPathEnvironmentProviderDifferences @pathEnvironmentParameters
+
+        if ($providerId -eq 'winget.baseline') {
+            $applicationParameters = @{
+                Differences       = $differences
+                ReferenceProvider = $referenceProvider
+                TargetProvider    = $targetProvider
+            }
+            Add-ComparisonWinGetApplicationDifferences @applicationParameters
+        }
+
+        $referenceComponents = Get-ComparisonComponentIndex -Provider $referenceProvider -ProviderId $providerId -Role reference
+        $targetComponents = Get-ComparisonComponentIndex -Provider $targetProvider -ProviderId $providerId -Role target
+
+        $componentIds = @(
+            @($referenceComponents.Keys) + @($targetComponents.Keys) |
+                Sort-Object -Unique
+        )
+
+        foreach ($componentId in $componentIds) {
+            $referenceComponentExists = $referenceComponents.ContainsKey($componentId)
+            $targetComponentExists = $targetComponents.ContainsKey($componentId)
+            $referenceComponent = if ($referenceComponentExists) { $referenceComponents[$componentId] } else { $null }
+            $targetComponent = if ($targetComponentExists) { $targetComponents[$componentId] } else { $null }
+
+            $referenceState = if ($referenceComponentExists) { [string]$referenceComponent.state } else { $null }
+            $targetState = if ($targetComponentExists) { [string]$targetComponent.state } else { $null }
+
+            $relationParameters = @{
+                ReferenceExists = $referenceComponentExists
+                TargetExists    = $targetComponentExists
+                ReferenceState  = $referenceState
+                TargetState     = $targetState
+            }
+            $componentRelation = Get-ComparisonRelation @relationParameters
+
+            if ($componentRelation -ne 'equal') {
+                $componentKind = if ($referenceComponentExists -and $targetComponentExists) { 'state' } else { 'presence' }
+                $parameters = @{
+                    Category       = 'component'
+                    Kind           = $componentKind
+                    ProviderId     = $providerId
+                    ComponentId    = $componentId
+                    Relation       = $componentRelation
+                    ReferenceState = $referenceState
+                    TargetState    = $targetState
+                }
+                $differences.Add((New-ComparisonDifference @parameters))
+            }
+
+            if (-not ($referenceComponentExists -and $targetComponentExists)) {
+                continue
+            }
+
+            $parameters = @{
+                Differences        = $differences
+                ProviderId         = $providerId
+                ComponentId        = $componentId
+                ReferenceComponent = $referenceComponent
+                TargetComponent    = $targetComponent
+            }
+            Add-ComparisonComponentVersionDifferences @parameters
+        }
+    }
+
+    $orderedDifferences = @(
+        $differences |
+            Sort-Object category, providerId, componentId, subjectId, kind
+    )
+
+    $providerDifferenceCount = @($orderedDifferences | Where-Object category -eq 'provider').Count
+    $componentDifferenceCount = @($orderedDifferences | Where-Object category -eq 'component').Count
+    $versionDifferenceCount = @($orderedDifferences | Where-Object category -eq 'version').Count
+    $unavailableCount = @($orderedDifferences | Where-Object relation -eq 'unavailable').Count
+    $unknownCount = @($orderedDifferences | Where-Object relation -eq 'unknown').Count
+    $notApplicableCount = @($orderedDifferences | Where-Object relation -eq 'not-applicable').Count
+
+    return [pscustomobject][ordered]@{
+        schemaVersion    = $script:ComparisonSchemaVersion
+        auditSchemaMajor = $script:SupportedAuditSchemaMajor
+        direction        = 'reference-to-target'
+        reference        = New-ComparisonEndpointDescriptor -Report $ReferenceReport
+        target           = New-ComparisonEndpointDescriptor -Report $TargetReport
+        summary          = [pscustomobject][ordered]@{
+            status                   = $(if ($orderedDifferences.Count -eq 0) { 'equal' } else { 'different' })
+            differenceCount          = $orderedDifferences.Count
+            providerDifferenceCount  = $providerDifferenceCount
+            componentDifferenceCount = $componentDifferenceCount
+            versionDifferenceCount   = $versionDifferenceCount
+            unavailableCount         = $unavailableCount
+            unknownCount             = $unknownCount
+            notApplicableCount       = $notApplicableCount
+        }
+        differences      = $orderedDifferences
+    }
+}
+
+Export-ModuleMember -Function @(
+    'Assert-WorkstationComparisonReport',
+    'Get-ComparisonProviderIndex',
+    'Get-ComparisonComponentIndex',
+    'Get-ComparisonRelation',
+    'ConvertTo-ComparisonVersionValue',
+    'ConvertTo-ComparisonInstallationValue',
+    'ConvertTo-ComparisonCommandResolutionValue',
+    'New-ComparisonDifference',
+    'New-WorkstationComparison'
+)
+)][string]$Kind,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubjectId,
+        [AllowNull()][object]$ReferenceEvidence,
+        [AllowNull()][object]$TargetEvidence
+    )
+
+    $referenceState = Get-ComparisonWinGetEvidenceState -Evidence $ReferenceEvidence
+    $targetState = Get-ComparisonWinGetEvidenceState -Evidence $TargetEvidence
+    $relation = Get-ComparisonWinGetStateRelation -ReferenceState $referenceState -TargetState $targetState
+
+    if ($relation -eq 'equal') {
+        return
+    }
+
+    $parameters = @{
+        Category       = 'application'
+        Kind           = $Kind
+        ProviderId     = 'winget.baseline'
+        ComponentId    = 'winget'
+        SubjectId      = $SubjectId
+        Relation       = $relation
+        ReferenceState = $referenceState
+        TargetState    = $targetState
+    }
+    $Differences.Add((New-ComparisonDifference @parameters))
+}
+
+function Get-ComparisonWinGetReliablePackageIndex {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Evidence,
+        [Parameter(Mandatory)][ValidateSet('packages', 'upgrades')][string]$RecordProperty,
+        [Parameter(Mandatory)][ValidateSet('reference', 'target')][string]$Role
+    )
+
+    $attributes = Get-ComparisonOptionalPropertyValue -InputObject $Evidence -Name 'attributes'
+    if ($null -eq $attributes) {
+        throw "$Role WinGet '$RecordProperty' evidence does not contain attributes."
+    }
+
+    $records = Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name $RecordProperty
+    $index = @{}
+
+    foreach ($record in @($records)) {
+        if ($null -eq $record) {
+            continue
+        }
+
+        $identityReliable = Get-ComparisonOptionalPropertyValue -InputObject $record -Name 'identityReliable'
+        $packageId = [string](Get-ComparisonOptionalPropertyValue -InputObject $record -Name 'packageId')
+
+        if ($identityReliable -ne $true -or [string]::IsNullOrWhiteSpace($packageId)) {
+            continue
+        }
+
+        $key = $packageId.Trim().ToLowerInvariant()
+        if ($index.ContainsKey($key)) {
+            throw "$Role WinGet '$RecordProperty' evidence contains duplicate reliable packageId '$packageId'."
+        }
+
+        $index[$key] = $record
+    }
+
+    return $index
+}
+
+function New-ComparisonWinGetPackageIdentityValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$PackageId
+    )
+
+    return [pscustomobject][ordered]@{
+        packageId = $PackageId.Trim().ToLowerInvariant()
+    }
+}
+
+function Add-ComparisonWinGetVersionDifference {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidatePattern('^[a-z0-9]+(?:[._-][a-z0-9]+)*
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceProvider,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetProvider
+    )
+
+    switch ($ProviderId) {
+        'environment.baseline' {
+            Add-ComparisonEnvironmentBaselineDifferences -Differences $Differences -ReferenceProvider $ReferenceProvider -TargetProvider $TargetProvider
+        }
+        'path.precedence' {
+            Add-ComparisonPathPrecedenceDifferences -Differences $Differences -ReferenceProvider $ReferenceProvider -TargetProvider $TargetProvider
+        }
+    }
+}
+
+function New-WorkstationComparison {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceReport,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetReport
+    )
+
+    $referenceSchema = Assert-WorkstationComparisonReport -Report $ReferenceReport -Role reference
+    $targetSchema = Assert-WorkstationComparisonReport -Report $TargetReport -Role target
+
+    if ($referenceSchema.major -ne $targetSchema.major) {
+        throw "Reference and target audit schema majors differ: $($referenceSchema.major) vs $($targetSchema.major)."
+    }
+
+    $referenceProviders = Get-ComparisonProviderIndex -Report $ReferenceReport -Role reference
+    $targetProviders = Get-ComparisonProviderIndex -Report $TargetReport -Role target
+
+    $providerIds = @(
+        @($referenceProviders.Keys) + @($targetProviders.Keys) |
+            Sort-Object -Unique
+    )
+
+    $differences = [System.Collections.Generic.List[object]]::new()
+
+    foreach ($providerId in $providerIds) {
+        $referenceExists = $referenceProviders.ContainsKey($providerId)
+        $targetExists = $targetProviders.ContainsKey($providerId)
+        $referenceProvider = if ($referenceExists) { $referenceProviders[$providerId] } else { $null }
+        $targetProvider = if ($targetExists) { $targetProviders[$providerId] } else { $null }
+
+        $referenceStatus = if ($referenceExists) { [string]$referenceProvider.status } else { $null }
+        $targetStatus = if ($targetExists) { [string]$targetProvider.status } else { $null }
+
+        $relationParameters = @{
+            ReferenceExists = $referenceExists
+            TargetExists    = $targetExists
+            ReferenceState  = $referenceStatus
+            TargetState     = $targetStatus
+        }
+        $providerRelation = Get-ComparisonRelation @relationParameters
+
+        if ($providerRelation -ne 'equal') {
+            $providerKind = if ($referenceExists -and $targetExists) { 'status' } else { 'presence' }
+            $parameters = @{
+                Category       = 'provider'
+                Kind           = $providerKind
+                ProviderId     = $providerId
+                Relation       = $providerRelation
+                ReferenceState = $referenceStatus
+                TargetState    = $targetStatus
+            }
+            $differences.Add((New-ComparisonDifference @parameters))
+        }
+
+        if (-not ($referenceExists -and $targetExists)) {
+            continue
+        }
+
+        $pathEnvironmentParameters = @{
+            Differences       = $differences
+            ProviderId        = $providerId
+            ReferenceProvider = $referenceProvider
+            TargetProvider    = $targetProvider
+        }
+        Add-ComparisonPathEnvironmentProviderDifferences @pathEnvironmentParameters
+
+        $referenceComponents = Get-ComparisonComponentIndex -Provider $referenceProvider -ProviderId $providerId -Role reference
+        $targetComponents = Get-ComparisonComponentIndex -Provider $targetProvider -ProviderId $providerId -Role target
+
+        $componentIds = @(
+            @($referenceComponents.Keys) + @($targetComponents.Keys) |
+                Sort-Object -Unique
+        )
+
+        foreach ($componentId in $componentIds) {
+            $referenceComponentExists = $referenceComponents.ContainsKey($componentId)
+            $targetComponentExists = $targetComponents.ContainsKey($componentId)
+            $referenceComponent = if ($referenceComponentExists) { $referenceComponents[$componentId] } else { $null }
+            $targetComponent = if ($targetComponentExists) { $targetComponents[$componentId] } else { $null }
+
+            $referenceState = if ($referenceComponentExists) { [string]$referenceComponent.state } else { $null }
+            $targetState = if ($targetComponentExists) { [string]$targetComponent.state } else { $null }
+
+            $relationParameters = @{
+                ReferenceExists = $referenceComponentExists
+                TargetExists    = $targetComponentExists
+                ReferenceState  = $referenceState
+                TargetState     = $targetState
+            }
+            $componentRelation = Get-ComparisonRelation @relationParameters
+
+            if ($componentRelation -ne 'equal') {
+                $componentKind = if ($referenceComponentExists -and $targetComponentExists) { 'state' } else { 'presence' }
+                $parameters = @{
+                    Category       = 'component'
+                    Kind           = $componentKind
+                    ProviderId     = $providerId
+                    ComponentId    = $componentId
+                    Relation       = $componentRelation
+                    ReferenceState = $referenceState
+                    TargetState    = $targetState
+                }
+                $differences.Add((New-ComparisonDifference @parameters))
+            }
+
+            if (-not ($referenceComponentExists -and $targetComponentExists)) {
+                continue
+            }
+
+            $parameters = @{
+                Differences        = $differences
+                ProviderId         = $providerId
+                ComponentId        = $componentId
+                ReferenceComponent = $referenceComponent
+                TargetComponent    = $targetComponent
+            }
+            Add-ComparisonComponentVersionDifferences @parameters
+        }
+    }
+
+    $orderedDifferences = @(
+        $differences |
+            Sort-Object category, providerId, componentId, subjectId, kind
+    )
+
+    $providerDifferenceCount = @($orderedDifferences | Where-Object category -eq 'provider').Count
+    $componentDifferenceCount = @($orderedDifferences | Where-Object category -eq 'component').Count
+    $versionDifferenceCount = @($orderedDifferences | Where-Object category -eq 'version').Count
+    $unavailableCount = @($orderedDifferences | Where-Object relation -eq 'unavailable').Count
+    $unknownCount = @($orderedDifferences | Where-Object relation -eq 'unknown').Count
+    $notApplicableCount = @($orderedDifferences | Where-Object relation -eq 'not-applicable').Count
+
+    return [pscustomobject][ordered]@{
+        schemaVersion    = $script:ComparisonSchemaVersion
+        auditSchemaMajor = $script:SupportedAuditSchemaMajor
+        direction        = 'reference-to-target'
+        reference        = New-ComparisonEndpointDescriptor -Report $ReferenceReport
+        target           = New-ComparisonEndpointDescriptor -Report $TargetReport
+        summary          = [pscustomobject][ordered]@{
+            status                   = $(if ($orderedDifferences.Count -eq 0) { 'equal' } else { 'different' })
+            differenceCount          = $orderedDifferences.Count
+            providerDifferenceCount  = $providerDifferenceCount
+            componentDifferenceCount = $componentDifferenceCount
+            versionDifferenceCount   = $versionDifferenceCount
+            unavailableCount         = $unavailableCount
+            unknownCount             = $unknownCount
+            notApplicableCount       = $notApplicableCount
+        }
+        differences      = $orderedDifferences
+    }
+}
+
+Export-ModuleMember -Function @(
+    'Assert-WorkstationComparisonReport',
+    'Get-ComparisonProviderIndex',
+    'Get-ComparisonComponentIndex',
+    'Get-ComparisonRelation',
+    'ConvertTo-ComparisonVersionValue',
+    'ConvertTo-ComparisonInstallationValue',
+    'ConvertTo-ComparisonCommandResolutionValue',
+    'New-ComparisonDifference',
+    'New-WorkstationComparison'
+)
+)][string]$Kind,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubjectId,
+        [Parameter(Mandatory)][ValidateSet('installedVersion', 'availableVersion')][string]$VersionProperty,
+        [Parameter(Mandatory)][ValidateSet('installedVersionReliable', 'availableVersionReliable')][string]$ReliabilityProperty,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceRecord,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetRecord
+    )
+
+    $referenceReliable = (Get-ComparisonOptionalPropertyValue -InputObject $ReferenceRecord -Name $ReliabilityProperty) -eq $true
+    $targetReliable = (Get-ComparisonOptionalPropertyValue -InputObject $TargetRecord -Name $ReliabilityProperty) -eq $true
+
+    $referenceRaw = Get-ComparisonOptionalPropertyValue -InputObject $ReferenceRecord -Name $VersionProperty
+    $targetRaw = Get-ComparisonOptionalPropertyValue -InputObject $TargetRecord -Name $VersionProperty
+
+    $referenceKnown = $referenceReliable -and -not [string]::IsNullOrWhiteSpace([string]$referenceRaw)
+    $targetKnown = $targetReliable -and -not [string]::IsNullOrWhiteSpace([string]$targetRaw)
+
+    if (-not $referenceKnown -and -not $targetKnown) {
+        return
+    }
+
+    $referenceValue = $(if ($referenceKnown) { [string]$referenceRaw } else { $null })
+    $targetValue = $(if ($targetKnown) { [string]$targetRaw } else { $null })
+    $referenceState = $(if ($referenceKnown) { 'known' } else { 'unknown' })
+    $targetState = $(if ($targetKnown) { 'known' } else { 'unknown' })
+
+    if ($referenceKnown -and $targetKnown -and $referenceValue -eq $targetValue) {
+        return
+    }
+
+    $relation = if ($referenceKnown -and $targetKnown) { 'different' } else { 'unknown' }
+
+    $parameters = @{
+        Category       = 'application'
+        Kind           = $Kind
+        ProviderId     = 'winget.baseline'
+        ComponentId    = 'winget'
+        SubjectId      = $SubjectId
+        Relation       = $relation
+        ReferenceState = $referenceState
+        TargetState    = $targetState
+        ReferenceValue = $referenceValue
+        TargetValue    = $targetValue
+    }
+    $Differences.Add((New-ComparisonDifference @parameters))
+}
+
+function Test-ComparisonWinGetUpgradeStateComparable {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][string]$State
+    )
+
+    return ($State -in @('current', 'upgrades-available'))
+}
+
+function Add-ComparisonWinGetApplicationDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceProvider,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetProvider
+    )
+
+    if (-not (Test-ComparisonProviderHasComparableEvidence -Provider $ReferenceProvider) -or
+        -not (Test-ComparisonProviderHasComparableEvidence -Provider $TargetProvider)) {
+        return
+    }
+
+    $referenceEvidence = Get-ComparisonEvidenceIndex -Provider $ReferenceProvider -ProviderId 'winget.baseline' -Role reference
+    $targetEvidence = Get-ComparisonEvidenceIndex -Provider $TargetProvider -ProviderId 'winget.baseline' -Role target
+
+    $inventoryEvidenceId = 'winget.inventory.normalized'
+    $referenceInventory = if ($referenceEvidence.ContainsKey($inventoryEvidenceId)) { $referenceEvidence[$inventoryEvidenceId] } else { $null }
+    $targetInventory = if ($targetEvidence.ContainsKey($inventoryEvidenceId)) { $targetEvidence[$inventoryEvidenceId] } else { $null }
+
+    $inventoryStateParameters = @{
+        Differences       = $Differences
+        Kind              = 'inventory-status'
+        SubjectId         = 'winget-inventory'
+        ReferenceEvidence = $referenceInventory
+        TargetEvidence    = $targetInventory
+    }
+    Add-ComparisonWinGetEvidenceStateDifference @inventoryStateParameters
+
+    $referenceInventoryState = Get-ComparisonWinGetEvidenceState -Evidence $referenceInventory
+    $targetInventoryState = Get-ComparisonWinGetEvidenceState -Evidence $targetInventory
+
+    if ($null -ne $referenceInventory -and
+        $null -ne $targetInventory -and
+        $referenceInventoryState -eq 'known' -and
+        $targetInventoryState -eq 'known') {
+
+        $referencePackages = Get-ComparisonWinGetReliablePackageIndex -Evidence $referenceInventory -RecordProperty packages -Role reference
+        $targetPackages = Get-ComparisonWinGetReliablePackageIndex -Evidence $targetInventory -RecordProperty packages -Role target
+        $packageIds = @(@($referencePackages.Keys) + @($targetPackages.Keys) | Sort-Object -Unique)
+
+        foreach ($packageId in $packageIds) {
+            $referenceExists = $referencePackages.ContainsKey($packageId)
+            $targetExists = $targetPackages.ContainsKey($packageId)
+            $subjectId = "winget-package:$packageId"
+
+            if (-not ($referenceExists -and $targetExists)) {
+                $relation = if ($referenceExists) { 'reference-only' } else { 'target-only' }
+                $parameters = @{
+                    Category       = 'application'
+                    Kind           = 'presence'
+                    ProviderId     = 'winget.baseline'
+                    ComponentId    = 'winget'
+                    SubjectId      = $subjectId
+                    Relation       = $relation
+                    ReferenceState = $(if ($referenceExists) { 'installed' } else { 'missing' })
+                    TargetState    = $(if ($targetExists) { 'installed' } else { 'missing' })
+                    ReferenceValue = $(if ($referenceExists) { New-ComparisonWinGetPackageIdentityValue -PackageId $packageId } else { $null })
+                    TargetValue    = $(if ($targetExists) { New-ComparisonWinGetPackageIdentityValue -PackageId $packageId } else { $null })
+                }
+                $Differences.Add((New-ComparisonDifference @parameters))
+                continue
+            }
+
+            $versionParameters = @{
+                Differences         = $Differences
+                Kind                = 'installed-version'
+                SubjectId           = $subjectId
+                VersionProperty     = 'installedVersion'
+                ReliabilityProperty = 'installedVersionReliable'
+                ReferenceRecord     = $referencePackages[$packageId]
+                TargetRecord        = $targetPackages[$packageId]
+            }
+            Add-ComparisonWinGetVersionDifference @versionParameters
+        }
+    }
+
+    $upgradeEvidenceId = 'winget.upgrades.normalized'
+    $referenceUpgrades = if ($referenceEvidence.ContainsKey($upgradeEvidenceId)) { $referenceEvidence[$upgradeEvidenceId] } else { $null }
+    $targetUpgrades = if ($targetEvidence.ContainsKey($upgradeEvidenceId)) { $targetEvidence[$upgradeEvidenceId] } else { $null }
+
+    $upgradeStateParameters = @{
+        Differences       = $Differences
+        Kind              = 'upgrade-status'
+        SubjectId         = 'winget-upgrades'
+        ReferenceEvidence = $referenceUpgrades
+        TargetEvidence    = $targetUpgrades
+    }
+    Add-ComparisonWinGetEvidenceStateDifference @upgradeStateParameters
+
+    $referenceUpgradeState = Get-ComparisonWinGetEvidenceState -Evidence $referenceUpgrades
+    $targetUpgradeState = Get-ComparisonWinGetEvidenceState -Evidence $targetUpgrades
+
+    if ($null -eq $referenceUpgrades -or
+        $null -eq $targetUpgrades -or
+        -not (Test-ComparisonWinGetUpgradeStateComparable -State $referenceUpgradeState) -or
+        -not (Test-ComparisonWinGetUpgradeStateComparable -State $targetUpgradeState)) {
+        return
+    }
+
+    $referenceUpgradePackages = Get-ComparisonWinGetReliablePackageIndex -Evidence $referenceUpgrades -RecordProperty upgrades -Role reference
+    $targetUpgradePackages = Get-ComparisonWinGetReliablePackageIndex -Evidence $targetUpgrades -RecordProperty upgrades -Role target
+    $upgradePackageIds = @(@($referenceUpgradePackages.Keys) + @($targetUpgradePackages.Keys) | Sort-Object -Unique)
+
+    foreach ($packageId in $upgradePackageIds) {
+        $referenceExists = $referenceUpgradePackages.ContainsKey($packageId)
+        $targetExists = $targetUpgradePackages.ContainsKey($packageId)
+        $subjectId = "winget-upgrade:$packageId"
+
+        if (-not ($referenceExists -and $targetExists)) {
+            $relation = if ($referenceExists) { 'reference-only' } else { 'target-only' }
+            $parameters = @{
+                Category       = 'application'
+                Kind           = 'upgrade-availability'
+                ProviderId     = 'winget.baseline'
+                ComponentId    = 'winget'
+                SubjectId      = $subjectId
+                Relation       = $relation
+                ReferenceState = $(if ($referenceExists) { 'upgrade-available' } else { 'current' })
+                TargetState    = $(if ($targetExists) { 'upgrade-available' } else { 'current' })
+                ReferenceValue = $(if ($referenceExists) { New-ComparisonWinGetPackageIdentityValue -PackageId $packageId } else { $null })
+                TargetValue    = $(if ($targetExists) { New-ComparisonWinGetPackageIdentityValue -PackageId $packageId } else { $null })
+            }
+            $Differences.Add((New-ComparisonDifference @parameters))
+            continue
+        }
+
+        $versionParameters = @{
+            Differences         = $Differences
+            Kind                = 'available-version'
+            SubjectId           = $subjectId
+            VersionProperty     = 'availableVersion'
+            ReliabilityProperty = 'availableVersionReliable'
+            ReferenceRecord     = $referenceUpgradePackages[$packageId]
+            TargetRecord        = $targetUpgradePackages[$packageId]
+        }
+        Add-ComparisonWinGetVersionDifference @versionParameters
+    }
+}
+
 function Add-ComparisonPathEnvironmentProviderDifferences {
     [CmdletBinding()]
     param(
