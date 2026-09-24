@@ -1,4 +1,4 @@
-# Machine-specific audit output
+# Machine-specific audit and comparison output
 reports/
 config/workstation.local.json
 
