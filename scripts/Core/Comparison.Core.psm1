@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$script:ComparisonSchemaVersion = '1.0.0'
+$script:ComparisonSchemaVersion = '1.1.0'
 $script:SupportedAuditSchemaMajor = 1
 
 function Get-ComparisonOptionalPropertyValue {
@@ -224,6 +224,372 @@ function New-ComparisonDifference {
     }
 }
 
+
+function ConvertTo-ComparisonVersionValue {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$VersionRecord
+    )
+
+    if ($null -eq $VersionRecord) {
+        return $null
+    }
+
+    $normalized = Get-ComparisonOptionalPropertyValue -InputObject $VersionRecord -Name 'normalized'
+    $raw = Get-ComparisonOptionalPropertyValue -InputObject $VersionRecord -Name 'raw'
+    $channel = Get-ComparisonOptionalPropertyValue -InputObject $VersionRecord -Name 'channel'
+
+    $value = $null
+    $valueSource = $null
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$normalized)) {
+        $value = [string]$normalized
+        $valueSource = 'normalized'
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace([string]$raw)) {
+        $value = [string]$raw
+        $valueSource = 'raw'
+    }
+    else {
+        throw 'Version record does not contain normalized or raw version evidence.'
+    }
+
+    return [pscustomobject][ordered]@{
+        value       = $value
+        valueSource = $valueSource
+        channel     = $(if ([string]::IsNullOrWhiteSpace([string]$channel)) { $null } else { [string]$channel })
+    }
+}
+
+function ConvertTo-ComparisonInstallationValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Installation
+    )
+
+    return [pscustomobject][ordered]@{
+        path    = $(if ([string]::IsNullOrWhiteSpace([string]$Installation.path)) { $null } else { [string]$Installation.path })
+        version = ConvertTo-ComparisonVersionValue -VersionRecord $Installation.version
+        active  = [bool]$Installation.active
+        source  = [string]$Installation.source
+    }
+}
+
+function ConvertTo-ComparisonCommandResolutionValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Resolution
+    )
+
+    $precedence = Get-ComparisonOptionalPropertyValue -InputObject $Resolution -Name 'precedence'
+    $commandType = Get-ComparisonOptionalPropertyValue -InputObject $Resolution -Name 'commandType'
+    $path = Get-ComparisonOptionalPropertyValue -InputObject $Resolution -Name 'path'
+
+    return [pscustomobject][ordered]@{
+        command     = [string]$Resolution.command
+        path        = $(if ([string]::IsNullOrWhiteSpace([string]$path)) { $null } else { [string]$path })
+        commandType = $(if ([string]::IsNullOrWhiteSpace([string]$commandType)) { $null } else { [string]$commandType })
+        version     = ConvertTo-ComparisonVersionValue -VersionRecord $Resolution.version
+        precedence  = $(if ($null -eq $precedence) { $null } else { [int]$precedence })
+        active      = [bool]$Resolution.active
+    }
+}
+
+function ConvertTo-ComparisonCanonicalJson {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Value
+    )
+
+    if ($null -eq $Value) {
+        return 'null'
+    }
+
+    return ($Value | ConvertTo-Json -Depth 20 -Compress)
+}
+
+function Get-ComparisonValueHash {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$CanonicalJson
+    )
+
+    $bytes = [Text.Encoding]::UTF8.GetBytes($CanonicalJson)
+    $sha = [Security.Cryptography.SHA256]::Create()
+
+    try {
+        $hash = $sha.ComputeHash($bytes)
+    }
+    finally {
+        $sha.Dispose()
+    }
+
+    return ([Convert]::ToHexString($hash)).ToLowerInvariant()
+}
+
+function Add-ComparisonValueDifference {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateSet('provider', 'component', 'version', 'path', 'environment', 'application', 'project', 'git')][string]$Category,
+        [Parameter(Mandatory)][ValidatePattern('^[a-z0-9]+(?:[._-][a-z0-9]+)*$')][string]$Kind,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ComponentId,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubjectId,
+        [AllowNull()][object]$ReferenceValue,
+        [AllowNull()][object]$TargetValue,
+        [AllowNull()][string]$ReferenceState,
+        [AllowNull()][string]$TargetState
+    )
+
+    $referenceExists = ($null -ne $ReferenceValue)
+    $targetExists = ($null -ne $TargetValue)
+
+    if (-not $referenceExists -and -not $targetExists) {
+        return
+    }
+
+    $referenceJson = if ($referenceExists) { ConvertTo-ComparisonCanonicalJson -Value $ReferenceValue } else { $null }
+    $targetJson = if ($targetExists) { ConvertTo-ComparisonCanonicalJson -Value $TargetValue } else { $null }
+
+    if ($referenceExists -and $targetExists -and $referenceJson -eq $targetJson) {
+        return
+    }
+
+    $relation = if ($referenceExists -and -not $targetExists) {
+        'reference-only'
+    }
+    elseif ($targetExists -and -not $referenceExists) {
+        'target-only'
+    }
+    else {
+        'different'
+    }
+
+    $parameters = @{
+        Category       = $Category
+        Kind           = $Kind
+        ProviderId     = $ProviderId
+        ComponentId    = $ComponentId
+        SubjectId      = $SubjectId
+        Relation       = $relation
+        ReferenceState = $ReferenceState
+        TargetState    = $TargetState
+        ReferenceValue = $ReferenceValue
+        TargetValue    = $TargetValue
+    }
+    $Differences.Add((New-ComparisonDifference @parameters))
+}
+
+function Add-ComparisonSetDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateSet('component', 'version')][string]$Category,
+        [Parameter(Mandatory)][ValidatePattern('^[a-z0-9]+(?:[._-][a-z0-9]+)*$')][string]$Kind,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ComponentId,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubjectPrefix,
+        [object[]]$ReferenceValues = @(),
+        [object[]]$TargetValues = @()
+    )
+
+    $referenceMap = [System.Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
+    foreach ($value in @($ReferenceValues)) {
+        if ($null -eq $value) {
+            continue
+        }
+
+        $canonical = ConvertTo-ComparisonCanonicalJson -Value $value
+        $referenceMap[$canonical] = $value
+    }
+
+    $targetMap = [System.Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
+    foreach ($value in @($TargetValues)) {
+        if ($null -eq $value) {
+            continue
+        }
+
+        $canonical = ConvertTo-ComparisonCanonicalJson -Value $value
+        $targetMap[$canonical] = $value
+    }
+
+    $keys = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($key in $referenceMap.Keys) {
+        $null = $keys.Add($key)
+    }
+    foreach ($key in $targetMap.Keys) {
+        $null = $keys.Add($key)
+    }
+
+    foreach ($key in $keys) {
+        $referenceExists = $referenceMap.ContainsKey($key)
+        $targetExists = $targetMap.ContainsKey($key)
+
+        if ($referenceExists -and $targetExists) {
+            continue
+        }
+
+        $relation = if ($referenceExists) { 'reference-only' } else { 'target-only' }
+        $subjectId = "${SubjectPrefix}:$(Get-ComparisonValueHash -CanonicalJson $key)"
+
+        $parameters = @{
+            Category       = $Category
+            Kind           = $Kind
+            ProviderId     = $ProviderId
+            ComponentId    = $ComponentId
+            SubjectId      = $subjectId
+            Relation       = $relation
+            ReferenceValue = $(if ($referenceExists) { $referenceMap[$key] } else { $null })
+            TargetValue    = $(if ($targetExists) { $targetMap[$key] } else { $null })
+        }
+        $Differences.Add((New-ComparisonDifference @parameters))
+    }
+}
+
+function Add-ComparisonComponentVersionDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ComponentId,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceComponent,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetComponent
+    )
+
+    $referenceState = [string]$ReferenceComponent.state
+    $targetState = [string]$TargetComponent.state
+
+    $activeParameters = @{
+        Differences    = $Differences
+        Category       = 'version'
+        Kind           = 'active-version'
+        ProviderId     = $ProviderId
+        ComponentId    = $ComponentId
+        SubjectId      = 'active'
+        ReferenceValue = (ConvertTo-ComparisonVersionValue -VersionRecord $ReferenceComponent.activeVersion)
+        TargetValue    = (ConvertTo-ComparisonVersionValue -VersionRecord $TargetComponent.activeVersion)
+        ReferenceState = $referenceState
+        TargetState    = $targetState
+    }
+    Add-ComparisonValueDifference @activeParameters
+
+    $referenceDiscovered = @(
+        @($ReferenceComponent.discoveredVersions) |
+            ForEach-Object { ConvertTo-ComparisonVersionValue -VersionRecord $_ }
+    )
+    $targetDiscovered = @(
+        @($TargetComponent.discoveredVersions) |
+            ForEach-Object { ConvertTo-ComparisonVersionValue -VersionRecord $_ }
+    )
+
+    $discoveredParameters = @{
+        Differences     = $Differences
+        Category        = 'version'
+        Kind            = 'discovered-version'
+        ProviderId      = $ProviderId
+        ComponentId     = $ComponentId
+        SubjectPrefix   = 'discovered-version'
+        ReferenceValues = $referenceDiscovered
+        TargetValues    = $targetDiscovered
+    }
+    Add-ComparisonSetDifferences @discoveredParameters
+
+    $referenceInstallations = @(
+        @($ReferenceComponent.installations) |
+            ForEach-Object { ConvertTo-ComparisonInstallationValue -Installation $_ }
+    )
+    $targetInstallations = @(
+        @($TargetComponent.installations) |
+            ForEach-Object { ConvertTo-ComparisonInstallationValue -Installation $_ }
+    )
+
+    $installationParameters = @{
+        Differences     = $Differences
+        Category        = 'component'
+        Kind            = 'installation'
+        ProviderId      = $ProviderId
+        ComponentId     = $ComponentId
+        SubjectPrefix   = 'installation'
+        ReferenceValues = $referenceInstallations
+        TargetValues    = $targetInstallations
+    }
+    Add-ComparisonSetDifferences @installationParameters
+
+    $referenceResolutions = @(
+        @($ReferenceComponent.commandResolutions) |
+            ForEach-Object { ConvertTo-ComparisonCommandResolutionValue -Resolution $_ }
+    )
+    $targetResolutions = @(
+        @($TargetComponent.commandResolutions) |
+            ForEach-Object { ConvertTo-ComparisonCommandResolutionValue -Resolution $_ }
+    )
+
+    $resolutionParameters = @{
+        Differences     = $Differences
+        Category        = 'component'
+        Kind            = 'command-resolution'
+        ProviderId      = $ProviderId
+        ComponentId     = $ComponentId
+        SubjectPrefix   = 'command-resolution'
+        ReferenceValues = $referenceResolutions
+        TargetValues    = $targetResolutions
+    }
+    Add-ComparisonSetDifferences @resolutionParameters
+
+    $referenceIntelligence = $ReferenceComponent.versionIntelligence
+    $targetIntelligence = $TargetComponent.versionIntelligence
+    $referenceIntelligenceStatus = [string]$referenceIntelligence.status
+    $targetIntelligenceStatus = [string]$targetIntelligence.status
+
+    $relationParameters = @{
+        ReferenceExists = $true
+        TargetExists    = $true
+        ReferenceState  = $referenceIntelligenceStatus
+        TargetState     = $targetIntelligenceStatus
+    }
+    $intelligenceRelation = Get-ComparisonRelation @relationParameters
+
+    if ($intelligenceRelation -ne 'equal') {
+        $parameters = @{
+            Category       = 'version'
+            Kind           = 'intelligence-status'
+            ProviderId     = $ProviderId
+            ComponentId    = $ComponentId
+            SubjectId      = 'version-intelligence'
+            Relation       = $intelligenceRelation
+            ReferenceState = $referenceIntelligenceStatus
+            TargetState    = $targetIntelligenceStatus
+        }
+        $Differences.Add((New-ComparisonDifference @parameters))
+    }
+
+    if ($referenceIntelligenceStatus -eq 'known' -and $targetIntelligenceStatus -eq 'known') {
+        foreach ($channel in @(
+            [pscustomobject]@{ Property = 'latestStable'; Kind = 'latest-stable'; Subject = 'stable' },
+            [pscustomobject]@{ Property = 'latestLts'; Kind = 'latest-lts'; Subject = 'lts' },
+            [pscustomobject]@{ Property = 'latestCurrent'; Kind = 'latest-current'; Subject = 'current' }
+        )) {
+            $referenceChannel = Get-ComparisonOptionalPropertyValue -InputObject $referenceIntelligence -Name $channel.Property
+            $targetChannel = Get-ComparisonOptionalPropertyValue -InputObject $targetIntelligence -Name $channel.Property
+
+            $channelParameters = @{
+                Differences    = $Differences
+                Category       = 'version'
+                Kind           = $channel.Kind
+                ProviderId     = $ProviderId
+                ComponentId    = $ComponentId
+                SubjectId      = $channel.Subject
+                ReferenceValue = (ConvertTo-ComparisonVersionValue -VersionRecord $referenceChannel)
+                TargetValue    = (ConvertTo-ComparisonVersionValue -VersionRecord $targetChannel)
+                ReferenceState = $referenceIntelligenceStatus
+                TargetState    = $targetIntelligenceStatus
+            }
+            Add-ComparisonValueDifference @channelParameters
+        }
+    }
+}
+
 function New-WorkstationComparison {
     [CmdletBinding()]
     param(
@@ -257,23 +623,25 @@ function New-WorkstationComparison {
         $referenceStatus = if ($referenceExists) { [string]$referenceProvider.status } else { $null }
         $targetStatus = if ($targetExists) { [string]$targetProvider.status } else { $null }
 
-        $providerRelation = Get-ComparisonRelation `
-            -ReferenceExists $referenceExists `
-            -TargetExists $targetExists `
-            -ReferenceState $referenceStatus `
-            -TargetState $targetStatus
+        $relationParameters = @{
+            ReferenceExists = $referenceExists
+            TargetExists    = $targetExists
+            ReferenceState  = $referenceStatus
+            TargetState     = $targetStatus
+        }
+        $providerRelation = Get-ComparisonRelation @relationParameters
 
         if ($providerRelation -ne 'equal') {
             $providerKind = if ($referenceExists -and $targetExists) { 'status' } else { 'presence' }
-            $differences.Add(
-                (New-ComparisonDifference `
-                    -Category provider `
-                    -Kind $providerKind `
-                    -ProviderId $providerId `
-                    -Relation $providerRelation `
-                    -ReferenceState $referenceStatus `
-                    -TargetState $targetStatus)
-            )
+            $parameters = @{
+                Category       = 'provider'
+                Kind           = $providerKind
+                ProviderId     = $providerId
+                Relation       = $providerRelation
+                ReferenceState = $referenceStatus
+                TargetState    = $targetStatus
+            }
+            $differences.Add((New-ComparisonDifference @parameters))
         }
 
         if (-not ($referenceExists -and $targetExists)) {
@@ -297,27 +665,40 @@ function New-WorkstationComparison {
             $referenceState = if ($referenceComponentExists) { [string]$referenceComponent.state } else { $null }
             $targetState = if ($targetComponentExists) { [string]$targetComponent.state } else { $null }
 
-            $componentRelation = Get-ComparisonRelation `
-                -ReferenceExists $referenceComponentExists `
-                -TargetExists $targetComponentExists `
-                -ReferenceState $referenceState `
-                -TargetState $targetState
+            $relationParameters = @{
+                ReferenceExists = $referenceComponentExists
+                TargetExists    = $targetComponentExists
+                ReferenceState  = $referenceState
+                TargetState     = $targetState
+            }
+            $componentRelation = Get-ComparisonRelation @relationParameters
 
-            if ($componentRelation -eq 'equal') {
+            if ($componentRelation -ne 'equal') {
+                $componentKind = if ($referenceComponentExists -and $targetComponentExists) { 'state' } else { 'presence' }
+                $parameters = @{
+                    Category       = 'component'
+                    Kind           = $componentKind
+                    ProviderId     = $providerId
+                    ComponentId    = $componentId
+                    Relation       = $componentRelation
+                    ReferenceState = $referenceState
+                    TargetState    = $targetState
+                }
+                $differences.Add((New-ComparisonDifference @parameters))
+            }
+
+            if (-not ($referenceComponentExists -and $targetComponentExists)) {
                 continue
             }
 
-            $componentKind = if ($referenceComponentExists -and $targetComponentExists) { 'state' } else { 'presence' }
-            $differences.Add(
-                (New-ComparisonDifference `
-                    -Category component `
-                    -Kind $componentKind `
-                    -ProviderId $providerId `
-                    -ComponentId $componentId `
-                    -Relation $componentRelation `
-                    -ReferenceState $referenceState `
-                    -TargetState $targetState)
-            )
+            $parameters = @{
+                Differences        = $differences
+                ProviderId         = $providerId
+                ComponentId        = $componentId
+                ReferenceComponent = $referenceComponent
+                TargetComponent    = $targetComponent
+            }
+            Add-ComparisonComponentVersionDifferences @parameters
         }
     }
 
@@ -328,6 +709,7 @@ function New-WorkstationComparison {
 
     $providerDifferenceCount = @($orderedDifferences | Where-Object category -eq 'provider').Count
     $componentDifferenceCount = @($orderedDifferences | Where-Object category -eq 'component').Count
+    $versionDifferenceCount = @($orderedDifferences | Where-Object category -eq 'version').Count
     $unavailableCount = @($orderedDifferences | Where-Object relation -eq 'unavailable').Count
     $unknownCount = @($orderedDifferences | Where-Object relation -eq 'unknown').Count
     $notApplicableCount = @($orderedDifferences | Where-Object relation -eq 'not-applicable').Count
@@ -343,6 +725,7 @@ function New-WorkstationComparison {
             differenceCount          = $orderedDifferences.Count
             providerDifferenceCount  = $providerDifferenceCount
             componentDifferenceCount = $componentDifferenceCount
+            versionDifferenceCount   = $versionDifferenceCount
             unavailableCount         = $unavailableCount
             unknownCount             = $unknownCount
             notApplicableCount       = $notApplicableCount
@@ -356,6 +739,9 @@ Export-ModuleMember -Function @(
     'Get-ComparisonProviderIndex',
     'Get-ComparisonComponentIndex',
     'Get-ComparisonRelation',
+    'ConvertTo-ComparisonVersionValue',
+    'ConvertTo-ComparisonInstallationValue',
+    'ConvertTo-ComparisonCommandResolutionValue',
     'New-ComparisonDifference',
     'New-WorkstationComparison'
 )

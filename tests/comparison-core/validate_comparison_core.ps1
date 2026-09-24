@@ -119,13 +119,14 @@ $equalTarget = New-SyntheticReport -Name 'SYNTHETIC-TARGET' -Providers @($equalP
 
 $equalComparison = New-WorkstationComparison -ReferenceReport $equalReference -TargetReport $equalTarget
 
-Assert-True ($equalComparison.schemaVersion -eq '1.0.0') 'Expected comparison schema 1.0.0.'
+Assert-True ($equalComparison.schemaVersion -eq '1.1.0') 'Expected comparison schema 1.1.0.'
 Assert-True ($equalComparison.auditSchemaMajor -eq 1) 'Expected supported audit schema major 1.'
 Assert-True ($equalComparison.direction -eq 'reference-to-target') 'Expected explicit reference-to-target direction.'
 Assert-True ($equalComparison.reference.host.name -eq 'SYNTHETIC-REFERENCE') 'Expected reference identity.'
 Assert-True ($equalComparison.target.host.name -eq 'SYNTHETIC-TARGET') 'Expected target identity.'
 Assert-True ($equalComparison.summary.status -eq 'equal') 'Equivalent normalized reports should compare equal.'
 Assert-True ($equalComparison.summary.differenceCount -eq 0) 'Equivalent reports should emit no difference records.'
+Assert-True ($equalComparison.summary.versionDifferenceCount -eq 0) 'Equivalent reports should emit no version differences.'
 
 $referenceProvider = New-SyntheticProvider -ProviderId 'runtime.synthetic' -Status success -Components @(
     (New-SyntheticComponent -ComponentId 'alpha' -State present),
@@ -306,7 +307,7 @@ try {
 
     $scriptComparison = & $comparisonScriptPath -Reference $referencePath -Target $targetPath
 
-    Assert-True ($scriptComparison.schemaVersion -eq '1.0.0') 'Comparison entrypoint must return the normalized comparison envelope.'
+    Assert-True ($scriptComparison.schemaVersion -eq '1.1.0') 'Comparison entrypoint must return the normalized comparison envelope.'
     Assert-True ($scriptComparison.direction -eq 'reference-to-target') 'Comparison entrypoint must preserve reference-to-target direction.'
     Assert-True ($scriptComparison.summary.differenceCount -eq 8) 'Comparison entrypoint must route through normalized core semantics.'
 }

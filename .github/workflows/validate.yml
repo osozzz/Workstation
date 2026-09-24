@@ -176,6 +176,11 @@ jobs:
           ./tests/comparison-core/validate_comparison_core.ps1
           python ./tests/comparison-core/validate_comparison_schema.py
 
+      - name: Validate component and version comparison
+        shell: pwsh
+        run: |
+          ./tests/component-version-comparison/validate_component_version_comparison.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |

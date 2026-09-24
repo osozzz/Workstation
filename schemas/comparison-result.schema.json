@@ -16,7 +16,7 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.0.0"
+      "const": "1.1.0"
     },
     "auditSchemaMajor": {
       "const": 1
@@ -109,6 +109,7 @@
         "differenceCount",
         "providerDifferenceCount",
         "componentDifferenceCount",
+        "versionDifferenceCount",
         "unavailableCount",
         "unknownCount",
         "notApplicableCount"
@@ -143,17 +144,12 @@
         "notApplicableCount": {
           "type": "integer",
           "minimum": 0
+        },
+        "versionDifferenceCount": {
+          "type": "integer",
+          "minimum": 0
         }
       }
-    },
-    "scalar": {
-      "type": [
-        "string",
-        "number",
-        "integer",
-        "boolean",
-        "null"
-      ]
     },
     "difference": {
       "type": "object",
@@ -228,12 +224,40 @@
           ]
         },
         "referenceValue": {
-          "$ref": "#/$defs/scalar"
+          "$ref": "#/$defs/normalizedValue"
         },
         "targetValue": {
-          "$ref": "#/$defs/scalar"
+          "$ref": "#/$defs/normalizedValue"
         }
       }
+    },
+    "normalizedValue": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/normalizedValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/normalizedValue"
+          }
+        }
+      ]
     }
   }
 }
