@@ -340,7 +340,7 @@ function Get-KnownGlobalPackageInventory {
         return @()
     }
 
-    $matches = New-Object System.Collections.Generic.List[object]
+    $packageMatches = New-Object System.Collections.Generic.List[object]
     $parseSucceeded = $false
 
     if (-not [string]::IsNullOrWhiteSpace($listResult.Captured)) {
@@ -382,7 +382,7 @@ function Get-KnownGlobalPackageInventory {
                         $versionRecord = Get-VersionRecordFromText -Text $versionText
 
                         $alreadyRecorded = @(
-                            $matches |
+                            $packageMatches |
                                 Where-Object {
                                     $_.packageName -eq $packageName -and
                                     (
@@ -397,7 +397,7 @@ function Get-KnownGlobalPackageInventory {
                         ).Count -gt 0
 
                         if (-not $alreadyRecorded) {
-                            $matches.Add([pscustomobject][ordered]@{
+                            $packageMatches.Add([pscustomobject][ordered]@{
                                 packageName = $packageName
                                 manager     = $Manager
                                 version     = $versionRecord
@@ -418,7 +418,7 @@ function Get-KnownGlobalPackageInventory {
     $rootResult = $null
     $rootPath = $null
 
-    if ($matches.Count -gt 0 -and @($matches | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.path) }).Count -gt 0) {
+    if ($packageMatches.Count -gt 0 -and @($packageMatches | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.path) }).Count -gt 0) {
         $rootResult = Invoke-AuditCommand -Command $Command -Arguments $RootArguments -TimeoutSeconds 20
 
         if ($rootResult.Found -and $rootResult.Status -eq 'success' -and -not [string]::IsNullOrWhiteSpace($rootResult.Captured)) {
@@ -444,7 +444,7 @@ function Get-KnownGlobalPackageInventory {
         }))
     }
 
-    foreach ($match in $matches) {
+    foreach ($match in $packageMatches) {
         if ([string]::IsNullOrWhiteSpace([string]$match.path) -and -not [string]::IsNullOrWhiteSpace([string]$rootPath)) {
             $relativePackagePath = ([string]$match.packageName).Replace('/', [IO.Path]::DirectorySeparatorChar)
             $match.path = Join-Path $rootPath $relativePackagePath
@@ -452,7 +452,7 @@ function Get-KnownGlobalPackageInventory {
     }
 
     $matchedAttributes = @(
-        $matches |
+        $packageMatches |
             ForEach-Object {
                 [pscustomobject][ordered]@{
                     packageName = $_.packageName
@@ -471,7 +471,7 @@ function Get-KnownGlobalPackageInventory {
         matchedPackages = $matchedAttributes
     }))
 
-    return $matches.ToArray()
+    return $packageMatches.ToArray()
 }
 
 function Get-PackageManagerInstallations {
