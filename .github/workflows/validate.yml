@@ -191,6 +191,11 @@ jobs:
         run: |
           ./tests/winget-application-comparison/validate_winget_application_comparison.ps1
 
+      - name: Validate project and runtime-constraint comparison
+        shell: pwsh
+        run: |
+          ./tests/project-runtime-comparison/validate_project_runtime_comparison.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |

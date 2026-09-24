@@ -158,6 +158,32 @@ When inventory or upgrade state is unavailable or unknown, the state difference 
 
 The comparison runtime never invokes WinGet, accepts source/package agreements, installs or upgrades packages, or converts upgrade availability into automatic remediation.
 
+## Project and runtime-constraint comparison
+
+Issue #99 compares bounded local-project evidence without performing new filesystem discovery.
+
+Project comparison consumes:
+
+- `projects.local.discovery` for candidate identity, relative path, and normalized Git/repository association;
+- `projects.javascript-web.summary` for JavaScript/web types, Node pins, and package-manager declarations/lockfile signals;
+- `projects.non-javascript.summary` for non-JavaScript project types and canonical runtime/toolchain constraints.
+
+Project identity is path-safe. The comparison derives a deterministic identity from the project directory name plus normalized `relativePath`. If that path-safe identity appears more than once in the same report, it is treated as ambiguous and omitted from specialized project matching rather than using configured-root order as identity. Absolute candidate paths, root indexes, and provider `comparisonKey` values are not copied into comparison values.
+
+Project differences remain independent from global runtime/version intelligence:
+
+- `presence` reports projects found only on the reference or target;
+- `types` compares normalized project ecosystems/framework classifications;
+- `runtime-constraints` compares project-local Node pins and canonical non-JavaScript runtime/toolchain constraints;
+- `package-manager` compares normalized explicit package-manager declaration plus lockfile-manager signals;
+- `git-association` compares only the normalized `repositoryMarker` already present in bounded discovery evidence.
+
+A project-local pin is evidence about that project and is never replaced by a globally active runtime, a latest-version lookup, or an upgrade recommendation.
+
+Classification providers in `not-applicable` state remain readable as valid empty classification evidence. Failed or unavailable classification evidence does not fabricate type, runtime-constraint, or package-manager drift. If `projects.local` discovery itself is unavailable or not comparable, project-level differences are suppressed rather than treating every project as missing.
+
+The comparator does not read project files, expand configured discovery roots, traverse the filesystem, execute project code, run package managers, mutate Git, or alter the bounded discovery contract.
+
 ## Initial Sprint 6 core coverage
 
 Issue #95 establishes only the common comparison mechanics:
@@ -175,7 +201,7 @@ The following are intentionally deferred:
 - active/default/discovered version comparison, installation sets, command resolution/precedence, and version-intelligence channels: implemented by #96;
 - PATH and safe environment comparison: implemented by #97;
 - WinGet/application comparison: implemented by #98;
-- project/runtime-constraint comparison: #99;
+- project/runtime-constraint comparison: implemented by #99;
 - Git-health comparison: #100;
 - human-readable/local report rendering: #101;
 - complete Sprint 6 integration gate: #102.
