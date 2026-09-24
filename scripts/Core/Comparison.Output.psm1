@@ -163,8 +163,8 @@ function ConvertTo-ComparisonDifferenceText {
         $parts.Add("targetState=$targetState")
     }
 
-    $referenceValue = Get-ComparisonOutputPropertyValue -InputObject $Difference -Name 'referenceValue'
-    $targetValue = Get-ComparisonOutputPropertyValue -InputObject $Difference -Name 'targetValue'
+    $referenceValue = $Difference.referenceValue
+    $targetValue = $Difference.targetValue
 
     if ($null -ne $referenceValue -or $null -ne $targetValue) {
         $parts.Add("reference=$(ConvertTo-ComparisonDisplayValue -Value $referenceValue)")
