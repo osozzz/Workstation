@@ -224,7 +224,7 @@ function New-FailedProviderResult {
 
     $safeEvidenceId = "provider.$($Registration.providerId).failure"
     $evidence = New-AuditEvidence -EvidenceId $safeEvidenceId -Type derived -Source $Registration.path -Captured $Message
-    $error = New-AuditIssue -Code 'PROVIDER_EXECUTION_FAILED' -Message $Message -Severity error -EvidenceIds @($safeEvidenceId)
+    $providerError = New-AuditIssue -Code 'PROVIDER_EXECUTION_FAILED' -Message $Message -Severity error -EvidenceIds @($safeEvidenceId)
 
     return [pscustomobject][ordered]@{
         providerId = $Registration.providerId
@@ -233,7 +233,7 @@ function New-FailedProviderResult {
         observedAt = $ObservedAt
         components = @()
         warnings   = @()
-        errors     = @($error)
+        errors     = @($providerError)
         evidence   = @($evidence)
     }
 }
