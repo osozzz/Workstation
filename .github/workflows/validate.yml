@@ -181,6 +181,11 @@ jobs:
         run: |
           ./tests/component-version-comparison/validate_component_version_comparison.ps1
 
+      - name: Validate PATH and environment comparison
+        shell: pwsh
+        run: |
+          ./tests/path-environment-comparison/validate_path_environment_comparison.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
