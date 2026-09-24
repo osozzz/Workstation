@@ -103,6 +103,36 @@ Version-intelligence `source`, `checkedAt`, and diagnostic `message` remain evid
 
 Set members receive deterministic hashed `subjectId` values derived from their normalized structured representation. This keeps ordering stable and avoids using raw terminal output as identity.
 
+## PATH and environment comparison
+
+Issue #97 compares only normalized evidence already emitted by the read-only audit providers.
+
+PATH/environment comparison consumes:
+
+- `environment.baseline` evidence for Machine/User/Process PATH health;
+- `environment.baseline` evidence for persistent Machine/User cross-scope duplicates;
+- `environment.baseline` evidence for approved environment variables;
+- `path.precedence` derived command evidence for effective command-to-PATH resolution.
+
+PATH scope comparison is split into independent difference kinds so callers can distinguish:
+
+- scope health/count drift;
+- effective PATH order drift;
+- duplicate-entry drift;
+- missing-entry drift;
+- unresolved-reference drift;
+- persistent Machine/User cross-scope duplicate drift.
+
+Windows PATH identity uses the normalized case-insensitive `comparisonKey` emitted by the audit model. Original/raw formatting is not used as comparison identity.
+
+Environment comparison is bounded by `environment.allowlist.boundary.approvedNames`. Variable values are compared only when the variable name is approved by both reports. Evidence outside that intersection is ignored by the specialized environment comparator.
+
+The comparison value intentionally excludes raw/expanded environment-variable fields. It uses the normalized scope model: state, comparison key, existence, path items, missing/unresolved counts, approved unresolved-variable names, and configuration/validity flags.
+
+A missing, failed, unavailable, or not-applicable specialized evidence provider does not cause the whole comparison to fail. Provider-level state remains visible through the shared provider comparison. Partial providers may still contribute the normalized evidence they successfully produced.
+
+The comparison runtime does not enumerate environment variables, expand the allowlist, read secrets, or execute command discovery.
+
 ## Initial Sprint 6 core coverage
 
 Issue #95 establishes only the common comparison mechanics:
@@ -118,7 +148,7 @@ Issue #95 establishes only the common comparison mechanics:
 The following are intentionally deferred:
 
 - active/default/discovered version comparison, installation sets, command resolution/precedence, and version-intelligence channels: implemented by #96;
-- PATH and safe environment comparison: #97;
+- PATH and safe environment comparison: implemented by #97;
 - WinGet/application comparison: #98;
 - project/runtime-constraint comparison: #99;
 - Git-health comparison: #100;

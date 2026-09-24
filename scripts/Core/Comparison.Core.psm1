@@ -334,7 +334,7 @@ function Add-ComparisonValueDifference {
         [Parameter(Mandatory)][ValidateSet('provider', 'component', 'version', 'path', 'environment', 'application', 'project', 'git')][string]$Category,
         [Parameter(Mandatory)][ValidatePattern('^[a-z0-9]+(?:[._-][a-z0-9]+)*$')][string]$Kind,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
-        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ComponentId,
+        [AllowNull()][string]$ComponentId,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubjectId,
         [AllowNull()][object]$ReferenceValue,
         [AllowNull()][object]$TargetValue,
@@ -590,6 +590,460 @@ function Add-ComparisonComponentVersionDifferences {
     }
 }
 
+
+function Get-ComparisonEvidenceIndex {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Provider,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateSet('reference', 'target')][string]$Role
+    )
+
+    $index = @{}
+    foreach ($evidence in @($Provider.evidence)) {
+        $evidenceId = [string](Get-ComparisonOptionalPropertyValue -InputObject $evidence -Name 'evidenceId')
+        if ([string]::IsNullOrWhiteSpace($evidenceId)) {
+            throw "$Role provider '$ProviderId' contains evidence without evidenceId."
+        }
+
+        if ($index.ContainsKey($evidenceId)) {
+            throw "$Role provider '$ProviderId' contains duplicate evidenceId '$evidenceId'."
+        }
+
+        $index[$evidenceId] = $evidence
+    }
+
+    return $index
+}
+
+function Test-ComparisonProviderHasComparableEvidence {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Provider
+    )
+
+    return ([string]$Provider.status -notin @('failed', 'unavailable', 'not-applicable'))
+}
+
+function ConvertTo-ComparisonPathEntryValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Entry
+    )
+
+    return [pscustomobject][ordered]@{
+        scope                    = [string]$Entry.scope
+        position                 = [int]$Entry.position
+        pathKey                  = $(if ([string]::IsNullOrWhiteSpace([string]$Entry.comparisonKey)) { $null } else { [string]$Entry.comparisonKey })
+        exists                   = $(if ($null -eq $Entry.exists) { $null } else { [bool]$Entry.exists })
+        duplicateWithinScope     = [bool]$Entry.duplicateWithinScope
+        firstEquivalentPosition  = $(if ($null -eq $Entry.firstEquivalentPosition) { $null } else { [int]$Entry.firstEquivalentPosition })
+        hasUnresolvedVariable    = [bool]$Entry.hasUnresolvedVariable
+        unresolvedVariables      = @(@($Entry.unresolvedVariables) | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+        unapprovedReferenceCount = [int]$Entry.unapprovedReferenceCount
+    }
+}
+
+function ConvertTo-ComparisonPathScopeHealthValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Attributes
+    )
+
+    return [pscustomobject][ordered]@{
+        entryCount              = [int]$Attributes.entryCount
+        duplicateCount          = [int]$Attributes.duplicateCount
+        missingCount            = [int]$Attributes.missingCount
+        unresolvedVariableCount = [int]$Attributes.unresolvedVariableCount
+    }
+}
+
+function ConvertTo-ComparisonPathOrderValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Attributes
+    )
+
+    return @(
+        @($Attributes.entries) |
+            Sort-Object position |
+            ForEach-Object { ConvertTo-ComparisonPathEntryValue -Entry $_ }
+    )
+}
+
+function ConvertTo-ComparisonPathFilteredEntries {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Attributes,
+        [Parameter(Mandatory)][ValidateSet('duplicate', 'missing', 'unresolved')][string]$Filter
+    )
+
+    $entries = @($Attributes.entries)
+    $filtered = switch ($Filter) {
+        'duplicate' { @($entries | Where-Object { $_.duplicateWithinScope }) }
+        'missing' { @($entries | Where-Object { $_.exists -eq $false }) }
+        'unresolved' { @($entries | Where-Object { $_.hasUnresolvedVariable }) }
+    }
+
+    return @(
+        $filtered |
+            Sort-Object position |
+            ForEach-Object { ConvertTo-ComparisonPathEntryValue -Entry $_ }
+    )
+}
+
+function ConvertTo-ComparisonPersistentDuplicateValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Attributes
+    )
+
+    $duplicates = @(
+        @($Attributes.duplicates) |
+            Sort-Object comparisonKey |
+            ForEach-Object {
+                [pscustomobject][ordered]@{
+                    pathKey = [string]$_.comparisonKey
+                    scopes = @(@($_.scopes) | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+                    occurrences = @(
+                        @($_.occurrences) |
+                            Sort-Object scope, position |
+                            ForEach-Object {
+                                [pscustomobject][ordered]@{
+                                    scope = [string]$_.scope
+                                    position = [int]$_.position
+                                }
+                            }
+                    )
+                }
+            }
+    )
+
+    return [pscustomobject][ordered]@{
+        duplicateCount = [int]$Attributes.duplicateCount
+        duplicates = $duplicates
+    }
+}
+
+function ConvertTo-ComparisonEnvironmentScopeValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ScopeValue
+    )
+
+    return [pscustomobject][ordered]@{
+        scope                    = [string]$ScopeValue.scope
+        state                    = [string]$ScopeValue.state
+        pathKey                  = $(if ([string]::IsNullOrWhiteSpace([string]$ScopeValue.comparisonKey)) { $null } else { [string]$ScopeValue.comparisonKey })
+        exists                   = $(if ($null -eq $ScopeValue.exists) { $null } else { [bool]$ScopeValue.exists })
+        pathItems                = @(
+            @($ScopeValue.pathItems) |
+                Sort-Object position |
+                ForEach-Object { ConvertTo-ComparisonPathEntryValue -Entry $_ }
+        )
+        missingPathCount         = [int]$ScopeValue.missingPathCount
+        hasUnresolvedVariable    = [bool]$ScopeValue.hasUnresolvedVariable
+        unresolvedVariables      = @(@($ScopeValue.unresolvedVariables) | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+        unapprovedReferenceCount = [int]$ScopeValue.unapprovedReferenceCount
+        isConfigured             = [bool]$ScopeValue.isConfigured
+        isInvalid                = [bool]$ScopeValue.isInvalid
+    }
+}
+
+function ConvertTo-ComparisonEnvironmentVariableValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Attributes
+    )
+
+    $scopeOrder = @{ process = 0; user = 1; machine = 2 }
+
+    return [pscustomobject][ordered]@{
+        kind                     = [string]$Attributes.kind
+        filesystem               = [bool]$Attributes.filesystem
+        configuredScopeCount     = [int]$Attributes.configuredScopeCount
+        valueScopeCount          = [int]$Attributes.valueScopeCount
+        distinctValueCount       = [int]$Attributes.distinctValueCount
+        scopeConflict            = [bool]$Attributes.scopeConflict
+        emptyScopeCount          = [int]$Attributes.emptyScopeCount
+        invalidScopeCount        = [int]$Attributes.invalidScopeCount
+        missingPathCount         = [int]$Attributes.missingPathCount
+        unresolvedScopeCount     = [int]$Attributes.unresolvedScopeCount
+        unapprovedReferenceCount = [int]$Attributes.unapprovedReferenceCount
+        scopes                   = @(
+            @($Attributes.scopes) |
+                Sort-Object @{ Expression = { $scopeOrder[[string]$_.scope] }; Ascending = $true } |
+                ForEach-Object { ConvertTo-ComparisonEnvironmentScopeValue -ScopeValue $_ }
+        )
+    }
+}
+
+function ConvertTo-ComparisonPathPrecedenceResolutionValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Resolution
+    )
+
+    return [pscustomobject][ordered]@{
+        command                = [string]$Resolution.command
+        commandType            = [string]$Resolution.commandType
+        precedence             = [int]$Resolution.precedence
+        active                 = [bool]$Resolution.active
+        pathBased              = [bool]$Resolution.pathBased
+        pathKey                = $(if ([string]::IsNullOrWhiteSpace([string]$Resolution.pathComparisonKey)) { $null } else { [string]$Resolution.pathComparisonKey })
+        pathMappingStatus      = [string]$Resolution.pathMappingStatus
+        pathPosition           = $(if ($null -eq $Resolution.pathPosition) { $null } else { [int]$Resolution.pathPosition })
+        candidatePathPositions = @(@($Resolution.candidatePathPositions) | ForEach-Object { [int]$_ } | Sort-Object)
+    }
+}
+
+function ConvertTo-ComparisonPathPrecedenceValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Attributes
+    )
+
+    $activeResolution = Get-ComparisonOptionalPropertyValue -InputObject $Attributes -Name 'activeResolution'
+
+    return [pscustomobject][ordered]@{
+        command                     = [string]$Attributes.command
+        resolutionCount             = [int]$Attributes.resolutionCount
+        pathBasedResolutionCount    = [int]$Attributes.pathBasedResolutionCount
+        mappedResolutionCount       = [int]$Attributes.mappedResolutionCount
+        unmappedPathResolutionCount = [int]$Attributes.unmappedPathResolutionCount
+        hasResolutionCollision      = [bool]$Attributes.hasResolutionCollision
+        hasPathResolutionCollision  = [bool]$Attributes.hasPathResolutionCollision
+        hasPathOrderConflict        = [bool]$Attributes.hasPathOrderConflict
+        fullyMapped                 = [bool]$Attributes.fullyMapped
+        activeResolution            = $(if ($null -eq $activeResolution) { $null } else { ConvertTo-ComparisonPathPrecedenceResolutionValue -Resolution $activeResolution })
+        shadowedResolutions         = @(
+            @($Attributes.shadowedResolutions) |
+                Sort-Object precedence, pathComparisonKey |
+                ForEach-Object { ConvertTo-ComparisonPathPrecedenceResolutionValue -Resolution $_ }
+        )
+        resolutions                 = @(
+            @($Attributes.resolutions) |
+                Sort-Object precedence, pathComparisonKey |
+                ForEach-Object { ConvertTo-ComparisonPathPrecedenceResolutionValue -Resolution $_ }
+        )
+    }
+}
+
+function Get-ComparisonApprovedEnvironmentNames {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][hashtable]$EvidenceIndex
+    )
+
+    if (-not $EvidenceIndex.ContainsKey('environment.allowlist.boundary')) {
+        return @()
+    }
+
+    $boundary = $EvidenceIndex['environment.allowlist.boundary']
+    return @(
+        @($boundary.attributes.approvedNames) |
+            ForEach-Object { ([string]$_).ToUpperInvariant() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            Sort-Object -Unique
+    )
+}
+
+function Add-ComparisonEnvironmentBaselineDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceProvider,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetProvider
+    )
+
+    if (-not (Test-ComparisonProviderHasComparableEvidence -Provider $ReferenceProvider) -or
+        -not (Test-ComparisonProviderHasComparableEvidence -Provider $TargetProvider)) {
+        return
+    }
+
+    $referenceEvidence = Get-ComparisonEvidenceIndex -Provider $ReferenceProvider -ProviderId 'environment.baseline' -Role reference
+    $targetEvidence = Get-ComparisonEvidenceIndex -Provider $TargetProvider -ProviderId 'environment.baseline' -Role target
+
+    $referenceAllowed = @(Get-ComparisonApprovedEnvironmentNames -EvidenceIndex $referenceEvidence)
+    $targetAllowed = @(Get-ComparisonApprovedEnvironmentNames -EvidenceIndex $targetEvidence)
+
+    $allowlistParameters = @{
+        Differences    = $Differences
+        Category       = 'environment'
+        Kind           = 'allowlist'
+        ProviderId     = 'environment.baseline'
+        ComponentId    = $null
+        SubjectId      = 'approved-names'
+        ReferenceValue = $referenceAllowed
+        TargetValue    = $targetAllowed
+        ReferenceState = [string]$ReferenceProvider.status
+        TargetState    = [string]$TargetProvider.status
+    }
+    Add-ComparisonValueDifference @allowlistParameters
+
+    $targetLookup = @{}
+    foreach ($name in $targetAllowed) {
+        $targetLookup[$name] = $true
+    }
+
+    $safeNames = @(
+        $referenceAllowed |
+            Where-Object { $targetLookup.ContainsKey($_) } |
+            Sort-Object -Unique
+    )
+
+    foreach ($name in $safeNames) {
+        $evidenceId = 'environment.' + $name.ToLowerInvariant()
+        $referenceItem = if ($referenceEvidence.ContainsKey($evidenceId)) { $referenceEvidence[$evidenceId] } else { $null }
+        $targetItem = if ($targetEvidence.ContainsKey($evidenceId)) { $targetEvidence[$evidenceId] } else { $null }
+
+        $referenceValue = if ($null -eq $referenceItem) { $null } else { ConvertTo-ComparisonEnvironmentVariableValue -Attributes $referenceItem.attributes }
+        $targetValue = if ($null -eq $targetItem) { $null } else { ConvertTo-ComparisonEnvironmentVariableValue -Attributes $targetItem.attributes }
+
+        $parameters = @{
+            Differences    = $Differences
+            Category       = 'environment'
+            Kind           = 'allowlisted-variable'
+            ProviderId     = 'environment.baseline'
+            ComponentId    = $null
+            SubjectId      = $name.ToLowerInvariant()
+            ReferenceValue = $referenceValue
+            TargetValue    = $targetValue
+            ReferenceState = [string]$ReferenceProvider.status
+            TargetState    = [string]$TargetProvider.status
+        }
+        Add-ComparisonValueDifference @parameters
+    }
+
+    foreach ($scope in @('machine', 'user', 'process')) {
+        $evidenceId = "path.$scope.health"
+        $referenceItem = if ($referenceEvidence.ContainsKey($evidenceId)) { $referenceEvidence[$evidenceId] } else { $null }
+        $targetItem = if ($targetEvidence.ContainsKey($evidenceId)) { $targetEvidence[$evidenceId] } else { $null }
+
+        if ($null -eq $referenceItem -and $null -eq $targetItem) {
+            continue
+        }
+
+        foreach ($kind in @('scope-health', 'scope-order', 'duplicate-entries', 'missing-entries', 'unresolved-entries')) {
+            $referenceValue = $null
+            $targetValue = $null
+
+            if ($null -ne $referenceItem) {
+                $referenceValue = switch ($kind) {
+                    'scope-health' { ConvertTo-ComparisonPathScopeHealthValue -Attributes $referenceItem.attributes }
+                    'scope-order' { ConvertTo-ComparisonPathOrderValue -Attributes $referenceItem.attributes }
+                    'duplicate-entries' { ConvertTo-ComparisonPathFilteredEntries -Attributes $referenceItem.attributes -Filter duplicate }
+                    'missing-entries' { ConvertTo-ComparisonPathFilteredEntries -Attributes $referenceItem.attributes -Filter missing }
+                    'unresolved-entries' { ConvertTo-ComparisonPathFilteredEntries -Attributes $referenceItem.attributes -Filter unresolved }
+                }
+            }
+
+            if ($null -ne $targetItem) {
+                $targetValue = switch ($kind) {
+                    'scope-health' { ConvertTo-ComparisonPathScopeHealthValue -Attributes $targetItem.attributes }
+                    'scope-order' { ConvertTo-ComparisonPathOrderValue -Attributes $targetItem.attributes }
+                    'duplicate-entries' { ConvertTo-ComparisonPathFilteredEntries -Attributes $targetItem.attributes -Filter duplicate }
+                    'missing-entries' { ConvertTo-ComparisonPathFilteredEntries -Attributes $targetItem.attributes -Filter missing }
+                    'unresolved-entries' { ConvertTo-ComparisonPathFilteredEntries -Attributes $targetItem.attributes -Filter unresolved }
+                }
+            }
+
+            $parameters = @{
+                Differences    = $Differences
+                Category       = 'path'
+                Kind           = $kind
+                ProviderId     = 'environment.baseline'
+                ComponentId    = $null
+                SubjectId      = $scope
+                ReferenceValue = $referenceValue
+                TargetValue    = $targetValue
+                ReferenceState = [string]$ReferenceProvider.status
+                TargetState    = [string]$TargetProvider.status
+            }
+            Add-ComparisonValueDifference @parameters
+        }
+    }
+
+    $crossScopeId = 'path.persistent.cross-scope-duplicates'
+    $referenceCrossScope = if ($referenceEvidence.ContainsKey($crossScopeId)) { $referenceEvidence[$crossScopeId] } else { $null }
+    $targetCrossScope = if ($targetEvidence.ContainsKey($crossScopeId)) { $targetEvidence[$crossScopeId] } else { $null }
+
+    $crossScopeParameters = @{
+        Differences    = $Differences
+        Category       = 'path'
+        Kind           = 'persistent-cross-scope-duplicates'
+        ProviderId     = 'environment.baseline'
+        ComponentId    = $null
+        SubjectId      = 'machine-user'
+        ReferenceValue = $(if ($null -eq $referenceCrossScope) { $null } else { ConvertTo-ComparisonPersistentDuplicateValue -Attributes $referenceCrossScope.attributes })
+        TargetValue    = $(if ($null -eq $targetCrossScope) { $null } else { ConvertTo-ComparisonPersistentDuplicateValue -Attributes $targetCrossScope.attributes })
+        ReferenceState = [string]$ReferenceProvider.status
+        TargetState    = [string]$TargetProvider.status
+    }
+    Add-ComparisonValueDifference @crossScopeParameters
+}
+
+function Add-ComparisonPathPrecedenceDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceProvider,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetProvider
+    )
+
+    if (-not (Test-ComparisonProviderHasComparableEvidence -Provider $ReferenceProvider) -or
+        -not (Test-ComparisonProviderHasComparableEvidence -Provider $TargetProvider)) {
+        return
+    }
+
+    $referenceEvidence = Get-ComparisonEvidenceIndex -Provider $ReferenceProvider -ProviderId 'path.precedence' -Role reference
+    $targetEvidence = Get-ComparisonEvidenceIndex -Provider $TargetProvider -ProviderId 'path.precedence' -Role target
+
+    $evidenceIds = @(
+        @($referenceEvidence.Keys) + @($targetEvidence.Keys) |
+            Where-Object { $_ -like 'path-precedence.command.*' } |
+            Sort-Object -Unique
+    )
+
+    foreach ($evidenceId in $evidenceIds) {
+        $referenceItem = if ($referenceEvidence.ContainsKey($evidenceId)) { $referenceEvidence[$evidenceId] } else { $null }
+        $targetItem = if ($targetEvidence.ContainsKey($evidenceId)) { $targetEvidence[$evidenceId] } else { $null }
+
+        $parameters = @{
+            Differences    = $Differences
+            Category       = 'path'
+            Kind           = 'command-precedence'
+            ProviderId     = 'path.precedence'
+            ComponentId    = $null
+            SubjectId      = $evidenceId
+            ReferenceValue = $(if ($null -eq $referenceItem) { $null } else { ConvertTo-ComparisonPathPrecedenceValue -Attributes $referenceItem.attributes })
+            TargetValue    = $(if ($null -eq $targetItem) { $null } else { ConvertTo-ComparisonPathPrecedenceValue -Attributes $targetItem.attributes })
+            ReferenceState = [string]$ReferenceProvider.status
+            TargetState    = [string]$TargetProvider.status
+        }
+        Add-ComparisonValueDifference @parameters
+    }
+}
+
+function Add-ComparisonPathEnvironmentProviderDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceProvider,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetProvider
+    )
+
+    switch ($ProviderId) {
+        'environment.baseline' {
+            Add-ComparisonEnvironmentBaselineDifferences -Differences $Differences -ReferenceProvider $ReferenceProvider -TargetProvider $TargetProvider
+        }
+        'path.precedence' {
+            Add-ComparisonPathPrecedenceDifferences -Differences $Differences -ReferenceProvider $ReferenceProvider -TargetProvider $TargetProvider
+        }
+    }
+}
+
 function New-WorkstationComparison {
     [CmdletBinding()]
     param(
@@ -647,6 +1101,14 @@ function New-WorkstationComparison {
         if (-not ($referenceExists -and $targetExists)) {
             continue
         }
+
+        $pathEnvironmentParameters = @{
+            Differences       = $differences
+            ProviderId        = $providerId
+            ReferenceProvider = $referenceProvider
+            TargetProvider    = $targetProvider
+        }
+        Add-ComparisonPathEnvironmentProviderDifferences @pathEnvironmentParameters
 
         $referenceComponents = Get-ComparisonComponentIndex -Provider $referenceProvider -ProviderId $providerId -Role reference
         $targetComponents = Get-ComparisonComponentIndex -Provider $targetProvider -ProviderId $providerId -Role target
