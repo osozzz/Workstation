@@ -209,6 +209,33 @@ Git-health providers in partial state remain readable. Failed or unavailable pro
 
 The comparison runtime does not execute Git commands and never performs fetch, pull, push, checkout, branch deletion, reset, clean, prune, worktree removal, configuration mutation, or history rewriting.
 
+## Comparison report outputs
+
+Issue #101 keeps comparison semantics separate from output rendering.
+
+`New-WorkstationComparison` remains the source of truth. Output generation consumes that normalized result and does not re-read audit providers, raw command output, project files, Git repositories, PATH, environment variables, package managers, or remote version sources.
+
+Two deterministic local outputs are supported:
+
+- `comparison.json` is the structured machine-readable comparison envelope serialized from the normalized comparison result;
+- `comparison.txt` is a human-readable projection derived only from that structured result.
+
+The human-readable report preserves the explicit `reference -> target` direction and groups differences into:
+
+- components and versions;
+- PATH and environment;
+- applications;
+- projects and runtime constraints;
+- Git health.
+
+Relations and states such as `reference-only`, `target-only`, `unavailable`, `unknown`, and `not-applicable` remain explicit. The renderer does not decide which workstation is correct and does not turn drift into remediation advice.
+
+`scripts/Compare-Workstations.ps1` keeps its existing programmatic behavior and still returns the normalized comparison object. When `-OutputDirectory` is supplied, it additionally writes `comparison.json` and `comparison.txt` to that local directory.
+
+Generated workstation audit and comparison artifacts remain local under the ignored `reports/` tree by convention. Real machine-specific comparison reports must not be committed.
+
+Output generation writes only the requested report files and performs no workstation configuration, package, PATH/environment, project, or Git mutation.
+
 ## Initial Sprint 6 core coverage
 
 Issue #95 establishes only the common comparison mechanics:
@@ -228,7 +255,7 @@ The following are intentionally deferred:
 - WinGet/application comparison: implemented by #98;
 - project/runtime-constraint comparison: implemented by #99;
 - Git-health comparison: implemented by #100;
-- human-readable/local report rendering: #101;
+- human-readable/local report rendering: implemented by #101;
 - complete Sprint 6 integration gate: #102.
 
 This separation keeps the comparison contract stable while specialized comparators remain independently testable.
