@@ -27,6 +27,24 @@ function Get-ComparisonOutputPropertyValue {
     return $null
 }
 
+function Test-ComparisonOutputHasProperty {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$InputObject,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    if ($null -eq $InputObject) {
+        return $false
+    }
+
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        return $InputObject.Contains($Name)
+    }
+
+    return ($null -ne $InputObject.PSObject.Properties[$Name])
+}
+
 function Assert-WorkstationComparisonOutput {
     [CmdletBinding()]
     param(
@@ -34,7 +52,7 @@ function Assert-WorkstationComparisonOutput {
     )
 
     foreach ($required in @('schemaVersion', 'direction', 'reference', 'target', 'summary', 'differences')) {
-        if ($null -eq (Get-ComparisonOutputPropertyValue -InputObject $Comparison -Name $required)) {
+        if (-not (Test-ComparisonOutputHasProperty -InputObject $Comparison -Name $required)) {
             throw "Comparison output is missing required property '$required'."
         }
     }
@@ -43,8 +61,8 @@ function Assert-WorkstationComparisonOutput {
         throw "Comparison output direction must be 'reference-to-target'."
     }
 
-    if ($null -eq (Get-ComparisonOutputPropertyValue -InputObject $Comparison.reference -Name 'host') -or
-        $null -eq (Get-ComparisonOutputPropertyValue -InputObject $Comparison.target -Name 'host')) {
+    if (-not (Test-ComparisonOutputHasProperty -InputObject $Comparison.reference -Name 'host') -or
+        -not (Test-ComparisonOutputHasProperty -InputObject $Comparison.target -Name 'host')) {
         throw 'Comparison output must include reference and target host descriptors.'
     }
 }
