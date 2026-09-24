@@ -1701,31 +1701,24 @@ function Get-ComparisonProjectReportState {
         }
         $identityCounts[$baseIdentity]++
 
-        $rootIndexes = @(
-            @((Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'rootIndexes')) |
-                ForEach-Object { [int]$_ } |
-                Sort-Object -Unique
-        )
-
         $rawCandidates.Add([pscustomobject][ordered]@{
             projectIndex     = $index
             name             = $name
             relativePath     = $relativePath
             baseIdentity     = $baseIdentity
-            rootIndexes      = $rootIndexes
             repositoryMarker = ((Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'repositoryMarker') -eq $true)
         })
     }
 
     $projects = @{}
     foreach ($candidate in $rawCandidates) {
+        if ([int]$identityCounts[[string]$candidate.baseIdentity] -gt 1) {
+            continue
+        }
+
         $identity = [pscustomobject][ordered]@{
             name         = [string]$candidate.name
             relativePath = [string]$candidate.relativePath
-        }
-
-        if ([int]$identityCounts[[string]$candidate.baseIdentity] -gt 1) {
-            $identity | Add-Member -NotePropertyName rootIndexes -NotePropertyValue @($candidate.rootIndexes)
         }
 
         $identityJson = ConvertTo-ComparisonCanonicalJson -Value $identity
