@@ -133,6 +133,31 @@ A missing, failed, unavailable, or not-applicable specialized evidence provider 
 
 The comparison runtime does not enumerate environment variables, expand the allowlist, read secrets, or execute command discovery.
 
+## WinGet and application comparison
+
+Issue #98 compares only the normalized application evidence already produced by `winget.baseline`.
+
+Application comparison consumes:
+
+- `winget.inventory.normalized` for installed application identity and installed-version evidence;
+- `winget.upgrades.normalized` for review-only upgrade state and available-version evidence.
+
+Reliable `packageId` values are matched case-insensitively and form the application identity. Records whose `identityReliable` flag is false are not used to claim that an application exists only on one PC.
+
+Installed-state comparison and upgrade intelligence remain separate:
+
+- `presence` reports reliable package IDs installed only on the reference or target;
+- `installed-version` compares installed versions only when both records declare `installedVersionReliable`;
+- `upgrade-status` preserves `current`, `upgrades-available`, `source-unavailable`, `agreement-required`, `command-failed`, and `unknown` semantics;
+- `upgrade-availability` compares the reliable package set with available upgrades only when both upgrade lookups are comparable;
+- `available-version` compares available versions only when both records declare `availableVersionReliable`.
+
+`checkedAt`, package display names, raw WinGet table formatting, and raw command evidence are not comparison identity and do not create drift by themselves.
+
+When inventory or upgrade state is unavailable or unknown, the state difference is reported without treating absent package records as missing applications. A failed, unavailable, or not-applicable WinGet provider does not stop unrelated comparison categories.
+
+The comparison runtime never invokes WinGet, accepts source/package agreements, installs or upgrades packages, or converts upgrade availability into automatic remediation.
+
 ## Initial Sprint 6 core coverage
 
 Issue #95 establishes only the common comparison mechanics:
@@ -149,7 +174,7 @@ The following are intentionally deferred:
 
 - active/default/discovered version comparison, installation sets, command resolution/precedence, and version-intelligence channels: implemented by #96;
 - PATH and safe environment comparison: implemented by #97;
-- WinGet/application comparison: #98;
+- WinGet/application comparison: implemented by #98;
 - project/runtime-constraint comparison: #99;
 - Git-health comparison: #100;
 - human-readable/local report rendering: #101;
