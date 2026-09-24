@@ -12,7 +12,7 @@ Draft202012Validator.check_schema(schema)
 validator = Draft202012Validator(schema)
 
 valid = {
-    "schemaVersion": "1.0.0",
+    "schemaVersion": "1.1.0",
     "auditSchemaMajor": 1,
     "direction": "reference-to-target",
     "reference": {
@@ -39,23 +39,24 @@ valid = {
         "status": "different",
         "differenceCount": 1,
         "providerDifferenceCount": 0,
-        "componentDifferenceCount": 1,
+        "componentDifferenceCount": 0,
+        "versionDifferenceCount": 1,
         "unavailableCount": 0,
-        "unknownCount": 1,
+        "unknownCount": 0,
         "notApplicableCount": 0,
     },
     "differences": [
         {
-            "category": "component",
-            "kind": "state",
+            "category": "version",
+            "kind": "active-version",
             "providerId": "runtime.synthetic",
             "componentId": "synthetic-runtime",
             "subjectId": None,
-            "relation": "unknown",
+            "relation": "different",
             "referenceState": "present",
-            "targetState": "unknown",
-            "referenceValue": None,
-            "targetValue": None,
+            "targetState": "present",
+            "referenceValue": {"value": "1.2.3", "valueSource": "normalized", "channel": "stable"},
+            "targetValue": {"value": "1.3.0", "valueSource": "normalized", "channel": "stable"},
         }
     ],
 }
