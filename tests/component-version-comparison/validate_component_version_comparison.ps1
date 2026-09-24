@@ -205,7 +205,7 @@ $runtimeAReferenceParams = @{
     CommandResolutions = @(
         (New-SyntheticResolution -Command 'node' -Path 'C:\Synthetic\Node\v20\node.exe' -CommandType Application -Version $v201Reference -Precedence 0 -Active $true)
     )
-    VersionIntelligence = New-SyntheticVersionIntelligence -Status known -LatestLts $v201Reference -LatestCurrent $v210Current
+    VersionIntelligence = (New-SyntheticVersionIntelligence -Status known -LatestLts $v201Reference -LatestCurrent $v210Current)
 }
 $runtimeAReference = New-SyntheticComponent @runtimeAReferenceParams
 
@@ -221,7 +221,7 @@ $runtimeATargetParams = @{
     CommandResolutions = @(
         (New-SyntheticResolution -Command 'node' -Path 'C:\Synthetic\Node\v20\node.exe' -CommandType Application -Version $v202Target -Precedence 1 -Active $true)
     )
-    VersionIntelligence = New-SyntheticVersionIntelligence -Status known -LatestLts $v202Target -LatestCurrent $v210Current
+    VersionIntelligence = (New-SyntheticVersionIntelligence -Status known -LatestLts $v202Target -LatestCurrent $v210Current)
 }
 $runtimeATarget = New-SyntheticComponent @runtimeATargetParams
 
