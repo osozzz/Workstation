@@ -14,14 +14,16 @@ function Get-ComparisonOutputPropertyValue {
 
     if ($InputObject -is [System.Collections.IDictionary]) {
         if ($InputObject.Contains($Name)) {
-            return $InputObject[$Name]
+            Write-Output -NoEnumerate $InputObject[$Name]
+            return
         }
         return $null
     }
 
     $property = $InputObject.PSObject.Properties[$Name]
     if ($property) {
-        return $property.Value
+        Write-Output -NoEnumerate $property.Value
+        return
     }
 
     return $null
