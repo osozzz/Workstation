@@ -1,0 +1,31 @@
+Workstation Comparison
+======================
+Direction: reference -> target
+Reference: SYNTHETIC-REFERENCE (windows/x64; audit 0.8.0; schema 1.0.0)
+Target: SYNTHETIC-TARGET (windows/x64; audit 0.8.0; schema 1.0.0)
+Status: different
+Differences: 8
+Semantic states: unavailable=1, unknown=1, not-applicable=1
+
+Components and versions
+-----------------------
+- [different] state | provider=runtime.synthetic | component=tool | referenceState=present | targetState=partial
+- [not-applicable] status | provider=synthetic.optional | referenceState=not-applicable | targetState=success
+- [different] active-version | provider=runtime.synthetic | component=tool | reference={"raw":"1.0.0","normalized":"1.0.0","channel":"stable"} | target={"raw":"2.0.0","normalized":"2.0.0","channel":"stable"}
+
+PATH and environment
+--------------------
+- [different] allowlisted-variable | provider=path.environment | subject=java_home | reference=c:/java17 | target=c:/java21
+- [unknown] scope-order | provider=path.environment | subject=machine | referenceState=unknown | targetState=present | reference=<none> | target=["c:/tools","c:/sdk"]
+
+Applications
+------------
+- [reference-only] presence | provider=winget.baseline | subject=Vendor.App | referenceState=present | targetState=missing | reference={"packageId":"Vendor.App"} | target=<none>
+
+Projects and runtime constraints
+--------------------------------
+- [different] runtime-constraints | provider=projects.local | subject=project:alpha | reference=[{"ecosystem":"node","source":"package.json#engines.node","value":">=20"}] | target=[{"ecosystem":"node","source":"package.json#engines.node","value":">=22"}]
+
+Git health
+----------
+- [unavailable] inspection-state | provider=git.repository-health | subject=git-repository:alpha | referenceState=inspected | targetState=unavailable

@@ -30,6 +30,11 @@ jobs:
         run: |
           python ./tests/contract/validate_contract_fixtures.py
 
+      - name: Validate normalized comparison report outputs
+        shell: pwsh
+        run: |
+          ./tests/comparison-output/validate_comparison_output.ps1
+
       - name: Validate platform provider fixtures
         shell: pwsh
         run: |

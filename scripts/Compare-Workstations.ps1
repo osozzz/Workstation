@@ -1,14 +1,17 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Reference,
-    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Target
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Target,
+    [ValidateNotNullOrEmpty()][string]$OutputDirectory
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $corePath = Join-Path $PSScriptRoot 'Core\Comparison.Core.psm1'
+$outputPath = Join-Path $PSScriptRoot 'Core\Comparison.Output.psm1'
 Import-Module $corePath -Force
+Import-Module $outputPath -Force
 
 function Read-NormalizedAuditReport {
     [CmdletBinding()]
@@ -33,4 +36,10 @@ function Read-NormalizedAuditReport {
 $referenceReport = Read-NormalizedAuditReport -Path $Reference -Role reference
 $targetReport = Read-NormalizedAuditReport -Path $Target -Role target
 
-New-WorkstationComparison -ReferenceReport $referenceReport -TargetReport $targetReport
+$comparison = New-WorkstationComparison -ReferenceReport $referenceReport -TargetReport $targetReport
+
+if (-not [string]::IsNullOrWhiteSpace($OutputDirectory)) {
+    Write-WorkstationComparisonOutputs -Comparison $comparison -OutputDirectory $OutputDirectory | Out-Null
+}
+
+$comparison
