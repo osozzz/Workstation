@@ -110,7 +110,7 @@ function ConvertTo-ComparisonDisplayValue {
         return [string]$Value
     }
 
-    $json = $Value | ConvertTo-Json -Depth 100 -Compress
+    $json = ConvertTo-Json -InputObject $Value -Depth 100 -Compress
     return $json.Replace([string][char]13, '').Replace([string][char]10, '')
 }
 
