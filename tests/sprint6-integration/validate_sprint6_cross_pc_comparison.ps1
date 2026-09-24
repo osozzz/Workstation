@@ -833,16 +833,18 @@ Assert-True (-not (Test-Path -LiteralPath $tempRoot)) 'Controlled comparison tem
 Assert-True (@(Get-Content -LiteralPath $gitignorePath) -contains 'reports/') 'Machine-specific audit/comparison reports must remain ignored by Git.'
 
 $fixtureSource = Get-Content -LiteralPath $MyInvocation.MyCommand.Path -Raw
-foreach ($forbiddenFixturePattern in @(
-    'C:\Users\',
-    'D:\Users\',
-    '@gmail.com',
-    '@outlook.com',
-    'github_pat_',
-    'ghp_',
-    'Bearer ',
-    'Authorization:'
-)) {
+$slash = [string][char]92
+$forbiddenFixturePatterns = @(
+    ('C:' + $slash + 'Users' + $slash),
+    ('D:' + $slash + 'Users' + $slash),
+    ('@gmail' + '.com'),
+    ('@outlook' + '.com'),
+    ('github_' + 'pat_'),
+    ('gh' + 'p_'),
+    ('Bearer' + ' '),
+    ('Authorization' + ':')
+)
+foreach ($forbiddenFixturePattern in $forbiddenFixturePatterns) {
     Assert-True ($fixtureSource -notmatch [Regex]::Escape($forbiddenFixturePattern)) "Committed Sprint 6 fixture source contains forbidden real-account/path marker '$forbiddenFixturePattern'."
 }
 
