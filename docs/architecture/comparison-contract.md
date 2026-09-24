@@ -168,7 +168,7 @@ Project comparison consumes:
 - `projects.javascript-web.summary` for JavaScript/web types, Node pins, and package-manager declarations/lockfile signals;
 - `projects.non-javascript.summary` for non-JavaScript project types and canonical runtime/toolchain constraints.
 
-Project identity is path-safe. The comparison derives a deterministic identity from the project directory name plus normalized `relativePath`; configured-root indexes are used only to disambiguate duplicate identities. Absolute candidate paths and provider `comparisonKey` values are not copied into comparison values.
+Project identity is path-safe. The comparison derives a deterministic identity from the project directory name plus normalized `relativePath`. If that path-safe identity appears more than once in the same report, it is treated as ambiguous and omitted from specialized project matching rather than using configured-root order as identity. Absolute candidate paths, root indexes, and provider `comparisonKey` values are not copied into comparison values.
 
 Project differences remain independent from global runtime/version intelligence:
 
