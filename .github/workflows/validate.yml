@@ -196,6 +196,11 @@ jobs:
         run: |
           ./tests/project-runtime-comparison/validate_project_runtime_comparison.ps1
 
+      - name: Validate Git health comparison
+        shell: pwsh
+        run: |
+          ./tests/git-health-comparison/validate_git_health_comparison.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |

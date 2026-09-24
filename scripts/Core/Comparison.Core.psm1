@@ -1861,6 +1861,484 @@ function Add-ComparisonProjectDifferences {
     }
 }
 
+
+function Test-ComparisonGitProviderReadable {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Provider
+    )
+
+    if ($null -eq $Provider) {
+        return $false
+    }
+
+    return ([string]$Provider.status -notin @('failed', 'unavailable'))
+}
+
+function Get-ComparisonGitRepositoryModels {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Provider,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$EvidencePrefix
+    )
+
+    $models = [System.Collections.Generic.List[object]]::new()
+
+    if (-not (Test-ComparisonGitProviderReadable -Provider $Provider)) {
+        return [pscustomobject][ordered]@{
+            available = $false
+            models    = @()
+        }
+    }
+
+    foreach ($evidence in @($Provider.evidence)) {
+        if ($null -eq $evidence) {
+            continue
+        }
+
+        $evidenceId = [string](Get-ComparisonOptionalPropertyValue -InputObject $evidence -Name 'evidenceId')
+        if ([string]::IsNullOrWhiteSpace($evidenceId) -or -not $evidenceId.StartsWith($EvidencePrefix, [StringComparison]::Ordinal)) {
+            continue
+        }
+
+        $attributes = Get-ComparisonOptionalPropertyValue -InputObject $evidence -Name 'attributes'
+        $repository = Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'repository'
+        if ($null -ne $repository) {
+            $models.Add($repository)
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        available = $true
+        models    = $models.ToArray()
+    }
+}
+
+function ConvertTo-ComparisonGitPathKey {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $null
+    }
+
+    return $Path.Trim().TrimEnd('\', '/').ToLowerInvariant()
+}
+
+function Get-ComparisonGitReportState {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][System.Collections.IDictionary]$Providers,
+        [Parameter(Mandatory)][ValidateSet('reference', 'target')][string]$Role
+    )
+
+    if (-not $Providers.Contains('projects.local')) {
+        return [pscustomobject][ordered]@{
+            available        = $false
+            healthAvailable  = $false
+            hygieneAvailable = $false
+            repositories     = @{}
+        }
+    }
+
+    $projectsProvider = $Providers['projects.local']
+    if (-not (Test-ComparisonProviderHasComparableEvidence -Provider $projectsProvider)) {
+        return [pscustomobject][ordered]@{
+            available        = $false
+            healthAvailable  = $false
+            hygieneAvailable = $false
+            repositories     = @{}
+        }
+    }
+
+    $projectEvidence = Get-ComparisonEvidenceIndex -Provider $projectsProvider -ProviderId 'projects.local' -Role $Role
+    if (-not $projectEvidence.ContainsKey('projects.local.discovery')) {
+        return [pscustomobject][ordered]@{
+            available        = $false
+            healthAvailable  = $false
+            hygieneAvailable = $false
+            repositories     = @{}
+        }
+    }
+
+    $discovery = $projectEvidence['projects.local.discovery']
+    $discoveryAttributes = Get-ComparisonOptionalPropertyValue -InputObject $discovery -Name 'attributes'
+    $candidates = @((Get-ComparisonOptionalPropertyValue -InputObject $discoveryAttributes -Name 'candidates'))
+
+    $rawCandidates = [System.Collections.Generic.List[object]]::new()
+    $identityCounts = @{}
+
+    for ($index = 0; $index -lt $candidates.Count; $index++) {
+        $candidate = $candidates[$index]
+        if ($null -eq $candidate -or (Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'repositoryMarker') -ne $true) {
+            continue
+        }
+
+        $path = [string](Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'path')
+        $pathKey = ConvertTo-ComparisonGitPathKey -Path $path
+        if ([string]::IsNullOrWhiteSpace($pathKey)) {
+            continue
+        }
+
+        $relativePath = ConvertTo-ComparisonProjectRelativePath -RelativePath ([string](Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'relativePath'))
+        $name = Get-ComparisonProjectLeafName -Path $path -ProjectIndex $index
+        $baseIdentity = "$name|$relativePath"
+
+        if (-not $identityCounts.ContainsKey($baseIdentity)) {
+            $identityCounts[$baseIdentity] = 0
+        }
+        $identityCounts[$baseIdentity]++
+
+        $rawCandidates.Add([pscustomobject][ordered]@{
+            name         = $name
+            relativePath = $relativePath
+            baseIdentity = $baseIdentity
+            pathKey      = $pathKey
+        })
+    }
+
+    $repositories = @{}
+    $subjectByPath = @{}
+
+    foreach ($candidate in $rawCandidates) {
+        if ([int]$identityCounts[[string]$candidate.baseIdentity] -gt 1) {
+            continue
+        }
+
+        $identity = New-ComparisonProjectIdentityValue -Name ([string]$candidate.name) -RelativePath ([string]$candidate.relativePath)
+        $identityJson = ConvertTo-ComparisonCanonicalJson -Value $identity
+        $subjectId = "git-repository:$(Get-ComparisonValueHash -CanonicalJson $identityJson)"
+
+        if ($repositories.ContainsKey($subjectId)) {
+            continue
+        }
+
+        $repositories[$subjectId] = [pscustomobject][ordered]@{
+            subjectId = $subjectId
+            identity  = $identity
+            health    = $null
+            hygiene   = $null
+        }
+        $subjectByPath[[string]$candidate.pathKey] = $subjectId
+    }
+
+    $healthProvider = if ($Providers.Contains('git.repository-health')) { $Providers['git.repository-health'] } else { $null }
+    $hygieneProvider = if ($Providers.Contains('git.branch-worktree-hygiene')) { $Providers['git.branch-worktree-hygiene'] } else { $null }
+
+    $healthState = Get-ComparisonGitRepositoryModels -Provider $healthProvider -EvidencePrefix 'git.repository-health.repository.'
+    $hygieneState = Get-ComparisonGitRepositoryModels -Provider $hygieneProvider -EvidencePrefix 'git.branch-worktree-hygiene.repository.'
+
+    foreach ($model in @($healthState.models)) {
+        $pathKey = ConvertTo-ComparisonGitPathKey -Path ([string](Get-ComparisonOptionalPropertyValue -InputObject $model -Name 'path'))
+        if (-not [string]::IsNullOrWhiteSpace($pathKey) -and $subjectByPath.ContainsKey($pathKey)) {
+            $repositories[$subjectByPath[$pathKey]].health = $model
+        }
+    }
+
+    foreach ($model in @($hygieneState.models)) {
+        $pathKey = ConvertTo-ComparisonGitPathKey -Path ([string](Get-ComparisonOptionalPropertyValue -InputObject $model -Name 'path'))
+        if (-not [string]::IsNullOrWhiteSpace($pathKey) -and $subjectByPath.ContainsKey($pathKey)) {
+            $repositories[$subjectByPath[$pathKey]].hygiene = $model
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        available        = $true
+        healthAvailable  = [bool]$healthState.available
+        hygieneAvailable = [bool]$hygieneState.available
+        repositories     = $repositories
+    }
+}
+
+function ConvertTo-ComparisonGitBranchUpstreamValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Health
+    )
+
+    $branchHead = [string](Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'branchHead')
+    $upstream = [string](Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'upstream')
+    $upstreamRemote = [string](Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'upstreamRemote')
+
+    return [pscustomobject][ordered]@{
+        branchHead         = $(if ([string]::IsNullOrWhiteSpace($branchHead)) { $null } else { $branchHead })
+        detached           = ((Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'detached') -eq $true)
+        initial            = ((Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'initial') -eq $true)
+        upstreamConfigured = (-not [string]::IsNullOrWhiteSpace($upstream))
+        upstream           = $(if ([string]::IsNullOrWhiteSpace($upstream)) { $null } else { $upstream })
+        upstreamRemote     = $(if ([string]::IsNullOrWhiteSpace($upstreamRemote)) { $null } else { $upstreamRemote })
+        missingUpstream    = ((Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'missingUpstream') -eq $true)
+    }
+}
+
+function ConvertTo-ComparisonGitWorktreeStateValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Health
+    )
+
+    return [pscustomobject][ordered]@{
+        clean           = ((Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'clean') -eq $true)
+        dirty           = ((Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'dirty') -eq $true)
+        stagedCount     = Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'stagedCount'
+        unstagedCount   = Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'unstagedCount'
+        untrackedCount  = Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'untrackedCount'
+        conflictedCount = Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'conflictedCount'
+    }
+}
+
+function ConvertTo-ComparisonGitDivergenceValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Health
+    )
+
+    $ahead = Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'ahead'
+    $behind = Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'behind'
+
+    if ($null -eq $ahead -or $null -eq $behind) {
+        return $null
+    }
+
+    return [pscustomobject][ordered]@{
+        ahead    = [int]$ahead
+        behind   = [int]$behind
+        diverged = ((Get-ComparisonOptionalPropertyValue -InputObject $Health -Name 'diverged') -eq $true)
+    }
+}
+
+function ConvertTo-ComparisonGitBranchHygieneValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Hygiene
+    )
+
+    $branches = @((Get-ComparisonOptionalPropertyValue -InputObject $Hygiene -Name 'branches'))
+
+    return [pscustomobject][ordered]@{
+        branchCount           = $branches.Count
+        staleBranchCount      = @($branches | Where-Object { (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'stale') -eq $true }).Count
+        upstreamGoneCount     = @($branches | Where-Object { (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'upstreamGone') -eq $true }).Count
+        namingDeviationCount  = @($branches | Where-Object { (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'namingDeviation') -eq $true }).Count
+        cleanupCandidateCount = @($branches | Where-Object { (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'advisoryCleanupCandidate') -eq $true }).Count
+    }
+}
+
+function ConvertTo-ComparisonGitWorktreeHygieneValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Hygiene
+    )
+
+    $worktrees = @((Get-ComparisonOptionalPropertyValue -InputObject $Hygiene -Name 'worktrees'))
+
+    return [pscustomobject][ordered]@{
+        worktreeCount            = $worktrees.Count
+        linkedWorktreeCount      = @($worktrees | Where-Object { (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'isMainWorktree') -ne $true }).Count
+        dirtyLinkedWorktreeCount = @($worktrees | Where-Object {
+            (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'isMainWorktree') -ne $true -and
+            (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'dirty') -eq $true
+        }).Count
+        prunableWorktreeCount    = @($worktrees | Where-Object { (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'prunable') -eq $true }).Count
+        cleanupCandidateCount    = @($worktrees | Where-Object { (Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'advisoryCleanupCandidate') -eq $true }).Count
+        unavailableWorktreeCount = @($worktrees | Where-Object {
+            [string](Get-ComparisonOptionalPropertyValue -InputObject $_ -Name 'state') -in @('missing', 'unavailable')
+        }).Count
+    }
+}
+
+function Add-ComparisonGitInspectionStateDifference {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubjectId,
+        [AllowNull()][object]$ReferenceHealth,
+        [AllowNull()][object]$TargetHealth
+    )
+
+    $referenceState = if ($null -eq $ReferenceHealth) { 'unknown' } else { [string](Get-ComparisonOptionalPropertyValue -InputObject $ReferenceHealth -Name 'state') }
+    $targetState = if ($null -eq $TargetHealth) { 'unknown' } else { [string](Get-ComparisonOptionalPropertyValue -InputObject $TargetHealth -Name 'state') }
+
+    if ([string]::IsNullOrWhiteSpace($referenceState)) { $referenceState = 'unknown' }
+    if ([string]::IsNullOrWhiteSpace($targetState)) { $targetState = 'unknown' }
+
+    if ($referenceState -eq $targetState) {
+        return
+    }
+
+    $relation = if ($referenceState -eq 'unavailable' -or $targetState -eq 'unavailable') {
+        'unavailable'
+    }
+    elseif ($referenceState -eq 'unknown' -or $targetState -eq 'unknown') {
+        'unknown'
+    }
+    else {
+        'different'
+    }
+
+    $parameters = @{
+        Category       = 'git'
+        Kind           = 'inspection-state'
+        ProviderId     = 'git.repository-health'
+        SubjectId      = $SubjectId
+        Relation       = $relation
+        ReferenceState = $referenceState
+        TargetState    = $targetState
+    }
+    $Differences.Add((New-ComparisonDifference @parameters))
+}
+
+function Add-ComparisonGitDivergenceDifference {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SubjectId,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$ReferenceHealth,
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$TargetHealth
+    )
+
+    $referenceValue = ConvertTo-ComparisonGitDivergenceValue -Health $ReferenceHealth
+    $targetValue = ConvertTo-ComparisonGitDivergenceValue -Health $TargetHealth
+
+    if ($null -eq $referenceValue -and $null -eq $targetValue) {
+        return
+    }
+
+    if ($null -eq $referenceValue -or $null -eq $targetValue) {
+        $parameters = @{
+            Category       = 'git'
+            Kind           = 'divergence'
+            ProviderId     = 'git.repository-health'
+            SubjectId      = $SubjectId
+            Relation       = 'unknown'
+            ReferenceState = $(if ($null -eq $referenceValue) { 'unknown' } else { 'known' })
+            TargetState    = $(if ($null -eq $targetValue) { 'unknown' } else { 'known' })
+            ReferenceValue = $referenceValue
+            TargetValue    = $targetValue
+        }
+        $Differences.Add((New-ComparisonDifference @parameters))
+        return
+    }
+
+    $parameters = @{
+        Differences    = $Differences
+        Category       = 'git'
+        Kind           = 'divergence'
+        ProviderId     = 'git.repository-health'
+        SubjectId      = $SubjectId
+        ReferenceState = 'known'
+        TargetState    = 'known'
+        ReferenceValue = $referenceValue
+        TargetValue    = $targetValue
+    }
+    Add-ComparisonValueDifference @parameters
+}
+
+function Add-ComparisonGitHealthDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNull()][System.Collections.IDictionary]$ReferenceProviders,
+        [Parameter(Mandatory)][ValidateNotNull()][System.Collections.IDictionary]$TargetProviders
+    )
+
+    $referenceState = Get-ComparisonGitReportState -Providers $ReferenceProviders -Role reference
+    $targetState = Get-ComparisonGitReportState -Providers $TargetProviders -Role target
+
+    if (-not $referenceState.available -or -not $targetState.available) {
+        return
+    }
+
+    $subjectIds = @(
+        @($referenceState.repositories.Keys) + @($targetState.repositories.Keys) |
+            Sort-Object -Unique
+    )
+
+    foreach ($subjectId in $subjectIds) {
+        if (-not $referenceState.repositories.ContainsKey($subjectId) -or -not $targetState.repositories.ContainsKey($subjectId)) {
+            continue
+        }
+
+        $referenceRepository = $referenceState.repositories[$subjectId]
+        $targetRepository = $targetState.repositories[$subjectId]
+
+        if ($referenceState.healthAvailable -and $targetState.healthAvailable) {
+            $inspectionParameters = @{
+                Differences     = $Differences
+                SubjectId       = $subjectId
+                ReferenceHealth = $referenceRepository.health
+                TargetHealth    = $targetRepository.health
+            }
+            Add-ComparisonGitInspectionStateDifference @inspectionParameters
+
+            $referenceHealthState = if ($null -eq $referenceRepository.health) { 'unknown' } else { [string](Get-ComparisonOptionalPropertyValue -InputObject $referenceRepository.health -Name 'state') }
+            $targetHealthState = if ($null -eq $targetRepository.health) { 'unknown' } else { [string](Get-ComparisonOptionalPropertyValue -InputObject $targetRepository.health -Name 'state') }
+
+            if ($referenceHealthState -eq 'inspected' -and $targetHealthState -eq 'inspected') {
+                $branchParameters = @{
+                    Differences    = $Differences
+                    Category       = 'git'
+                    Kind           = 'branch-upstream'
+                    ProviderId     = 'git.repository-health'
+                    SubjectId      = $subjectId
+                    ReferenceValue = ConvertTo-ComparisonGitBranchUpstreamValue -Health $referenceRepository.health
+                    TargetValue    = ConvertTo-ComparisonGitBranchUpstreamValue -Health $targetRepository.health
+                }
+                Add-ComparisonValueDifference @branchParameters
+
+                $divergenceParameters = @{
+                    Differences     = $Differences
+                    SubjectId       = $subjectId
+                    ReferenceHealth = $referenceRepository.health
+                    TargetHealth    = $targetRepository.health
+                }
+                Add-ComparisonGitDivergenceDifference @divergenceParameters
+
+                $worktreeParameters = @{
+                    Differences    = $Differences
+                    Category       = 'git'
+                    Kind           = 'worktree-state'
+                    ProviderId     = 'git.repository-health'
+                    SubjectId      = $subjectId
+                    ReferenceValue = ConvertTo-ComparisonGitWorktreeStateValue -Health $referenceRepository.health
+                    TargetValue    = ConvertTo-ComparisonGitWorktreeStateValue -Health $targetRepository.health
+                }
+                Add-ComparisonValueDifference @worktreeParameters
+            }
+        }
+
+        if ($referenceState.hygieneAvailable -and
+            $targetState.hygieneAvailable -and
+            $null -ne $referenceRepository.hygiene -and
+            $null -ne $targetRepository.hygiene) {
+
+            $branchHygieneParameters = @{
+                Differences    = $Differences
+                Category       = 'git'
+                Kind           = 'branch-hygiene'
+                ProviderId     = 'git.branch-worktree-hygiene'
+                SubjectId      = $subjectId
+                ReferenceValue = ConvertTo-ComparisonGitBranchHygieneValue -Hygiene $referenceRepository.hygiene
+                TargetValue    = ConvertTo-ComparisonGitBranchHygieneValue -Hygiene $targetRepository.hygiene
+            }
+            Add-ComparisonValueDifference @branchHygieneParameters
+
+            $worktreeHygieneParameters = @{
+                Differences    = $Differences
+                Category       = 'git'
+                Kind           = 'worktree-hygiene'
+                ProviderId     = 'git.branch-worktree-hygiene'
+                SubjectId      = $subjectId
+                ReferenceValue = ConvertTo-ComparisonGitWorktreeHygieneValue -Hygiene $referenceRepository.hygiene
+                TargetValue    = ConvertTo-ComparisonGitWorktreeHygieneValue -Hygiene $targetRepository.hygiene
+            }
+            Add-ComparisonValueDifference @worktreeHygieneParameters
+        }
+    }
+}
+
 function Add-ComparisonPathEnvironmentProviderDifferences {
     [CmdletBinding()]
     param(
@@ -1905,6 +2383,7 @@ function New-WorkstationComparison {
     $differences = [System.Collections.Generic.List[object]]::new()
 
     Add-ComparisonProjectDifferences -Differences $differences -ReferenceProviders $referenceProviders -TargetProviders $targetProviders
+    Add-ComparisonGitHealthDifferences -Differences $differences -ReferenceProviders $referenceProviders -TargetProviders $targetProviders
 
     foreach ($providerId in $providerIds) {
         $referenceExists = $referenceProviders.ContainsKey($providerId)
