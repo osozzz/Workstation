@@ -752,8 +752,8 @@ function Add-ComparisonComponentVersionDifferences {
         ProviderId     = $ProviderId
         ComponentId    = $ComponentId
         SubjectId      = 'active'
-        ReferenceValue = ConvertTo-ComparisonVersionValue -VersionRecord $ReferenceComponent.activeVersion
-        TargetValue    = ConvertTo-ComparisonVersionValue -VersionRecord $TargetComponent.activeVersion
+        ReferenceValue = (ConvertTo-ComparisonVersionValue -VersionRecord $ReferenceComponent.activeVersion)
+        TargetValue    = (ConvertTo-ComparisonVersionValue -VersionRecord $TargetComponent.activeVersion)
         ReferenceState = $referenceState
         TargetState    = $targetState
     }
@@ -865,8 +865,8 @@ function Add-ComparisonComponentVersionDifferences {
                 ProviderId     = $ProviderId
                 ComponentId    = $ComponentId
                 SubjectId      = $channel.Subject
-                ReferenceValue = ConvertTo-ComparisonVersionValue -VersionRecord $referenceChannel
-                TargetValue    = ConvertTo-ComparisonVersionValue -VersionRecord $targetChannel
+                ReferenceValue = (ConvertTo-ComparisonVersionValue -VersionRecord $referenceChannel)
+                TargetValue    = (ConvertTo-ComparisonVersionValue -VersionRecord $targetChannel)
                 ReferenceState = $referenceIntelligenceStatus
                 TargetState    = $targetIntelligenceStatus
             }
