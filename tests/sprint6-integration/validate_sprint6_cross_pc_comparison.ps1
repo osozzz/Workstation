@@ -815,9 +815,15 @@ try {
 
     $writtenStructured = Normalize-Newlines -Value ([IO.File]::ReadAllText((Join-Path $outputDirectory 'comparison.json')))
     $writtenHuman = Normalize-Newlines -Value ([IO.File]::ReadAllText((Join-Path $outputDirectory 'comparison.txt')))
+    $entryStructured = Normalize-Newlines -Value (ConvertTo-WorkstationComparisonJson -Comparison $entryComparison)
+    $entryHuman = Normalize-Newlines -Value (ConvertTo-WorkstationComparisonText -Comparison $entryComparison)
 
-    Assert-True ($writtenStructured -eq (Normalize-Newlines -Value $structured)) 'Written structured output must match the direct structured result.'
-    Assert-True ($writtenHuman -eq (Normalize-Newlines -Value $human)) 'Written human-readable output must match the direct rendering.'
+    Assert-True ($writtenStructured -eq $entryStructured) 'Written structured output must match the entrypoint normalized comparison result.'
+    Assert-True ($writtenHuman -eq $entryHuman) 'Written human-readable output must match the entrypoint rendering.'
+
+    $writtenRoundTrip = $writtenStructured | ConvertFrom-Json -Depth 100
+    $writtenHumanFromStructured = Normalize-Newlines -Value (ConvertTo-WorkstationComparisonText -Comparison $writtenRoundTrip)
+    Assert-True ($writtenHuman -eq $writtenHumanFromStructured) 'Written human-readable output must be reproducible from written structured output.'
 
     $repoPrefix = [IO.Path]::GetFullPath($root).TrimEnd('\') + '\'
     $outputPrefix = [IO.Path]::GetFullPath($outputDirectory)
