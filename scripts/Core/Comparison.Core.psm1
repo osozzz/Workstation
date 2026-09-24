@@ -431,7 +431,7 @@ function Add-ComparisonSetDifferences {
         }
 
         $relation = if ($referenceExists) { 'reference-only' } else { 'target-only' }
-        $subjectId = "$SubjectPrefix:$(Get-ComparisonValueHash -CanonicalJson $key)"
+        $subjectId = "${SubjectPrefix}:$(Get-ComparisonValueHash -CanonicalJson $key)"
 
         $parameters = @{
             Category       = $Category
