@@ -4,9 +4,9 @@ A Windows developer-workstation toolkit for auditing, comparing, and standardizi
 
 ## Current phase
 
-**v0.8.0 — Cross-PC Comparison**
+**v0.9.0 — Audit Hardening**
 
-`v0.7.0 — Version Intelligence` is complete. The repository is now extending the read-only audit with schema-aware cross-PC comparison across normalized toolchains, active/default versions, PATH/environment health, applications, project/runtime constraints, Git health, and version intelligence.
+`v0.8.0 — Cross-PC Comparison` is complete and published. The repository is now hardening the complete read-only audit with static analysis, provider and contract tests, normalized schema validation, deterministic fixtures, failure-path coverage, PowerShell compatibility verification, stable CI checks, and report redaction/security testing.
 
 The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
 
