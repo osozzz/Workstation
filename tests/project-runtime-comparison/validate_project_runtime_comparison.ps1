@@ -94,7 +94,7 @@ function New-SyntheticCandidate {
 
 function New-ProjectsLocalProvider {
     param(
-        [Parameter(Mandatory)][object[]]$Candidates,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Candidates,
         [ValidateSet('success','warning','partial','failed','unavailable','not-applicable')][string]$Status = 'success'
     )
 
@@ -222,7 +222,7 @@ function New-Constraint {
 function New-ClassificationProvider {
     param(
         [Parameter(Mandatory)][ValidateSet('javascript','non-javascript')][string]$Kind,
-        [Parameter(Mandatory)][object[]]$Projects,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Projects,
         [ValidateSet('success','warning','partial','failed','unavailable','not-applicable')][string]$Status = 'success'
     )
 
