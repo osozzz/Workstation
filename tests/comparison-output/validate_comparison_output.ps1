@@ -41,7 +41,28 @@ $actualStructured = ConvertTo-WorkstationComparisonJson -Comparison $comparison
 Assert-True ($actualStructured -eq $expectedStructured) 'Structured comparison snapshot must be deterministic and validated before human rendering.'
 
 $actualHuman = ConvertTo-WorkstationComparisonText -Comparison $comparison
-Assert-True ($actualHuman -eq $expectedHuman) 'Human-readable comparison must be derived deterministically from the validated structured result.'
+if ($actualHuman -ne $expectedHuman) {
+    $expectedLines = @($expectedHuman -split [char]10)
+    $actualLines = @($actualHuman -split [char]10)
+    $maximumLineCount = [Math]::Max($expectedLines.Count, $actualLines.Count)
+    $mismatchLine = 0
+    $expectedLine = '<missing>'
+    $actualLine = '<missing>'
+
+    for ($lineIndex = 0; $lineIndex -lt $maximumLineCount; $lineIndex++) {
+        $candidateExpected = if ($lineIndex -lt $expectedLines.Count) { [string]$expectedLines[$lineIndex] } else { '<missing>' }
+        $candidateActual = if ($lineIndex -lt $actualLines.Count) { [string]$actualLines[$lineIndex] } else { '<missing>' }
+
+        if ($candidateExpected -ne $candidateActual) {
+            $mismatchLine = $lineIndex + 1
+            $expectedLine = $candidateExpected
+            $actualLine = $candidateActual
+            break
+        }
+    }
+
+    throw "Human-readable comparison snapshot mismatch at line $mismatchLine. Expected: '$expectedLine' Actual: '$actualLine'"
+}
 
 foreach ($requiredHeading in @(
     'Components and versions',
