@@ -57,9 +57,11 @@ function Assert-NoAnalyzerFindings {
 }
 
 # Prove the gate can fail by analyzing a controlled in-memory violation.
-$negativeDiagnostics = @(
-    Invoke-ScriptAnalyzer         -ScriptDefinition "Invoke-Expression 'Get-Date'"         -Settings $settingsPath
-)
+$negativeAnalysisArgs = @{
+    ScriptDefinition = "Invoke-Expression 'Get-Date'"
+    Settings = $settingsPath
+}
+$negativeDiagnostics = @(Invoke-ScriptAnalyzer @negativeAnalysisArgs)
 
 if (-not ($negativeDiagnostics | Where-Object RuleName -eq 'PSAvoidUsingInvokeExpression')) {
     throw 'Controlled negative analysis did not produce PSAvoidUsingInvokeExpression.'
@@ -90,12 +92,18 @@ if ($productionFiles.Count -eq 0) {
 $productionDiagnostics = @()
 
 foreach ($file in $productionFiles) {
-    $productionDiagnostics += @(
-        Invoke-ScriptAnalyzer             -Path $file.FullName             -Settings $settingsPath
-    )
+    $productionAnalysisArgs = @{
+        Path = $file.FullName
+        Settings = $settingsPath
+    }
+    $productionDiagnostics += @(Invoke-ScriptAnalyzer @productionAnalysisArgs)
 }
 
-Assert-NoAnalyzerFindings     -Diagnostics $productionDiagnostics     -Context "$($productionFiles.Count) production PowerShell file(s)"
+$productionGateArgs = @{
+    Diagnostics = $productionDiagnostics
+    Context = "$($productionFiles.Count) production PowerShell file(s)"
+}
+Assert-NoAnalyzerFindings @productionGateArgs
 
 Write-Host "PSScriptAnalyzer gate passed for $($productionFiles.Count) production PowerShell file(s)."
 Write-Host 'Controlled negative fixture produced the expected failing diagnostic.'
