@@ -201,6 +201,11 @@ jobs:
         run: |
           ./tests/git-health-comparison/validate_git_health_comparison.ps1
 
+      - name: Validate normalized comparison report outputs
+        shell: pwsh
+        run: |
+          ./tests/comparison-output/validate_comparison_output.ps1
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
