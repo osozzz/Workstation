@@ -48,7 +48,7 @@ Duplicate provider IDs or duplicate component IDs are invalid comparison input a
 
 ## Difference record
 
-The comparison output is a deterministic envelope containing normalized difference records.
+The comparison output is a deterministic envelope containing normalized difference records. Comparison schema `1.1.0` extends the initial envelope with structured normalized values for component/version drift.
 
 Each difference records:
 
@@ -57,7 +57,7 @@ Each difference records:
 - `providerId`, `componentId`, or `subjectId` where relevant;
 - `relation`;
 - reference/target state;
-- optional scalar reference/target values.
+- optional normalized reference/target values. These may be scalars, arrays, or structured objects when the source contract is structured.
 
 The specialized Sprint 6 issues add differences through this shared record rather than inventing independent output envelopes.
 
@@ -78,6 +78,31 @@ Equal values are not emitted as difference records.
 
 Component state such as `missing` is preserved in `referenceState` or `targetState`; it is not rewritten as `unavailable` or `unknown`.
 
+## Component and version comparison
+
+Comparison schema `1.1.0` adds normalized component/version drift on top of the `1.0.0` core contract.
+
+Version records are reduced to a comparison-safe structured value:
+
+- `value`: the normalized version when available, otherwise the source `raw` value;
+- `valueSource`: `normalized` or `raw`, so raw fallback is never presented as normalized data;
+- `channel`: the original ecosystem channel such as `stable`, `lts`, `current`, prerelease, or RC when present.
+
+When `normalized` is available, `raw` is not retained in the comparison value and therefore cannot create drift solely because display/source text differs.
+
+Component/version comparison covers:
+
+- `activeVersion` independently from discovered versions;
+- `discoveredVersions` as an order-independent normalized set;
+- `installations` as an order-independent structured set containing path, normalized version value, active state, and source;
+- `commandResolutions` as an order-independent structured set containing command, resolved path, command type, normalized version value, precedence, and active state;
+- `versionIntelligence.status` with `known`, `unknown`, `unavailable`, and `not-applicable` preserved;
+- `latestStable`, `latestLts`, and `latestCurrent` independently when both sides have known intelligence.
+
+Version-intelligence `source`, `checkedAt`, and diagnostic `message` remain evidence metadata and are not treated as version drift by themselves. A different latest value remains informational comparison evidence only; it does not imply that an upgrade is mandatory or should be automated.
+
+Set members receive deterministic hashed `subjectId` values derived from their normalized structured representation. This keeps ordering stable and avoids using raw terminal output as identity.
+
 ## Initial Sprint 6 core coverage
 
 Issue #95 establishes only the common comparison mechanics:
@@ -92,7 +117,7 @@ Issue #95 establishes only the common comparison mechanics:
 
 The following are intentionally deferred:
 
-- active/default/discovered version comparison: #96;
+- active/default/discovered version comparison, installation sets, command resolution/precedence, and version-intelligence channels: implemented by #96;
 - PATH and safe environment comparison: #97;
 - WinGet/application comparison: #98;
 - project/runtime-constraint comparison: #99;
