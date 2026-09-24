@@ -1372,6 +1372,502 @@ function Add-ComparisonWinGetApplicationDifferences {
     }
 }
 
+
+function Test-ComparisonProjectClassificationProviderReadable {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Provider
+    )
+
+    if ($null -eq $Provider) {
+        return $false
+    }
+
+    return ([string]$Provider.status -notin @('failed', 'unavailable'))
+}
+
+function Get-ComparisonProjectSummaryEvidence {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][psobject]$Provider,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$EvidenceId,
+        [Parameter(Mandatory)][ValidateSet('reference', 'target')][string]$Role
+    )
+
+    $evidenceIndex = Get-ComparisonEvidenceIndex -Provider $Provider -ProviderId $ProviderId -Role $Role
+    if (-not $evidenceIndex.ContainsKey($EvidenceId)) {
+        return $null
+    }
+
+    return $evidenceIndex[$EvidenceId]
+}
+
+function ConvertTo-ComparisonProjectRelativePath {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][string]$RelativePath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($RelativePath)) {
+        return '.'
+    }
+
+    $normalized = $RelativePath.Trim().Replace('\', '/')
+    while ($normalized.StartsWith('./', [StringComparison]::Ordinal)) {
+        $normalized = $normalized.Substring(2)
+    }
+
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        return '.'
+    }
+
+    return $normalized.ToLowerInvariant()
+}
+
+function Get-ComparisonProjectLeafName {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][string]$Path,
+        [Parameter(Mandatory)][int]$ProjectIndex
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return "project-$ProjectIndex"
+    }
+
+    $trimmed = $Path.Trim().TrimEnd('\', '/')
+    if ([string]::IsNullOrWhiteSpace($trimmed)) {
+        return "project-$ProjectIndex"
+    }
+
+    $segments = @($trimmed -split '[\\/]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($segments.Count -eq 0) {
+        return "project-$ProjectIndex"
+    }
+
+    return ([string]$segments[-1]).ToLowerInvariant()
+}
+
+function Get-ComparisonProjectClassificationIndex {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$Provider,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ProviderId,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$SummaryEvidenceId,
+        [Parameter(Mandatory)][ValidateSet('reference', 'target')][string]$Role
+    )
+
+    $index = @{}
+    if (-not (Test-ComparisonProjectClassificationProviderReadable -Provider $Provider)) {
+        return [pscustomobject][ordered]@{
+            available = $false
+            projects  = $index
+        }
+    }
+
+    $summary = Get-ComparisonProjectSummaryEvidence -Provider $Provider -ProviderId $ProviderId -EvidenceId $SummaryEvidenceId -Role $Role
+    if ($null -eq $summary) {
+        return [pscustomobject][ordered]@{
+            available = $false
+            projects  = $index
+        }
+    }
+
+    $attributes = Get-ComparisonOptionalPropertyValue -InputObject $summary -Name 'attributes'
+    $projects = Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'projects'
+
+    foreach ($project in @($projects)) {
+        if ($null -eq $project) {
+            continue
+        }
+
+        $projectIndexValue = Get-ComparisonOptionalPropertyValue -InputObject $project -Name 'projectIndex'
+        if ($null -eq $projectIndexValue) {
+            continue
+        }
+
+        $projectIndex = [int]$projectIndexValue
+        if ($index.ContainsKey($projectIndex)) {
+            throw "$Role provider '$ProviderId' contains duplicate projectIndex '$projectIndex'."
+        }
+
+        $index[$projectIndex] = $project
+    }
+
+    return [pscustomobject][ordered]@{
+        available = $true
+        projects  = $index
+    }
+}
+
+function ConvertTo-ComparisonProjectTypes {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$JavaScriptProject,
+        [AllowNull()][object]$NonJavaScriptProject
+    )
+
+    $types = @()
+    if ($null -ne $JavaScriptProject) {
+        $types += @((Get-ComparisonOptionalPropertyValue -InputObject $JavaScriptProject -Name 'types'))
+    }
+    if ($null -ne $NonJavaScriptProject) {
+        $types += @((Get-ComparisonOptionalPropertyValue -InputObject $NonJavaScriptProject -Name 'types'))
+    }
+
+    return @(
+        $types |
+            Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
+            ForEach-Object { ([string]$_).Trim().ToLowerInvariant() } |
+            Sort-Object -Unique
+    )
+}
+
+function ConvertTo-ComparisonProjectRuntimeConstraints {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$JavaScriptProject,
+        [AllowNull()][object]$NonJavaScriptProject
+    )
+
+    $constraints = [System.Collections.Generic.List[object]]::new()
+
+    if ($null -ne $JavaScriptProject) {
+        $nodePins = Get-ComparisonOptionalPropertyValue -InputObject $JavaScriptProject -Name 'nodePins'
+        foreach ($pin in @($nodePins)) {
+            if ($null -eq $pin) {
+                continue
+            }
+
+            $source = [string](Get-ComparisonOptionalPropertyValue -InputObject $pin -Name 'source')
+            $value = [string](Get-ComparisonOptionalPropertyValue -InputObject $pin -Name 'value')
+            if ([string]::IsNullOrWhiteSpace($source) -or [string]::IsNullOrWhiteSpace($value)) {
+                continue
+            }
+
+            $constraints.Add([pscustomobject][ordered]@{
+                ecosystem = 'node'
+                source    = $source.Trim().ToLowerInvariant()
+                value     = $value.Trim()
+            })
+        }
+    }
+
+    if ($null -ne $NonJavaScriptProject) {
+        $nonJavaScriptConstraints = Get-ComparisonOptionalPropertyValue -InputObject $NonJavaScriptProject -Name 'constraints'
+        foreach ($constraint in @($nonJavaScriptConstraints)) {
+            if ($null -eq $constraint) {
+                continue
+            }
+
+            $ecosystem = [string](Get-ComparisonOptionalPropertyValue -InputObject $constraint -Name 'ecosystem')
+            $source = [string](Get-ComparisonOptionalPropertyValue -InputObject $constraint -Name 'source')
+            $value = [string](Get-ComparisonOptionalPropertyValue -InputObject $constraint -Name 'value')
+            if ([string]::IsNullOrWhiteSpace($ecosystem) -or
+                [string]::IsNullOrWhiteSpace($source) -or
+                [string]::IsNullOrWhiteSpace($value)) {
+                continue
+            }
+
+            $constraints.Add([pscustomobject][ordered]@{
+                ecosystem = $ecosystem.Trim().ToLowerInvariant()
+                source    = $source.Trim().ToLowerInvariant()
+                value     = $value.Trim()
+            })
+        }
+    }
+
+    return @($constraints.ToArray() | Sort-Object ecosystem, source, value)
+}
+
+function ConvertTo-ComparisonProjectPackageManager {
+    [CmdletBinding()]
+    param(
+        [AllowNull()][object]$JavaScriptProject
+    )
+
+    if ($null -eq $JavaScriptProject) {
+        return $null
+    }
+
+    $packageManager = Get-ComparisonOptionalPropertyValue -InputObject $JavaScriptProject -Name 'packageManager'
+    $declaration = $null
+
+    if ($null -ne $packageManager) {
+        $name = [string](Get-ComparisonOptionalPropertyValue -InputObject $packageManager -Name 'name')
+        $version = [string](Get-ComparisonOptionalPropertyValue -InputObject $packageManager -Name 'version')
+        $validValue = Get-ComparisonOptionalPropertyValue -InputObject $packageManager -Name 'valid'
+
+        $declaration = [pscustomobject][ordered]@{
+            valid   = ($validValue -eq $true)
+            name    = $(if ([string]::IsNullOrWhiteSpace($name)) { $null } else { $name.Trim().ToLowerInvariant() })
+            version = $(if ([string]::IsNullOrWhiteSpace($version)) { $null } else { $version.Trim() })
+        }
+    }
+
+    $lockManagers = @(
+        @((Get-ComparisonOptionalPropertyValue -InputObject $JavaScriptProject -Name 'lockManagers')) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
+            ForEach-Object { ([string]$_).Trim().ToLowerInvariant() } |
+            Sort-Object -Unique
+    )
+
+    if ($null -eq $declaration -and $lockManagers.Count -eq 0) {
+        return $null
+    }
+
+    return [pscustomobject][ordered]@{
+        declaration = $declaration
+        lockManagers = $lockManagers
+    }
+}
+
+function New-ComparisonProjectIdentityValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Name,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$RelativePath
+    )
+
+    return [pscustomobject][ordered]@{
+        name         = $Name
+        relativePath = $RelativePath
+    }
+}
+
+function Get-ComparisonProjectReportState {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateNotNull()][System.Collections.IDictionary]$Providers,
+        [Parameter(Mandatory)][ValidateSet('reference', 'target')][string]$Role
+    )
+
+    if (-not $Providers.Contains('projects.local')) {
+        return [pscustomobject][ordered]@{
+            available              = $false
+            javascriptAvailable    = $false
+            nonJavascriptAvailable = $false
+            projects               = @{}
+        }
+    }
+
+    $localProvider = $Providers['projects.local']
+    if (-not (Test-ComparisonProviderHasComparableEvidence -Provider $localProvider)) {
+        return [pscustomobject][ordered]@{
+            available              = $false
+            javascriptAvailable    = $false
+            nonJavascriptAvailable = $false
+            projects               = @{}
+        }
+    }
+
+    $localEvidenceIndex = Get-ComparisonEvidenceIndex -Provider $localProvider -ProviderId 'projects.local' -Role $Role
+    if (-not $localEvidenceIndex.ContainsKey('projects.local.discovery')) {
+        return [pscustomobject][ordered]@{
+            available              = $false
+            javascriptAvailable    = $false
+            nonJavascriptAvailable = $false
+            projects               = @{}
+        }
+    }
+
+    $discovery = $localEvidenceIndex['projects.local.discovery']
+    $discoveryAttributes = Get-ComparisonOptionalPropertyValue -InputObject $discovery -Name 'attributes'
+    $candidates = @((Get-ComparisonOptionalPropertyValue -InputObject $discoveryAttributes -Name 'candidates'))
+
+    $javascriptProvider = if ($Providers.Contains('projects.javascript-web')) { $Providers['projects.javascript-web'] } else { $null }
+    $nonJavaScriptProvider = if ($Providers.Contains('projects.non-javascript')) { $Providers['projects.non-javascript'] } else { $null }
+
+    $javascriptState = Get-ComparisonProjectClassificationIndex -Provider $javascriptProvider -ProviderId 'projects.javascript-web' -SummaryEvidenceId 'projects.javascript-web.summary' -Role $Role
+    $nonJavaScriptState = Get-ComparisonProjectClassificationIndex -Provider $nonJavaScriptProvider -ProviderId 'projects.non-javascript' -SummaryEvidenceId 'projects.non-javascript.summary' -Role $Role
+
+    $rawCandidates = [System.Collections.Generic.List[object]]::new()
+    $identityCounts = @{}
+
+    for ($index = 0; $index -lt $candidates.Count; $index++) {
+        $candidate = $candidates[$index]
+        if ($null -eq $candidate) {
+            continue
+        }
+
+        $path = [string](Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'path')
+        $relativePath = ConvertTo-ComparisonProjectRelativePath -RelativePath ([string](Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'relativePath'))
+        $name = Get-ComparisonProjectLeafName -Path $path -ProjectIndex $index
+        $baseIdentity = "$name|$relativePath"
+
+        if (-not $identityCounts.ContainsKey($baseIdentity)) {
+            $identityCounts[$baseIdentity] = 0
+        }
+        $identityCounts[$baseIdentity]++
+
+        $rootIndexes = @(
+            @((Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'rootIndexes')) |
+                ForEach-Object { [int]$_ } |
+                Sort-Object -Unique
+        )
+
+        $rawCandidates.Add([pscustomobject][ordered]@{
+            projectIndex     = $index
+            name             = $name
+            relativePath     = $relativePath
+            baseIdentity     = $baseIdentity
+            rootIndexes      = $rootIndexes
+            repositoryMarker = ((Get-ComparisonOptionalPropertyValue -InputObject $candidate -Name 'repositoryMarker') -eq $true)
+        })
+    }
+
+    $projects = @{}
+    foreach ($candidate in $rawCandidates) {
+        $identity = [pscustomobject][ordered]@{
+            name         = [string]$candidate.name
+            relativePath = [string]$candidate.relativePath
+        }
+
+        if ([int]$identityCounts[[string]$candidate.baseIdentity] -gt 1) {
+            $identity | Add-Member -NotePropertyName rootIndexes -NotePropertyValue @($candidate.rootIndexes)
+        }
+
+        $identityJson = ConvertTo-ComparisonCanonicalJson -Value $identity
+        $subjectId = "project:$(Get-ComparisonValueHash -CanonicalJson $identityJson)"
+
+        if ($projects.ContainsKey($subjectId)) {
+            throw "$Role project comparison produced duplicate path-safe project identity '$subjectId'."
+        }
+
+        $javascriptProject = if ($javascriptState.projects.ContainsKey([int]$candidate.projectIndex)) {
+            $javascriptState.projects[[int]$candidate.projectIndex]
+        }
+        else {
+            $null
+        }
+
+        $nonJavaScriptProject = if ($nonJavaScriptState.projects.ContainsKey([int]$candidate.projectIndex)) {
+            $nonJavaScriptState.projects[[int]$candidate.projectIndex]
+        }
+        else {
+            $null
+        }
+
+        $projects[$subjectId] = [pscustomobject][ordered]@{
+            subjectId             = $subjectId
+            identity              = New-ComparisonProjectIdentityValue -Name ([string]$candidate.name) -RelativePath ([string]$candidate.relativePath)
+            repositoryMarker      = [bool]$candidate.repositoryMarker
+            javascriptProject     = $javascriptProject
+            nonJavaScriptProject  = $nonJavaScriptProject
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        available              = $true
+        javascriptAvailable    = [bool]$javascriptState.available
+        nonJavascriptAvailable = [bool]$nonJavaScriptState.available
+        projects               = $projects
+    }
+}
+
+function Add-ComparisonProjectDifferences {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Differences,
+        [Parameter(Mandatory)][ValidateNotNull()][System.Collections.IDictionary]$ReferenceProviders,
+        [Parameter(Mandatory)][ValidateNotNull()][System.Collections.IDictionary]$TargetProviders
+    )
+
+    $referenceState = Get-ComparisonProjectReportState -Providers $ReferenceProviders -Role reference
+    $targetState = Get-ComparisonProjectReportState -Providers $TargetProviders -Role target
+
+    if (-not $referenceState.available -or -not $targetState.available) {
+        return
+    }
+
+    $subjectIds = @(
+        @($referenceState.projects.Keys) + @($targetState.projects.Keys) |
+            Sort-Object -Unique
+    )
+
+    foreach ($subjectId in $subjectIds) {
+        $referenceExists = $referenceState.projects.ContainsKey($subjectId)
+        $targetExists = $targetState.projects.ContainsKey($subjectId)
+        $referenceProject = if ($referenceExists) { $referenceState.projects[$subjectId] } else { $null }
+        $targetProject = if ($targetExists) { $targetState.projects[$subjectId] } else { $null }
+
+        if (-not ($referenceExists -and $targetExists)) {
+            $relation = if ($referenceExists) { 'reference-only' } else { 'target-only' }
+            $parameters = @{
+                Category       = 'project'
+                Kind           = 'presence'
+                ProviderId     = 'projects.local'
+                ComponentId    = $null
+                SubjectId      = $subjectId
+                Relation       = $relation
+                ReferenceState = $(if ($referenceExists) { 'present' } else { 'missing' })
+                TargetState    = $(if ($targetExists) { 'present' } else { 'missing' })
+                ReferenceValue = $(if ($referenceExists) { $referenceProject.identity } else { $null })
+                TargetValue    = $(if ($targetExists) { $targetProject.identity } else { $null })
+            }
+            $Differences.Add((New-ComparisonDifference @parameters))
+            continue
+        }
+
+        $gitParameters = @{
+            Differences    = $Differences
+            Category       = 'project'
+            Kind           = 'git-association'
+            ProviderId     = 'projects.local'
+            ComponentId    = $null
+            SubjectId      = $subjectId
+            ReferenceValue = [bool]$referenceProject.repositoryMarker
+            TargetValue    = [bool]$targetProject.repositoryMarker
+        }
+        Add-ComparisonValueDifference @gitParameters
+
+        if ($referenceState.javascriptAvailable -and
+            $targetState.javascriptAvailable -and
+            $referenceState.nonJavascriptAvailable -and
+            $targetState.nonJavascriptAvailable) {
+
+            $typeParameters = @{
+                Differences    = $Differences
+                Category       = 'project'
+                Kind           = 'types'
+                ProviderId     = 'projects.local'
+                ComponentId    = $null
+                SubjectId      = $subjectId
+                ReferenceValue = @(ConvertTo-ComparisonProjectTypes -JavaScriptProject $referenceProject.javascriptProject -NonJavaScriptProject $referenceProject.nonJavaScriptProject)
+                TargetValue    = @(ConvertTo-ComparisonProjectTypes -JavaScriptProject $targetProject.javascriptProject -NonJavaScriptProject $targetProject.nonJavaScriptProject)
+            }
+            Add-ComparisonValueDifference @typeParameters
+
+            $constraintParameters = @{
+                Differences    = $Differences
+                Category       = 'project'
+                Kind           = 'runtime-constraints'
+                ProviderId     = 'projects.local'
+                ComponentId    = $null
+                SubjectId      = $subjectId
+                ReferenceValue = @(ConvertTo-ComparisonProjectRuntimeConstraints -JavaScriptProject $referenceProject.javascriptProject -NonJavaScriptProject $referenceProject.nonJavaScriptProject)
+                TargetValue    = @(ConvertTo-ComparisonProjectRuntimeConstraints -JavaScriptProject $targetProject.javascriptProject -NonJavaScriptProject $targetProject.nonJavaScriptProject)
+            }
+            Add-ComparisonValueDifference @constraintParameters
+        }
+
+        if ($referenceState.javascriptAvailable -and $targetState.javascriptAvailable) {
+            $packageManagerParameters = @{
+                Differences    = $Differences
+                Category       = 'project'
+                Kind           = 'package-manager'
+                ProviderId     = 'projects.local'
+                ComponentId    = $null
+                SubjectId      = $subjectId
+                ReferenceValue = ConvertTo-ComparisonProjectPackageManager -JavaScriptProject $referenceProject.javascriptProject
+                TargetValue    = ConvertTo-ComparisonProjectPackageManager -JavaScriptProject $targetProject.javascriptProject
+            }
+            Add-ComparisonValueDifference @packageManagerParameters
+        }
+    }
+}
+
 function Add-ComparisonPathEnvironmentProviderDifferences {
     [CmdletBinding()]
     param(
@@ -1414,6 +1910,8 @@ function New-WorkstationComparison {
     )
 
     $differences = [System.Collections.Generic.List[object]]::new()
+
+    Add-ComparisonProjectDifferences -Differences $differences -ReferenceProviders $referenceProviders -TargetProviders $targetProviders
 
     foreach ($providerId in $providerIds) {
         $referenceExists = $referenceProviders.ContainsKey($providerId)
