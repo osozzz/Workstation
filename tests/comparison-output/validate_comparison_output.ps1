@@ -120,15 +120,50 @@ try {
         }
         summary       = [pscustomobject][ordered]@{
             status             = 'success'
-            providerCount      = 0
-            successCount       = 0
+            providerCount      = 1
+            successCount       = 1
             warningCount       = 0
             partialCount       = 0
             failedCount        = 0
             unavailableCount   = 0
             notApplicableCount = 0
         }
-        providers     = @()
+        providers     = @(
+            [pscustomobject][ordered]@{
+                providerId = 'synthetic.equal'
+                category   = 'synthetic'
+                status     = 'success'
+                observedAt = '2026-09-24T12:00:00+00:00'
+                components = @(
+                    [pscustomobject][ordered]@{
+                        componentId         = 'equal-component'
+                        name                = 'Synthetic equal component'
+                        state               = 'present'
+                        installed           = $true
+                        activeVersion       = [pscustomobject][ordered]@{
+                            raw        = '1.0.0'
+                            normalized = '1.0.0'
+                            channel    = 'stable'
+                        }
+                        discoveredVersions  = @()
+                        installations       = @()
+                        commandResolutions  = @()
+                        versionIntelligence = [pscustomobject][ordered]@{
+                            status        = 'not-applicable'
+                            latestStable  = $null
+                            latestLts     = $null
+                            latestCurrent = $null
+                            source        = $null
+                            checkedAt     = $null
+                            message       = $null
+                        }
+                    }
+                )
+                warnings   = @()
+                errors     = @()
+                evidence   = @()
+            }
+        )
         warnings      = @()
         errors        = @()
     }
