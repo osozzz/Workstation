@@ -95,6 +95,10 @@ exit 1
     if ($negativeExitCode -eq 0) {
         throw 'The controlled failing Pester assertion did not produce a failing child test run.'
     }
+
+    # The child failure is expected evidence. Reset the native exit code so the
+    # parent CI step reflects the validator result rather than the child result.
+    $global:LASTEXITCODE = 0
 }
 finally {
     if (Test-Path -LiteralPath $negativeDirectory) {
