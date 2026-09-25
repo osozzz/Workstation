@@ -7,6 +7,7 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 - `architecture/` — system boundaries, provider model, data flow, and normalized schemas.
 - `audit/` — audit capabilities, detection coverage, comparison behavior, and safety requirements.
   - `audit/powershell-static-analysis.md` — pinned PSScriptAnalyzer baseline, explicit exclusions, and CI gate behavior.
+  - `audit/pester-testing.md` — direct core/provider contract testing conventions and deterministic CI behavior.
 - `governance/` — repository workflow, issue/PR conventions, branch hygiene, and project management.
 - `policies/` — workstation standards and version/update policies.
 - `releases/` — versioning, milestones, release readiness, and changelog rules.

@@ -23,6 +23,16 @@ jobs:
         run: |
           ./tests/static-analysis/validate_psscriptanalyzer_gate.ps1
 
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -RequiredVersion 6.2.0 -Scope CurrentUser -Force -AllowClobber -Repository PSGallery -Confirm:$false
+
+      - name: Validate Pester core and provider contracts
+        shell: pwsh
+        run: |
+          ./tests/pester/validate_pester_gate.ps1
+
       - name: Set up contract validation Python
         uses: actions/setup-python@v7.0.0
         with:
