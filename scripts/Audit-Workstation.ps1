@@ -190,6 +190,729 @@ function Test-ProviderDescription {
     }
 }
 
+function Test-ProviderCollectionProperty {
+    param(
+        [Parameter(Mandatory)][object]$Result,
+        [Parameter(Mandatory)][object]$Registration,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    $value = $Result.$Name
+
+    if ($null -eq $value) {
+        throw "Provider '$($Registration.providerId)' result collection '$Name' cannot be null."
+    }
+
+    if ($value -is [string] -or $value -isnot [System.Collections.IEnumerable]) {
+        throw "Provider '$($Registration.providerId)' result '$Name' must be a collection."
+    }
+}
+
+function Test-ProviderEvidenceShape {
+    param(
+        [Parameter(Mandatory)][object]$Result,
+        [Parameter(Mandatory)][object]$Registration
+    )
+
+    $evidenceIds = New-Object System.Collections.Generic.HashSet[string]([StringComparer]::Ordinal)
+
+    foreach ($evidence in @($Result.evidence)) {
+        if ($null -eq $evidence) {
+            throw "Provider '$($Registration.providerId)' returned null evidence."
+        }
+
+        foreach ($property in @('evidenceId', 'type', 'source', 'exitCode', 'captured', 'redacted', 'attributes')) {
+            if ($null -eq $evidence.PSObject.Properties[$property]) {
+                throw "Provider '$($Registration.providerId)' evidence is missing '$property'."
+            }
+        }
+
+        $evidenceId = [string]$evidence.evidenceId
+        if ($evidenceId -notmatch '^[a-z0-9]+(?:[._-][a-z0-9]+)*
+function New-FailedProviderResult {
+    param(
+        [Parameter(Mandatory)][object]$Registration,
+        [Parameter(Mandatory)][string]$ObservedAt,
+        [Parameter(Mandatory)][string]$Message
+    )
+
+    $safeEvidenceId = "provider.$($Registration.providerId).failure"
+    $evidence = New-AuditEvidence -EvidenceId $safeEvidenceId -Type derived -Source $Registration.path -Captured $Message
+    $error = New-AuditIssue -Code 'PROVIDER_EXECUTION_FAILED' -Message $Message -Severity error -EvidenceIds @($safeEvidenceId)
+
+    return [pscustomobject][ordered]@{
+        providerId = $Registration.providerId
+        category   = $Registration.category
+        status     = 'failed'
+        observedAt = $ObservedAt
+        components = @()
+        warnings   = @()
+        errors     = @($error)
+        evidence   = @($evidence)
+    }
+}
+
+Ensure-Directory -Path $OutputDirectory
+
+$timestamp = Get-Date
+$observedAt = $timestamp.ToString('o')
+$stamp = $timestamp.ToString('yyyyMMdd-HHmmss')
+
+$computerName = [Environment]::MachineName
+if ([string]::IsNullOrWhiteSpace($computerName)) {
+    $computerName = 'Windows-PC'
+}
+$safeComputerName = $computerName -replace '[^A-Za-z0-9._-]', '_'
+
+$versionPath = Join-Path $PSScriptRoot '..\VERSION'
+$toolVersion = if (Test-Path -LiteralPath $versionPath) {
+    (Get-Content -LiteralPath $versionPath -Raw).Trim()
+}
+else {
+    '0.0.0'
+}
+
+$environmentVariableNames = @(
+    'NVM_HOME',
+    'NVM_SYMLINK',
+    'PNPM_HOME',
+    'JAVA_HOME',
+    'ANDROID_HOME',
+    'ANDROID_SDK_ROOT',
+    'FLUTTER_ROOT',
+    'PUB_CACHE',
+    'CARGO_HOME',
+    'RUSTUP_HOME',
+    'GOPATH',
+    'GOROOT',
+    'PYENV_ROOT',
+    'DOTNET_ROOT',
+    'DOTNET_ROOT_X64',
+    'DOTNET_ROOT_X86'
+)
+
+$localConfiguration = Get-LocalAuditConfiguration -Path $LocalConfigurationPath
+
+$context = [pscustomobject][ordered]@{
+    ObservedAt                   = $observedAt
+    ToolVersion                  = $toolVersion
+    IncludeWingetInventory       = [bool]$IncludeWingetInventory
+    VersionIntelligenceOffline    = [bool]$OfflineVersionIntelligence
+    EnvironmentVariableNames     = $environmentVariableNames
+    LocalConfigurationState      = $localConfiguration.state
+    LocalConfigurationSource     = [IO.Path]::GetFileName($LocalConfigurationPath)
+    LocalConfigurationError      = $localConfiguration.errorMessage
+    DevelopmentRoots             = @($localConfiguration.developmentRoots)
+    ProjectDiscoveryMaxDepth     = [int]$localConfiguration.maxDiscoveryDepth
+    GitBranchStaleDays           = [int]$localConfiguration.gitBranchStaleDays
+}
+
+$reportWarnings = New-Object System.Collections.Generic.List[object]
+$reportErrors = New-Object System.Collections.Generic.List[object]
+
+$providerPaths = New-Object System.Collections.Generic.List[string]
+if (Test-Path -LiteralPath $ProviderDirectory) {
+    Get-ChildItem -LiteralPath $ProviderDirectory -Filter '*.Provider.ps1' -File |
+        ForEach-Object { $providerPaths.Add($_.FullName) }
+}
+else {
+    $message = "Provider directory '$ProviderDirectory' was not found."
+    $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_DIRECTORY_NOT_FOUND' -Message $message -Severity error -EvidenceIds @()))
+}
+
+foreach ($path in $AdditionalProviderPath) {
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        continue
+    }
+
+    try {
+        $resolvedPath = (Resolve-Path -LiteralPath $path -ErrorAction Stop).Path
+        if (-not $providerPaths.Contains($resolvedPath)) {
+            $providerPaths.Add($resolvedPath)
+        }
+    }
+    catch {
+        $message = "Additional provider path '$path' could not be resolved: $($_.Exception.Message)"
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_PATH_NOT_FOUND' -Message $message -Severity error -EvidenceIds @()))
+    }
+}
+
+$registrations = New-Object System.Collections.Generic.List[object]
+
+foreach ($path in $providerPaths) {
+    try {
+        $description = & $path -Describe
+        Test-ProviderDescription -Description $description -Path $path
+
+        $registrations.Add([pscustomobject][ordered]@{
+            providerId = $description.providerId
+            category   = $description.category
+            order      = [int]$description.order
+            path       = $path
+        })
+    }
+    catch {
+        $fallbackId = Get-FallbackProviderId -Path $path
+        $message = "Provider discovery failed for '$path': $($_.Exception.Message)"
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_DISCOVERY_FAILED' -Message $message -Severity error -EvidenceIds @()))
+
+        $registrations.Add([pscustomobject][ordered]@{
+            providerId = $fallbackId
+            category   = 'unknown'
+            order      = 2147483647
+            path       = $path
+            discoveryFailure = $message
+        })
+    }
+}
+
+$orderedRegistrations = @(
+    $registrations |
+        Sort-Object @{ Expression = 'order'; Ascending = $true }, @{ Expression = 'providerId'; Ascending = $true }, @{ Expression = 'path'; Ascending = $true }
+)
+
+$duplicateProviderIds = @(
+    $orderedRegistrations |
+        Group-Object providerId |
+        Where-Object { $_.Count -gt 1 }
+)
+
+if ($duplicateProviderIds.Count -gt 0) {
+    foreach ($duplicate in $duplicateProviderIds) {
+        $message = "Duplicate providerId '$($duplicate.Name)' was registered $($duplicate.Count) times. Those registrations were skipped."
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_ID_DUPLICATE' -Message $message -Severity error -EvidenceIds @()))
+    }
+
+    $duplicateNames = @($duplicateProviderIds | ForEach-Object { $_.Name })
+    $orderedRegistrations = @(
+        $orderedRegistrations |
+            Where-Object { $_.providerId -notin $duplicateNames }
+    )
+}
+
+$providerResults = New-Object System.Collections.Generic.List[object]
+
+foreach ($registration in $orderedRegistrations) {
+    $discoveryFailureProperty = $registration.PSObject.Properties['discoveryFailure']
+    if ($discoveryFailureProperty -and $discoveryFailureProperty.Value) {
+        $providerResults.Add((New-FailedProviderResult -Registration $registration -ObservedAt $observedAt -Message $discoveryFailureProperty.Value))
+        continue
+    }
+
+    try {
+        $providerContext = $context | Select-Object *
+        $providerContext | Add-Member -NotePropertyName PreviousProviderResults -NotePropertyValue $providerResults.ToArray() -Force
+
+        $result = & $registration.path -Context $providerContext
+        Test-ProviderResultShape -Result $result -Registration $registration
+        $providerResults.Add($result)
+    }
+    catch {
+        $message = "Provider '$($registration.providerId)' failed: $($_.Exception.Message)"
+        $providerResults.Add((New-FailedProviderResult -Registration $registration -ObservedAt $observedAt -Message $message))
+    }
+}
+
+$providers = $providerResults.ToArray()
+$successCount = @($providers | Where-Object { $_.status -eq 'success' }).Count
+$warningCount = @($providers | Where-Object { $_.status -eq 'warning' }).Count
+$partialCount = @($providers | Where-Object { $_.status -eq 'partial' }).Count
+$failedCount = @($providers | Where-Object { $_.status -eq 'failed' }).Count
+$unavailableCount = @($providers | Where-Object { $_.status -eq 'unavailable' }).Count
+$notApplicableCount = @($providers | Where-Object { $_.status -eq 'not-applicable' }).Count
+
+$summaryStatus = if ($failedCount -gt 0 -or $reportErrors.Count -gt 0) {
+    'failed'
+}
+elseif ($partialCount -gt 0 -or $unavailableCount -gt 0) {
+    'partial'
+}
+elseif ($warningCount -gt 0 -or $reportWarnings.Count -gt 0) {
+    'warning'
+}
+else {
+    'success'
+}
+
+$report = [pscustomobject][ordered]@{
+    schemaVersion = '1.0.0'
+    generatedAt   = $observedAt
+    audit         = [pscustomobject][ordered]@{
+        mode        = 'read-only'
+        toolVersion = $toolVersion
+    }
+    host          = [pscustomobject][ordered]@{
+        name         = $computerName
+        platform     = 'windows'
+        architecture = Get-HostArchitecture
+    }
+    summary       = [pscustomobject][ordered]@{
+        status             = $summaryStatus
+        providerCount      = $providers.Count
+        successCount       = $successCount
+        warningCount       = $warningCount
+        partialCount       = $partialCount
+        failedCount        = $failedCount
+        unavailableCount   = $unavailableCount
+        notApplicableCount = $notApplicableCount
+    }
+    providers     = $providers
+    warnings      = $reportWarnings.ToArray()
+    errors        = $reportErrors.ToArray()
+}
+
+$jsonPath = Join-Path $OutputDirectory "$safeComputerName-$stamp.json"
+$mdPath = Join-Path $OutputDirectory "$safeComputerName-$stamp.md"
+
+$report | ConvertTo-Json -Depth 24 | Set-Content -LiteralPath $jsonPath -Encoding UTF8
+
+$md = New-Object System.Collections.Generic.List[string]
+$md.Add('# Developer Workstation Audit')
+$md.Add('')
+$md.Add("- **Computer:** $computerName")
+$md.Add("- **Generated:** $($timestamp.ToString('yyyy-MM-dd HH:mm:ss zzz'))")
+$md.Add("- **Tool version:** $toolVersion")
+$md.Add("- **Schema:** $($report.schemaVersion)")
+$md.Add("- **Audit status:** $($report.summary.status)")
+$md.Add('')
+$md.Add('> Read-only audit. Machine-specific reports stay local and evidence is limited by the audit safety policy.')
+$md.Add('')
+$md.Add('## Provider summary')
+$md.Add('')
+$md.Add('| Provider | Category | Status | Components | Warnings | Errors |')
+$md.Add('|---|---|---|---:|---:|---:|')
+
+foreach ($provider in $providers) {
+    $md.Add("| $(Convert-ToMarkdownSafe $provider.providerId) | $(Convert-ToMarkdownSafe $provider.category) | $(Convert-ToMarkdownSafe $provider.status) | $(@($provider.components).Count) | $(@($provider.warnings).Count) | $(@($provider.errors).Count) |")
+}
+
+$md.Add('')
+$md.Add('## Components')
+$md.Add('')
+$md.Add('| Provider | Component | State | Installed | Active version |')
+$md.Add('|---|---|---|:---:|---|')
+
+foreach ($provider in $providers) {
+    foreach ($component in @($provider.components)) {
+        $version = if ($component.activeVersion) { $component.activeVersion.raw } else { '' }
+        $installed = if ($null -eq $component.installed) { '' } elseif ($component.installed) { 'Yes' } else { 'No' }
+        $md.Add("| $(Convert-ToMarkdownSafe $provider.providerId) | $(Convert-ToMarkdownSafe $component.name) | $(Convert-ToMarkdownSafe $component.state) | $installed | $(Convert-ToMarkdownSafe $version) |")
+    }
+}
+
+$providerWarnings = @($providers | ForEach-Object { @($_.warnings) })
+$providerErrors = @($providers | ForEach-Object { @($_.errors) })
+$allWarnings = @($report.warnings) + $providerWarnings
+$allErrors = @($report.errors) + $providerErrors
+
+$md.Add('')
+$md.Add('## Findings')
+$md.Add('')
+
+if ($allWarnings.Count -eq 0 -and $allErrors.Count -eq 0) {
+    $md.Add('- No warnings or errors were reported by the current providers.')
+}
+else {
+    foreach ($item in $allErrors) {
+        $md.Add("- **ERROR $($item.code):** $(Convert-ToMarkdownSafe $item.message)")
+    }
+    foreach ($item in $allWarnings) {
+        $md.Add("- **$($item.severity.ToUpperInvariant()) $($item.code):** $(Convert-ToMarkdownSafe $item.message)")
+    }
+}
+
+$md -join [Environment]::NewLine | Set-Content -LiteralPath $mdPath -Encoding UTF8
+
+Write-Host ''
+Write-Host 'Audit complete.' -ForegroundColor Green
+Write-Host "JSON: $jsonPath"
+Write-Host "Markdown: $mdPath"
+Write-Host "Providers: $($report.summary.providerCount) | Status: $($report.summary.status)"
+Write-Host ''
+
+if ($PassThru) {
+    return [pscustomobject][ordered]@{
+        Report       = $report
+        JsonPath     = $jsonPath
+        MarkdownPath = $mdPath
+    }
+}
+) {
+            throw "Provider '$($Registration.providerId)' returned invalid evidenceId '$evidenceId'."
+        }
+
+        if (-not $evidenceIds.Add($evidenceId)) {
+            throw "Provider '$($Registration.providerId)' returned duplicate evidenceId '$evidenceId'."
+        }
+
+        if ($evidence.type -notin @('command', 'path', 'environment', 'registry', 'filesystem', 'api', 'configuration', 'derived')) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' returned invalid type '$($evidence.type)'."
+        }
+
+        if ([string]::IsNullOrWhiteSpace([string]$evidence.source)) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' returned an empty source."
+        }
+
+        if ($evidence.redacted -isnot [bool]) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' redacted must be boolean."
+        }
+
+        if ($null -eq $evidence.attributes) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' attributes cannot be null."
+        }
+    }
+
+    foreach ($collectionName in @('warnings', 'errors')) {
+        foreach ($issue in @($Result.$collectionName)) {
+            if ($null -eq $issue) {
+                throw "Provider '$($Registration.providerId)' returned null $collectionName entry."
+            }
+
+            foreach ($property in @('code', 'message', 'severity', 'componentId', 'evidenceIds')) {
+                if ($null -eq $issue.PSObject.Properties[$property]) {
+                    throw "Provider '$($Registration.providerId)' $collectionName entry is missing '$property'."
+                }
+            }
+
+            if ([string]$issue.code -notmatch '^[A-Z0-9_]+
+function New-FailedProviderResult {
+    param(
+        [Parameter(Mandatory)][object]$Registration,
+        [Parameter(Mandatory)][string]$ObservedAt,
+        [Parameter(Mandatory)][string]$Message
+    )
+
+    $safeEvidenceId = "provider.$($Registration.providerId).failure"
+    $evidence = New-AuditEvidence -EvidenceId $safeEvidenceId -Type derived -Source $Registration.path -Captured $Message
+    $error = New-AuditIssue -Code 'PROVIDER_EXECUTION_FAILED' -Message $Message -Severity error -EvidenceIds @($safeEvidenceId)
+
+    return [pscustomobject][ordered]@{
+        providerId = $Registration.providerId
+        category   = $Registration.category
+        status     = 'failed'
+        observedAt = $ObservedAt
+        components = @()
+        warnings   = @()
+        errors     = @($error)
+        evidence   = @($evidence)
+    }
+}
+
+Ensure-Directory -Path $OutputDirectory
+
+$timestamp = Get-Date
+$observedAt = $timestamp.ToString('o')
+$stamp = $timestamp.ToString('yyyyMMdd-HHmmss')
+
+$computerName = [Environment]::MachineName
+if ([string]::IsNullOrWhiteSpace($computerName)) {
+    $computerName = 'Windows-PC'
+}
+$safeComputerName = $computerName -replace '[^A-Za-z0-9._-]', '_'
+
+$versionPath = Join-Path $PSScriptRoot '..\VERSION'
+$toolVersion = if (Test-Path -LiteralPath $versionPath) {
+    (Get-Content -LiteralPath $versionPath -Raw).Trim()
+}
+else {
+    '0.0.0'
+}
+
+$environmentVariableNames = @(
+    'NVM_HOME',
+    'NVM_SYMLINK',
+    'PNPM_HOME',
+    'JAVA_HOME',
+    'ANDROID_HOME',
+    'ANDROID_SDK_ROOT',
+    'FLUTTER_ROOT',
+    'PUB_CACHE',
+    'CARGO_HOME',
+    'RUSTUP_HOME',
+    'GOPATH',
+    'GOROOT',
+    'PYENV_ROOT',
+    'DOTNET_ROOT',
+    'DOTNET_ROOT_X64',
+    'DOTNET_ROOT_X86'
+)
+
+$localConfiguration = Get-LocalAuditConfiguration -Path $LocalConfigurationPath
+
+$context = [pscustomobject][ordered]@{
+    ObservedAt                   = $observedAt
+    ToolVersion                  = $toolVersion
+    IncludeWingetInventory       = [bool]$IncludeWingetInventory
+    VersionIntelligenceOffline    = [bool]$OfflineVersionIntelligence
+    EnvironmentVariableNames     = $environmentVariableNames
+    LocalConfigurationState      = $localConfiguration.state
+    LocalConfigurationSource     = [IO.Path]::GetFileName($LocalConfigurationPath)
+    LocalConfigurationError      = $localConfiguration.errorMessage
+    DevelopmentRoots             = @($localConfiguration.developmentRoots)
+    ProjectDiscoveryMaxDepth     = [int]$localConfiguration.maxDiscoveryDepth
+    GitBranchStaleDays           = [int]$localConfiguration.gitBranchStaleDays
+}
+
+$reportWarnings = New-Object System.Collections.Generic.List[object]
+$reportErrors = New-Object System.Collections.Generic.List[object]
+
+$providerPaths = New-Object System.Collections.Generic.List[string]
+if (Test-Path -LiteralPath $ProviderDirectory) {
+    Get-ChildItem -LiteralPath $ProviderDirectory -Filter '*.Provider.ps1' -File |
+        ForEach-Object { $providerPaths.Add($_.FullName) }
+}
+else {
+    $message = "Provider directory '$ProviderDirectory' was not found."
+    $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_DIRECTORY_NOT_FOUND' -Message $message -Severity error -EvidenceIds @()))
+}
+
+foreach ($path in $AdditionalProviderPath) {
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        continue
+    }
+
+    try {
+        $resolvedPath = (Resolve-Path -LiteralPath $path -ErrorAction Stop).Path
+        if (-not $providerPaths.Contains($resolvedPath)) {
+            $providerPaths.Add($resolvedPath)
+        }
+    }
+    catch {
+        $message = "Additional provider path '$path' could not be resolved: $($_.Exception.Message)"
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_PATH_NOT_FOUND' -Message $message -Severity error -EvidenceIds @()))
+    }
+}
+
+$registrations = New-Object System.Collections.Generic.List[object]
+
+foreach ($path in $providerPaths) {
+    try {
+        $description = & $path -Describe
+        Test-ProviderDescription -Description $description -Path $path
+
+        $registrations.Add([pscustomobject][ordered]@{
+            providerId = $description.providerId
+            category   = $description.category
+            order      = [int]$description.order
+            path       = $path
+        })
+    }
+    catch {
+        $fallbackId = Get-FallbackProviderId -Path $path
+        $message = "Provider discovery failed for '$path': $($_.Exception.Message)"
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_DISCOVERY_FAILED' -Message $message -Severity error -EvidenceIds @()))
+
+        $registrations.Add([pscustomobject][ordered]@{
+            providerId = $fallbackId
+            category   = 'unknown'
+            order      = 2147483647
+            path       = $path
+            discoveryFailure = $message
+        })
+    }
+}
+
+$orderedRegistrations = @(
+    $registrations |
+        Sort-Object @{ Expression = 'order'; Ascending = $true }, @{ Expression = 'providerId'; Ascending = $true }, @{ Expression = 'path'; Ascending = $true }
+)
+
+$duplicateProviderIds = @(
+    $orderedRegistrations |
+        Group-Object providerId |
+        Where-Object { $_.Count -gt 1 }
+)
+
+if ($duplicateProviderIds.Count -gt 0) {
+    foreach ($duplicate in $duplicateProviderIds) {
+        $message = "Duplicate providerId '$($duplicate.Name)' was registered $($duplicate.Count) times. Those registrations were skipped."
+        $reportErrors.Add((New-AuditIssue -Code 'PROVIDER_ID_DUPLICATE' -Message $message -Severity error -EvidenceIds @()))
+    }
+
+    $duplicateNames = @($duplicateProviderIds | ForEach-Object { $_.Name })
+    $orderedRegistrations = @(
+        $orderedRegistrations |
+            Where-Object { $_.providerId -notin $duplicateNames }
+    )
+}
+
+$providerResults = New-Object System.Collections.Generic.List[object]
+
+foreach ($registration in $orderedRegistrations) {
+    $discoveryFailureProperty = $registration.PSObject.Properties['discoveryFailure']
+    if ($discoveryFailureProperty -and $discoveryFailureProperty.Value) {
+        $providerResults.Add((New-FailedProviderResult -Registration $registration -ObservedAt $observedAt -Message $discoveryFailureProperty.Value))
+        continue
+    }
+
+    try {
+        $providerContext = $context | Select-Object *
+        $providerContext | Add-Member -NotePropertyName PreviousProviderResults -NotePropertyValue $providerResults.ToArray() -Force
+
+        $result = & $registration.path -Context $providerContext
+        Test-ProviderResultShape -Result $result -Registration $registration
+        $providerResults.Add($result)
+    }
+    catch {
+        $message = "Provider '$($registration.providerId)' failed: $($_.Exception.Message)"
+        $providerResults.Add((New-FailedProviderResult -Registration $registration -ObservedAt $observedAt -Message $message))
+    }
+}
+
+$providers = $providerResults.ToArray()
+$successCount = @($providers | Where-Object { $_.status -eq 'success' }).Count
+$warningCount = @($providers | Where-Object { $_.status -eq 'warning' }).Count
+$partialCount = @($providers | Where-Object { $_.status -eq 'partial' }).Count
+$failedCount = @($providers | Where-Object { $_.status -eq 'failed' }).Count
+$unavailableCount = @($providers | Where-Object { $_.status -eq 'unavailable' }).Count
+$notApplicableCount = @($providers | Where-Object { $_.status -eq 'not-applicable' }).Count
+
+$summaryStatus = if ($failedCount -gt 0 -or $reportErrors.Count -gt 0) {
+    'failed'
+}
+elseif ($partialCount -gt 0 -or $unavailableCount -gt 0) {
+    'partial'
+}
+elseif ($warningCount -gt 0 -or $reportWarnings.Count -gt 0) {
+    'warning'
+}
+else {
+    'success'
+}
+
+$report = [pscustomobject][ordered]@{
+    schemaVersion = '1.0.0'
+    generatedAt   = $observedAt
+    audit         = [pscustomobject][ordered]@{
+        mode        = 'read-only'
+        toolVersion = $toolVersion
+    }
+    host          = [pscustomobject][ordered]@{
+        name         = $computerName
+        platform     = 'windows'
+        architecture = Get-HostArchitecture
+    }
+    summary       = [pscustomobject][ordered]@{
+        status             = $summaryStatus
+        providerCount      = $providers.Count
+        successCount       = $successCount
+        warningCount       = $warningCount
+        partialCount       = $partialCount
+        failedCount        = $failedCount
+        unavailableCount   = $unavailableCount
+        notApplicableCount = $notApplicableCount
+    }
+    providers     = $providers
+    warnings      = $reportWarnings.ToArray()
+    errors        = $reportErrors.ToArray()
+}
+
+$jsonPath = Join-Path $OutputDirectory "$safeComputerName-$stamp.json"
+$mdPath = Join-Path $OutputDirectory "$safeComputerName-$stamp.md"
+
+$report | ConvertTo-Json -Depth 24 | Set-Content -LiteralPath $jsonPath -Encoding UTF8
+
+$md = New-Object System.Collections.Generic.List[string]
+$md.Add('# Developer Workstation Audit')
+$md.Add('')
+$md.Add("- **Computer:** $computerName")
+$md.Add("- **Generated:** $($timestamp.ToString('yyyy-MM-dd HH:mm:ss zzz'))")
+$md.Add("- **Tool version:** $toolVersion")
+$md.Add("- **Schema:** $($report.schemaVersion)")
+$md.Add("- **Audit status:** $($report.summary.status)")
+$md.Add('')
+$md.Add('> Read-only audit. Machine-specific reports stay local and evidence is limited by the audit safety policy.')
+$md.Add('')
+$md.Add('## Provider summary')
+$md.Add('')
+$md.Add('| Provider | Category | Status | Components | Warnings | Errors |')
+$md.Add('|---|---|---|---:|---:|---:|')
+
+foreach ($provider in $providers) {
+    $md.Add("| $(Convert-ToMarkdownSafe $provider.providerId) | $(Convert-ToMarkdownSafe $provider.category) | $(Convert-ToMarkdownSafe $provider.status) | $(@($provider.components).Count) | $(@($provider.warnings).Count) | $(@($provider.errors).Count) |")
+}
+
+$md.Add('')
+$md.Add('## Components')
+$md.Add('')
+$md.Add('| Provider | Component | State | Installed | Active version |')
+$md.Add('|---|---|---|:---:|---|')
+
+foreach ($provider in $providers) {
+    foreach ($component in @($provider.components)) {
+        $version = if ($component.activeVersion) { $component.activeVersion.raw } else { '' }
+        $installed = if ($null -eq $component.installed) { '' } elseif ($component.installed) { 'Yes' } else { 'No' }
+        $md.Add("| $(Convert-ToMarkdownSafe $provider.providerId) | $(Convert-ToMarkdownSafe $component.name) | $(Convert-ToMarkdownSafe $component.state) | $installed | $(Convert-ToMarkdownSafe $version) |")
+    }
+}
+
+$providerWarnings = @($providers | ForEach-Object { @($_.warnings) })
+$providerErrors = @($providers | ForEach-Object { @($_.errors) })
+$allWarnings = @($report.warnings) + $providerWarnings
+$allErrors = @($report.errors) + $providerErrors
+
+$md.Add('')
+$md.Add('## Findings')
+$md.Add('')
+
+if ($allWarnings.Count -eq 0 -and $allErrors.Count -eq 0) {
+    $md.Add('- No warnings or errors were reported by the current providers.')
+}
+else {
+    foreach ($item in $allErrors) {
+        $md.Add("- **ERROR $($item.code):** $(Convert-ToMarkdownSafe $item.message)")
+    }
+    foreach ($item in $allWarnings) {
+        $md.Add("- **$($item.severity.ToUpperInvariant()) $($item.code):** $(Convert-ToMarkdownSafe $item.message)")
+    }
+}
+
+$md -join [Environment]::NewLine | Set-Content -LiteralPath $mdPath -Encoding UTF8
+
+Write-Host ''
+Write-Host 'Audit complete.' -ForegroundColor Green
+Write-Host "JSON: $jsonPath"
+Write-Host "Markdown: $mdPath"
+Write-Host "Providers: $($report.summary.providerCount) | Status: $($report.summary.status)"
+Write-Host ''
+
+if ($PassThru) {
+    return [pscustomobject][ordered]@{
+        Report       = $report
+        JsonPath     = $jsonPath
+        MarkdownPath = $mdPath
+    }
+}
+) {
+                throw "Provider '$($Registration.providerId)' returned invalid issue code '$($issue.code)'."
+            }
+
+            if ([string]::IsNullOrWhiteSpace([string]$issue.message)) {
+                throw "Provider '$($Registration.providerId)' returned an empty issue message."
+            }
+
+            if ($collectionName -eq 'warnings' -and $issue.severity -notin @('info', 'warning')) {
+                throw "Provider '$($Registration.providerId)' warning '$($issue.code)' returned invalid severity '$($issue.severity)'."
+            }
+
+            if ($collectionName -eq 'errors' -and $issue.severity -ne 'error') {
+                throw "Provider '$($Registration.providerId)' error '$($issue.code)' returned invalid severity '$($issue.severity)'."
+            }
+
+            $issueEvidenceIds = @($issue.evidenceIds)
+            if ($issueEvidenceIds.Count -ne @($issueEvidenceIds | Select-Object -Unique).Count) {
+                throw "Provider '$($Registration.providerId)' issue '$($issue.code)' returned duplicate evidenceIds."
+            }
+
+            foreach ($evidenceId in $issueEvidenceIds) {
+                if (-not $evidenceIds.Contains([string]$evidenceId)) {
+                    throw "Provider '$($Registration.providerId)' issue '$($issue.code)' references missing evidenceId '$evidenceId'."
+                }
+            }
+        }
+    }
+}
+
 function Test-ProviderResultShape {
     param(
         [Parameter(Mandatory)][object]$Result,
@@ -200,6 +923,10 @@ function Test-ProviderResultShape {
         if ($null -eq $Result.PSObject.Properties[$property]) {
             throw "Provider '$($Registration.providerId)' result is missing '$property'."
         }
+    }
+
+    foreach ($collectionName in @('components', 'warnings', 'errors', 'evidence')) {
+        Test-ProviderCollectionProperty -Result $Result -Registration $Registration -Name $collectionName
     }
 
     if ($Result.providerId -ne $Registration.providerId) {
@@ -213,6 +940,8 @@ function Test-ProviderResultShape {
     if ($Result.status -notin @('success', 'warning', 'partial', 'failed', 'unavailable', 'not-applicable')) {
         throw "Provider '$($Registration.providerId)' returned invalid status '$($Result.status)'."
     }
+
+    Test-ProviderEvidenceShape -Result $Result -Registration $Registration
 }
 
 function New-FailedProviderResult {
