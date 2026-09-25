@@ -50,6 +50,11 @@ jobs:
         run: |
           python ./tests/contract/validate_contract_fixtures.py
 
+      - name: Validate schema hardening fixture matrix
+        shell: pwsh
+        run: |
+          python ./tests/hardening-contract/validate_hardening_fixtures.py
+
       - name: Validate normalized comparison report outputs
         shell: pwsh
         run: |
