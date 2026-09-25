@@ -190,6 +190,111 @@ function Test-ProviderDescription {
     }
 }
 
+function Test-ProviderCollectionProperty {
+    param(
+        [Parameter(Mandatory)][object]$Result,
+        [Parameter(Mandatory)][object]$Registration,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    $value = $Result.$Name
+
+    if ($null -eq $value) {
+        throw "Provider '$($Registration.providerId)' result collection '$Name' cannot be null."
+    }
+
+    if ($value -is [string] -or $value -isnot [System.Collections.IEnumerable]) {
+        throw "Provider '$($Registration.providerId)' result '$Name' must be a collection."
+    }
+}
+
+function Test-ProviderEvidenceShape {
+    param(
+        [Parameter(Mandatory)][object]$Result,
+        [Parameter(Mandatory)][object]$Registration
+    )
+
+    $evidenceIds = New-Object System.Collections.Generic.HashSet[string]([StringComparer]::Ordinal)
+
+    foreach ($evidence in @($Result.evidence)) {
+        if ($null -eq $evidence) {
+            throw "Provider '$($Registration.providerId)' returned null evidence."
+        }
+
+        foreach ($property in @('evidenceId', 'type', 'source', 'exitCode', 'captured', 'redacted', 'attributes')) {
+            if ($null -eq $evidence.PSObject.Properties[$property]) {
+                throw "Provider '$($Registration.providerId)' evidence is missing '$property'."
+            }
+        }
+
+        $evidenceId = [string]$evidence.evidenceId
+        if ($evidenceId -notmatch '^[a-z0-9]+(?:[._-][a-z0-9]+)*$') {
+            throw "Provider '$($Registration.providerId)' returned invalid evidenceId '$evidenceId'."
+        }
+
+        if (-not $evidenceIds.Add($evidenceId)) {
+            throw "Provider '$($Registration.providerId)' returned duplicate evidenceId '$evidenceId'."
+        }
+
+        if ($evidence.type -notin @('command', 'path', 'environment', 'registry', 'filesystem', 'api', 'configuration', 'derived')) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' returned invalid type '$($evidence.type)'."
+        }
+
+        if ([string]::IsNullOrWhiteSpace([string]$evidence.source)) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' returned an empty source."
+        }
+
+        if ($evidence.redacted -isnot [bool]) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' redacted must be boolean."
+        }
+
+        if ($null -eq $evidence.attributes) {
+            throw "Provider '$($Registration.providerId)' evidence '$evidenceId' attributes cannot be null."
+        }
+    }
+
+    foreach ($collectionName in @('warnings', 'errors')) {
+        foreach ($issue in @($Result.$collectionName)) {
+            if ($null -eq $issue) {
+                throw "Provider '$($Registration.providerId)' returned null $collectionName entry."
+            }
+
+            foreach ($property in @('code', 'message', 'severity', 'componentId', 'evidenceIds')) {
+                if ($null -eq $issue.PSObject.Properties[$property]) {
+                    throw "Provider '$($Registration.providerId)' $collectionName entry is missing '$property'."
+                }
+            }
+
+            if ([string]$issue.code -notmatch '^[A-Z0-9_]+$') {
+                throw "Provider '$($Registration.providerId)' returned invalid issue code '$($issue.code)'."
+            }
+
+            if ([string]::IsNullOrWhiteSpace([string]$issue.message)) {
+                throw "Provider '$($Registration.providerId)' returned an empty issue message."
+            }
+
+            if ($collectionName -eq 'warnings' -and $issue.severity -notin @('info', 'warning')) {
+                throw "Provider '$($Registration.providerId)' warning '$($issue.code)' returned invalid severity '$($issue.severity)'."
+            }
+
+            if ($collectionName -eq 'errors' -and $issue.severity -ne 'error') {
+                throw "Provider '$($Registration.providerId)' error '$($issue.code)' returned invalid severity '$($issue.severity)'."
+            }
+
+            $issueEvidenceIds = @($issue.evidenceIds)
+            if ($issueEvidenceIds.Count -ne @($issueEvidenceIds | Select-Object -Unique).Count) {
+                throw "Provider '$($Registration.providerId)' issue '$($issue.code)' returned duplicate evidenceIds."
+            }
+
+            foreach ($evidenceId in $issueEvidenceIds) {
+                if (-not $evidenceIds.Contains([string]$evidenceId)) {
+                    throw "Provider '$($Registration.providerId)' issue '$($issue.code)' references missing evidenceId '$evidenceId'."
+                }
+            }
+        }
+    }
+}
+
 function Test-ProviderResultShape {
     param(
         [Parameter(Mandatory)][object]$Result,
@@ -200,6 +305,10 @@ function Test-ProviderResultShape {
         if ($null -eq $Result.PSObject.Properties[$property]) {
             throw "Provider '$($Registration.providerId)' result is missing '$property'."
         }
+    }
+
+    foreach ($collectionName in @('components', 'warnings', 'errors', 'evidence')) {
+        Test-ProviderCollectionProperty -Result $Result -Registration $Registration -Name $collectionName
     }
 
     if ($Result.providerId -ne $Registration.providerId) {
@@ -213,6 +322,8 @@ function Test-ProviderResultShape {
     if ($Result.status -notin @('success', 'warning', 'partial', 'failed', 'unavailable', 'not-applicable')) {
         throw "Provider '$($Registration.providerId)' returned invalid status '$($Result.status)'."
     }
+
+    Test-ProviderEvidenceShape -Result $Result -Registration $Registration
 }
 
 function New-FailedProviderResult {
