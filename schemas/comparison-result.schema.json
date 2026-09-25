@@ -53,7 +53,7 @@
       "properties": {
         "schemaVersion": {
           "type": "string",
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
+          "pattern": "^1\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$"
         },
         "generatedAt": {
           "type": "string",
