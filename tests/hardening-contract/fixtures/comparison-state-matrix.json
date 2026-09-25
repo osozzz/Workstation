@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "1.1.0",
+  "auditSchemaMajor": 1,
+  "direction": "reference-to-target",
+  "reference": {
+    "schemaVersion": "1.0.0",
+    "generatedAt": "2026-09-24T00:00:00Z",
+    "audit": {
+      "mode": "read-only",
+      "toolVersion": "0.8.0"
+    },
+    "host": {
+      "name": "SYNTHETIC-REFERENCE",
+      "platform": "windows",
+      "architecture": "x64"
+    }
+  },
+  "target": {
+    "schemaVersion": "1.0.0",
+    "generatedAt": "2026-09-24T00:00:00Z",
+    "audit": {
+      "mode": "read-only",
+      "toolVersion": "0.8.0"
+    },
+    "host": {
+      "name": "SYNTHETIC-TARGET",
+      "platform": "windows",
+      "architecture": "x64"
+    }
+  },
+  "summary": {
+    "status": "different",
+    "differenceCount": 6,
+    "providerDifferenceCount": 1,
+    "componentDifferenceCount": 1,
+    "versionDifferenceCount": 1,
+    "unavailableCount": 1,
+    "unknownCount": 1,
+    "notApplicableCount": 1
+  },
+  "differences": [
+    {
+      "category": "provider",
+      "kind": "status",
+      "providerId": "synthetic.optional",
+      "componentId": null,
+      "subjectId": null,
+      "relation": "not-applicable",
+      "referenceState": "not-applicable",
+      "targetState": "success",
+      "referenceValue": null,
+      "targetValue": null
+    },
+    {
+      "category": "component",
+      "kind": "state",
+      "providerId": "runtime.synthetic",
+      "componentId": "tool",
+      "subjectId": null,
+      "relation": "different",
+      "referenceState": "present",
+      "targetState": "partial",
+      "referenceValue": null,
+      "targetValue": null
+    },
+    {
+      "category": "version",
+      "kind": "active-version",
+      "providerId": "runtime.synthetic",
+      "componentId": "tool",
+      "subjectId": "active",
+      "relation": "unknown",
+      "referenceState": "unknown",
+      "targetState": "present",
+      "referenceValue": null,
+      "targetValue": {
+        "value": "2.0.0",
+        "valueSource": "normalized",
+        "channel": "stable"
+      }
+    },
+    {
+      "category": "path",
+      "kind": "scope-order",
+      "providerId": "path.environment",
+      "componentId": null,
+      "subjectId": "machine",
+      "relation": "different",
+      "referenceState": "present",
+      "targetState": "present",
+      "referenceValue": [
+        "synthetic-a",
+        "synthetic-b"
+      ],
+      "targetValue": [
+        "synthetic-b",
+        "synthetic-a"
+      ]
+    },
+    {
+      "category": "git",
+      "kind": "inspection-state",
+      "providerId": "git.repository-health",
+      "componentId": null,
+      "subjectId": "git-repository:synthetic",
+      "relation": "unavailable",
+      "referenceState": "inspected",
+      "targetState": "unavailable",
+      "referenceValue": null,
+      "targetValue": null
+    },
+    {
+      "category": "application",
+      "kind": "presence",
+      "providerId": "winget.baseline",
+      "componentId": null,
+      "subjectId": "Synthetic.App",
+      "relation": "target-only",
+      "referenceState": "missing",
+      "targetState": "present",
+      "referenceValue": null,
+      "targetValue": {
+        "packageId": "Synthetic.App"
+      }
+    }
+  ]
+}
