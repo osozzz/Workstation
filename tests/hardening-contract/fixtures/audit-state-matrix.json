@@ -1,0 +1,194 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-09-24T00:00:00Z",
+  "audit": {
+    "mode": "read-only",
+    "toolVersion": "0.8.0"
+  },
+  "host": {
+    "name": "SYNTHETIC-HARDENING-AUDIT",
+    "platform": "windows",
+    "architecture": "x64"
+  },
+  "summary": {
+    "status": "partial",
+    "providerCount": 4,
+    "successCount": 1,
+    "warningCount": 0,
+    "partialCount": 1,
+    "failedCount": 0,
+    "unavailableCount": 1,
+    "notApplicableCount": 1
+  },
+  "providers": [
+    {
+      "providerId": "runtime.state-matrix",
+      "category": "runtime",
+      "status": "success",
+      "observedAt": "2026-09-24T00:00:00Z",
+      "components": [
+        {
+          "componentId": "present-runtime",
+          "name": "Synthetic Present Runtime",
+          "state": "present",
+          "installed": true,
+          "activeVersion": {
+            "raw": "1.2.3",
+            "normalized": "1.2.3",
+            "channel": "stable"
+          },
+          "discoveredVersions": [
+            {
+              "raw": "1.2.3",
+              "normalized": "1.2.3",
+              "channel": "stable"
+            }
+          ],
+          "installations": [],
+          "commandResolutions": [],
+          "versionIntelligence": {
+            "status": "known",
+            "latestStable": {
+              "raw": "1.2.3",
+              "normalized": "1.2.3",
+              "channel": "stable"
+            },
+            "latestLts": null,
+            "latestCurrent": null,
+            "source": "synthetic-static-source",
+            "checkedAt": "2026-09-24T00:00:00Z",
+            "message": null
+          }
+        },
+        {
+          "componentId": "missing-runtime",
+          "name": "Synthetic Missing Runtime",
+          "state": "missing",
+          "installed": false,
+          "activeVersion": null,
+          "discoveredVersions": [],
+          "installations": [],
+          "commandResolutions": [],
+          "versionIntelligence": {
+            "status": "not-applicable",
+            "latestStable": null,
+            "latestLts": null,
+            "latestCurrent": null,
+            "source": null,
+            "checkedAt": null,
+            "message": null
+          }
+        },
+        {
+          "componentId": "partial-runtime",
+          "name": "Synthetic Partial Runtime",
+          "state": "partial",
+          "installed": true,
+          "activeVersion": null,
+          "discoveredVersions": [],
+          "installations": [],
+          "commandResolutions": [],
+          "versionIntelligence": {
+            "status": "unknown",
+            "latestStable": null,
+            "latestLts": null,
+            "latestCurrent": null,
+            "source": "synthetic-static-source",
+            "checkedAt": "2026-09-24T00:00:00Z",
+            "message": "Synthetic version evidence is incomplete."
+          }
+        },
+        {
+          "componentId": "unknown-runtime",
+          "name": "Synthetic Unknown Runtime",
+          "state": "unknown",
+          "installed": null,
+          "activeVersion": null,
+          "discoveredVersions": [],
+          "installations": [],
+          "commandResolutions": [],
+          "versionIntelligence": {
+            "status": "unknown",
+            "latestStable": null,
+            "latestLts": null,
+            "latestCurrent": null,
+            "source": null,
+            "checkedAt": null,
+            "message": "Synthetic evidence is insufficient."
+          }
+        }
+      ],
+      "warnings": [],
+      "errors": [],
+      "evidence": []
+    },
+    {
+      "providerId": "versions.offline",
+      "category": "version-intelligence",
+      "status": "unavailable",
+      "observedAt": "2026-09-24T00:00:00Z",
+      "components": [
+        {
+          "componentId": "remote-source",
+          "name": "Synthetic Offline Source",
+          "state": "unavailable",
+          "installed": null,
+          "activeVersion": null,
+          "discoveredVersions": [],
+          "installations": [],
+          "commandResolutions": [],
+          "versionIntelligence": {
+            "status": "unavailable",
+            "latestStable": null,
+            "latestLts": null,
+            "latestCurrent": null,
+            "source": "synthetic-offline-source",
+            "checkedAt": "2026-09-24T00:00:00Z",
+            "message": "Synthetic remote source is offline."
+          }
+        }
+      ],
+      "warnings": [
+        {
+          "code": "SYNTHETIC_SOURCE_UNAVAILABLE",
+          "message": "Synthetic remote source is offline.",
+          "severity": "warning",
+          "componentId": "remote-source",
+          "evidenceIds": []
+        }
+      ],
+      "errors": [],
+      "evidence": []
+    },
+    {
+      "providerId": "runtime.partial-provider",
+      "category": "runtime",
+      "status": "partial",
+      "observedAt": "2026-09-24T00:00:00Z",
+      "components": [],
+      "warnings": [
+        {
+          "code": "SYNTHETIC_PARTIAL_PROVIDER",
+          "message": "Synthetic provider completed only part of its inspection.",
+          "severity": "warning",
+          "componentId": null,
+          "evidenceIds": []
+        }
+      ],
+      "errors": [],
+      "evidence": []
+    },
+    {
+      "providerId": "runtime.not-applicable",
+      "category": "runtime",
+      "status": "not-applicable",
+      "observedAt": "2026-09-24T00:00:00Z",
+      "components": [],
+      "warnings": [],
+      "errors": [],
+      "evidence": []
+    }
+  ],
+  "warnings": [],
+  "errors": []
+}
