@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0.0",
+  "fixtures": {
+    "audit-state-matrix.json": {
+      "canonicalSha256": "dcb444550628bc2b2cfd90c9f4385ecba084da0a8411ab71ae885c25f8bd5c52"
+    },
+    "comparison-state-matrix.json": {
+      "canonicalSha256": "d3241e2789f218be9c7f70f105bfb45264ee7feb7edd22896bc8db1feacf626b"
+    }
+  }
+}
