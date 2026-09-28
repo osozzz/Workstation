@@ -26,12 +26,11 @@ $errors = [System.Collections.Generic.List[object]]::new()
 $evidence = [System.Collections.Generic.List[object]]::new()
 $hasPartial = $false
 
-$previousProviderResults = if ($Context.PSObject.Properties['PreviousProviderResults']) {
-    @($Context.PreviousProviderResults)
-}
-else {
-    @()
-}
+$previousProviderResults = @(
+    if ($Context.PSObject.Properties['PreviousProviderResults']) {
+        $Context.PreviousProviderResults
+    }
+)
 
 $processPathModel = Get-AuditPathScopeModel -Scope process -RawPath ([Environment]::GetEnvironmentVariable('Path', 'Process'))
 

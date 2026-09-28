@@ -349,12 +349,11 @@ $evidence.Add((New-AuditEvidence -EvidenceId 'dotnet.info' -Type command -Source
 }))
 
 $sdkListResult = Invoke-AuditCommand -Command 'dotnet' -Arguments @('--list-sdks') -TimeoutSeconds 25
-$sdkItems = if ($sdkListResult.Status -eq 'success') {
-    @(Parse-DotNetSdkList -Text $sdkListResult.Captured)
-}
-else {
-    @()
-}
+$sdkItems = @(
+    if ($sdkListResult.Status -eq 'success') {
+        Parse-DotNetSdkList -Text $sdkListResult.Captured
+    }
+)
 
 $evidence.Add((New-AuditEvidence -EvidenceId 'dotnet.sdks' -Type command -Source 'dotnet --list-sdks' -ExitCode $sdkListResult.ExitCode -Captured $sdkListResult.Captured -Redacted:$sdkListResult.Redacted -Attributes @{
     status = $sdkListResult.Status
@@ -413,12 +412,11 @@ $components.Add([pscustomobject][ordered]@{
 })
 
 $runtimeListResult = Invoke-AuditCommand -Command 'dotnet' -Arguments @('--list-runtimes') -TimeoutSeconds 25
-$runtimeItems = if ($runtimeListResult.Status -eq 'success') {
-    @(Parse-DotNetRuntimeList -Text $runtimeListResult.Captured)
-}
-else {
-    @()
-}
+$runtimeItems = @(
+    if ($runtimeListResult.Status -eq 'success') {
+        Parse-DotNetRuntimeList -Text $runtimeListResult.Captured
+    }
+)
 
 $evidence.Add((New-AuditEvidence -EvidenceId 'dotnet.runtimes' -Type command -Source 'dotnet --list-runtimes' -ExitCode $runtimeListResult.ExitCode -Captured $runtimeListResult.Captured -Redacted:$runtimeListResult.Redacted -Attributes @{
     status = $runtimeListResult.Status

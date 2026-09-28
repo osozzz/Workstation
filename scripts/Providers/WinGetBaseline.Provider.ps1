@@ -165,12 +165,11 @@ else {
         }))
 
         $inventoryTable = ConvertFrom-WinGetTable -Text $inventory.Captured
-        $inventoryRecords = if ($inventory.Status -eq 'success') {
-            @(ConvertTo-WinGetPackageRecords -Table $inventoryTable -Mode inventory -CheckedAt $wingetCheckedAt)
-        }
-        else {
-            @()
-        }
+        $inventoryRecords = @(
+            if ($inventory.Status -eq 'success') {
+                ConvertTo-WinGetPackageRecords -Table $inventoryTable -Mode inventory -CheckedAt $wingetCheckedAt
+            }
+        )
 
         $inventoryState = if ($inventory.Status -ne 'success') {
             'unavailable'

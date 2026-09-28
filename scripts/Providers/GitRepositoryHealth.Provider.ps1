@@ -199,18 +199,15 @@ if ($null -eq $projectsLocal) {
     }
 }
 
-$discoveryEvidence = @(
-    $projectsLocal.evidence |
-        Where-Object evidenceId -eq 'projects.local.discovery' |
-        Select-Object -First 1
-)[0]
+$discoveryEvidence = $projectsLocal.evidence |
+    Where-Object evidenceId -eq 'projects.local.discovery' |
+    Select-Object -First 1
 
-$candidates = if ($null -ne $discoveryEvidence) {
-    @($discoveryEvidence.attributes.candidates)
-}
-else {
-    @()
-}
+$candidates = @(
+    if ($null -ne $discoveryEvidence) {
+        $discoveryEvidence.attributes.candidates
+    }
+)
 
 $repositories = @(
     $candidates |
