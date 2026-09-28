@@ -840,7 +840,7 @@ function Assert-AuditProviderResult {
     }
 
     foreach ($collectionName in @('warnings', 'errors')) {
-        $allowedSeverities = if ($collectionName -eq 'warnings') { @('info', 'warning') } else { @('error') }
+        $allowedSeverities = @(if ($collectionName -eq 'warnings') { 'info', 'warning' } else { 'error' })
 
         foreach ($issue in $Result.$collectionName) {
             $issueLabel = "$label $collectionName entry"
