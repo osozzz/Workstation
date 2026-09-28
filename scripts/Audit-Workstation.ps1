@@ -155,6 +155,9 @@ function Get-FallbackProviderId {
     $name = [IO.Path]::GetFileNameWithoutExtension($Path)
     $name = $name -replace '\.Provider$', ''
     $name = $name.ToLowerInvariant() -replace '[^a-z0-9._-]+', '-'
+    # Collapse separator runs so the fallback id (and its failure evidence id)
+    # always satisfies the normalized identifier pattern.
+    $name = $name -replace '[._-]{2,}', '-'
     $name = $name.Trim('-', '.', '_')
 
     if ([string]::IsNullOrWhiteSpace($name)) {
@@ -176,42 +179,17 @@ function Test-ProviderDescription {
         }
     }
 
-    if ($Description.providerId -notmatch '^[a-z0-9]+(?:[._-][a-z0-9]+)*$') {
+    if ($Description.providerId -isnot [string] -or $Description.providerId -cnotmatch '^[a-z0-9]+(?:[._-][a-z0-9]+)*$') {
         throw "Provider '$Path' returned invalid providerId '$($Description.providerId)'."
     }
 
-    if ($Description.category -notmatch '^[a-z][a-z0-9-]*$') {
+    if ($Description.category -isnot [string] -or $Description.category -cnotmatch '^[a-z][a-z0-9-]*$') {
         throw "Provider '$Path' returned invalid category '$($Description.category)'."
     }
 
     [int]$order = 0
     if (-not [int]::TryParse($Description.order.ToString(), [ref]$order)) {
         throw "Provider '$Path' returned a non-numeric order."
-    }
-}
-
-function Test-ProviderResultShape {
-    param(
-        [Parameter(Mandatory)][object]$Result,
-        [Parameter(Mandatory)][object]$Registration
-    )
-
-    foreach ($property in @('providerId', 'category', 'status', 'observedAt', 'components', 'warnings', 'errors', 'evidence')) {
-        if ($null -eq $Result.PSObject.Properties[$property]) {
-            throw "Provider '$($Registration.providerId)' result is missing '$property'."
-        }
-    }
-
-    if ($Result.providerId -ne $Registration.providerId) {
-        throw "Provider result id '$($Result.providerId)' does not match registered id '$($Registration.providerId)'."
-    }
-
-    if ($Result.category -ne $Registration.category) {
-        throw "Provider '$($Registration.providerId)' returned category '$($Result.category)' instead of '$($Registration.category)'."
-    }
-
-    if ($Result.status -notin @('success', 'warning', 'partial', 'failed', 'unavailable', 'not-applicable')) {
-        throw "Provider '$($Registration.providerId)' returned invalid status '$($Result.status)'."
     }
 }
 
@@ -390,7 +368,7 @@ foreach ($registration in $orderedRegistrations) {
         $providerContext | Add-Member -NotePropertyName PreviousProviderResults -NotePropertyValue $providerResults.ToArray() -Force
 
         $result = & $registration.path -Context $providerContext
-        Test-ProviderResultShape -Result $result -Registration $registration
+        Assert-AuditProviderResult -Result $result -ProviderId $registration.providerId -Category $registration.category
         $providerResults.Add($result)
     }
     catch {
