@@ -120,14 +120,14 @@ function ConvertTo-ComparisonEndpointText {
         [Parameter(Mandatory)][ValidateNotNull()][psobject]$Endpoint
     )
 
-    $host = $Endpoint.host
+    $hostIdentity = $Endpoint.host
     $audit = $Endpoint.audit
 
     return (
         '{0} ({1}/{2}; audit {3}; schema {4})' -f
-        [string]$host.name,
-        [string]$host.platform,
-        [string]$host.architecture,
+        [string]$hostIdentity.name,
+        [string]$hostIdentity.platform,
+        [string]$hostIdentity.architecture,
         [string]$audit.toolVersion,
         [string]$Endpoint.schemaVersion
     )

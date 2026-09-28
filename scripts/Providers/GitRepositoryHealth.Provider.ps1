@@ -28,14 +28,14 @@ $evidence = New-Object System.Collections.Generic.List[object]
 function Get-PreviousProvider {
     param([Parameter(Mandatory)][string]$ProviderId)
 
-    $matches = @(
+    $providerMatches = @(
         @($Context.PreviousProviderResults) |
             Where-Object providerId -eq $ProviderId |
             Select-Object -First 1
     )
 
-    if ($matches.Count -gt 0) {
-        return $matches[0]
+    if ($providerMatches.Count -gt 0) {
+        return $providerMatches[0]
     }
 
     return $null
