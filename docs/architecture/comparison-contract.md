@@ -232,6 +232,8 @@ Relations and states such as `reference-only`, `target-only`, `unavailable`, `un
 
 `scripts/Compare-Workstations.ps1` keeps its existing programmatic behavior and still returns the normalized comparison object. When `-OutputDirectory` is supplied, it additionally writes `comparison.json` and `comparison.txt` to that local directory.
 
+Reports are read with `ConvertFrom-WorkstationJson`, so parsing behaves the same under Windows PowerShell 5.1 and PowerShell 7. Date-time values stay RFC 3339 strings instead of becoming local `DateTime` values, which means `generatedAt` is emitted exactly as the source report recorded it, whatever the comparing machine's time zone. On PowerShell 7.0–7.4, which cannot keep the source text, the value is restored as RFC 3339 text for the same instant.
+
 Generated workstation audit and comparison artifacts remain local under the ignored `reports/` tree by convention. Real machine-specific comparison reports must not be committed.
 
 Output generation writes only the requested report files and performs no workstation configuration, package, PATH/environment, project, or Git mutation.
