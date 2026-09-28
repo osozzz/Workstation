@@ -12,6 +12,7 @@ $fixtureRoot = Join-Path $PSScriptRoot 'fixtures'
 $expectedStructuredPath = Join-Path $fixtureRoot 'expected-comparison.json'
 $expectedHumanPath = Join-Path $fixtureRoot 'expected-comparison.txt'
 
+Import-Module (Join-Path $root 'scripts\Core\Comparison.Core.psm1') -Force
 Import-Module $outputModulePath -Force
 
 function Assert-True {
@@ -35,7 +36,17 @@ function Normalize-Newlines {
 
 $expectedStructured = Normalize-Newlines -Value ([IO.File]::ReadAllText($expectedStructuredPath))
 $expectedHuman = Normalize-Newlines -Value ([IO.File]::ReadAllText($expectedHumanPath))
-$comparison = $expectedStructured | ConvertFrom-Json -Depth 100
+$comparison = ConvertFrom-WorkstationJson -Json $expectedStructured
+
+# PowerShell 7.0-7.4 cannot keep date-time text while parsing; the fallback must restore
+# RFC 3339 strings for the same instant anywhere in the object graph.
+$utcInstant = [datetime]::new(2026, 9, 24, 12, 0, 0, [DateTimeKind]::Utc)
+$fallback = ConvertTo-ComparisonDateText -Value ([pscustomobject]@{
+        generatedAt = $utcInstant
+        nested      = @([pscustomobject]@{ checkedAt = $utcInstant; label = 'kept' })
+    })
+Assert-True ($fallback.generatedAt -ceq '2026-09-24T12:00:00.0000000Z') 'Date-time fallback must emit RFC 3339 text for top-level values.'
+Assert-True ($fallback.nested[0].checkedAt -ceq '2026-09-24T12:00:00.0000000Z' -and $fallback.nested[0].label -ceq 'kept') 'Date-time fallback must convert nested array values and keep other values.'
 
 $actualStructured = ConvertTo-WorkstationComparisonJson -Comparison $comparison
 Assert-True ($actualStructured -eq $expectedStructured) 'Structured comparison snapshot must be deterministic and validated before human rendering.'
@@ -108,7 +119,8 @@ try {
 
     $referenceAudit = [pscustomobject][ordered]@{
         schemaVersion = '1.0.0'
-        generatedAt   = '2026-09-24T12:00:00+00:00'
+        # A non-UTC offset exposes host time-zone rewriting even on a UTC runner.
+        generatedAt   = '2026-09-24T12:00:00+05:00'
         audit         = [pscustomobject][ordered]@{
             mode        = 'read-only'
             toolVersion = '0.8.0'
@@ -167,7 +179,7 @@ try {
         warnings      = @()
         errors        = @()
     }
-    $targetAudit = $referenceAudit | ConvertTo-Json -Depth 20 | ConvertFrom-Json -Depth 20
+    $targetAudit = ConvertFrom-WorkstationJson -Json ($referenceAudit | ConvertTo-Json -Depth 20)
     $targetAudit.host.name = 'ENTRY-TARGET'
 
     $referencePath = Join-Path $tempRoot 'reference.json'
@@ -179,6 +191,27 @@ try {
     Assert-True ($entryComparison.summary.status -eq 'equal') 'Comparison entrypoint must continue returning the normalized comparison object.'
     Assert-True (Test-Path -LiteralPath (Join-Path $entryOutputDirectory 'comparison.json') -PathType Leaf) 'Entrypoint must write structured output when OutputDirectory is supplied.'
     Assert-True (Test-Path -LiteralPath (Join-Path $entryOutputDirectory 'comparison.txt') -PathType Leaf) 'Entrypoint must write human-readable output when OutputDirectory is supplied.'
+
+    $entryHosts = @(
+        @{ Name = 'current host'; OutputDirectory = $entryOutputDirectory }
+    )
+
+    $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    if (Test-Path -LiteralPath $windowsPowerShell -PathType Leaf) {
+        $legacyOutputDirectory = Join-Path $tempRoot 'entrypoint-output-5.1'
+        $legacyOutput = & $windowsPowerShell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $comparisonScriptPath -Reference $referencePath -Target $targetPath -OutputDirectory $legacyOutputDirectory 2>&1
+        $legacyExitCode = $LASTEXITCODE
+        $global:LASTEXITCODE = 0
+        Assert-True ($legacyExitCode -eq 0) "Comparison entrypoint must run under Windows PowerShell 5.1: $($legacyOutput | Out-String)"
+        $entryHosts += @{ Name = 'Windows PowerShell 5.1'; OutputDirectory = $legacyOutputDirectory }
+    }
+
+    foreach ($entryHost in $entryHosts) {
+        $written = ConvertFrom-WorkstationJson -Json ([IO.File]::ReadAllText((Join-Path $entryHost.OutputDirectory 'comparison.json')))
+        foreach ($endpoint in @($written.reference, $written.target)) {
+            Assert-True ($endpoint.generatedAt -is [string] -and $endpoint.generatedAt -eq $referenceAudit.generatedAt) "Comparison output on $($entryHost.Name) must preserve report timestamps exactly; got '$($endpoint.generatedAt)'."
+        }
+    }
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {

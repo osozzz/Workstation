@@ -770,7 +770,7 @@ Assert-True (@($comparison.differences | Where-Object category -eq 'project').Co
 Assert-True (@($comparison.differences | Where-Object category -eq 'git').Count -gt 0) 'Unavailable unrelated provider must not block Git comparison.'
 
 $human = ConvertTo-WorkstationComparisonText -Comparison $comparison
-$roundTripped = $structured | ConvertFrom-Json -Depth 100
+$roundTripped = ConvertFrom-WorkstationJson -Json $structured
 $humanFromStructured = ConvertTo-WorkstationComparisonText -Comparison $roundTripped
 Assert-True ($human -eq $humanFromStructured) 'Human-readable output must be derived consistently from the structured comparison result.'
 
@@ -781,12 +781,12 @@ foreach ($marker in @('[unavailable]','[unknown]','[not-applicable]','Direction:
     Assert-True ($human.Contains($marker)) "Human-readable output is missing semantic marker '$marker'."
 }
 
-$compatibleTarget = $targetReport | ConvertTo-Json -Depth 100 | ConvertFrom-Json -Depth 100
+$compatibleTarget = ConvertFrom-WorkstationJson -Json ($targetReport | ConvertTo-Json -Depth 100)
 $compatibleTarget.schemaVersion = '1.1.0'
 $compatibleComparison = New-WorkstationComparison -ReferenceReport $referenceReport -TargetReport $compatibleTarget
 Assert-True ($compatibleComparison.summary.differenceCount -eq $comparison.summary.differenceCount) 'Compatible audit schema minor drift must not change semantic differences.'
 
-$unsupportedTarget = $targetReport | ConvertTo-Json -Depth 100 | ConvertFrom-Json -Depth 100
+$unsupportedTarget = ConvertFrom-WorkstationJson -Json ($targetReport | ConvertTo-Json -Depth 100)
 $unsupportedTarget.schemaVersion = '2.0.0'
 $unsupportedFailed = $false
 try {
@@ -821,7 +821,7 @@ try {
     Assert-True ($writtenStructured -eq $entryStructured) 'Written structured output must match the entrypoint normalized comparison result.'
     Assert-True ($writtenHuman -eq $entryHuman) 'Written human-readable output must match the entrypoint rendering.'
 
-    $writtenRoundTrip = $writtenStructured | ConvertFrom-Json -Depth 100
+    $writtenRoundTrip = ConvertFrom-WorkstationJson -Json $writtenStructured
     $writtenHumanFromStructured = Normalize-Newlines -Value (ConvertTo-WorkstationComparisonText -Comparison $writtenRoundTrip)
     Assert-True ($writtenHuman -eq $writtenHumanFromStructured) 'Written human-readable output must be reproducible from written structured output.'
 

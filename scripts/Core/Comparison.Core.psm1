@@ -23,6 +23,72 @@ function Get-ComparisonOptionalPropertyValue {
     return $property.Value
 }
 
+function ConvertTo-ComparisonDateText {
+    [CmdletBinding()]
+    param([AllowNull()][object]$Value)
+
+    if ($Value -is [datetime]) {
+        return $Value.ToString('o', [Globalization.CultureInfo]::InvariantCulture)
+    }
+
+    if ($Value -is [System.Management.Automation.PSCustomObject]) {
+        foreach ($property in $Value.PSObject.Properties) {
+            $property.Value = ConvertTo-ComparisonDateText -Value $property.Value
+        }
+
+        return $Value
+    }
+
+    if ($Value -is [System.Collections.IList]) {
+        for ($index = 0; $index -lt $Value.Count; $index++) {
+            $Value[$index] = ConvertTo-ComparisonDateText -Value $Value[$index]
+        }
+
+        return , $Value
+    }
+
+    return $Value
+}
+
+function ConvertFrom-WorkstationJson {
+    <#
+    .SYNOPSIS
+    Parses normalized report JSON the same way on Windows PowerShell 5.1 and PowerShell 7.
+
+    .DESCRIPTION
+    Windows PowerShell 5.1 has no -Depth parameter and keeps date-time text as strings.
+    PowerShell 7 converts date-time text into local DateTime values, which rewrites report
+    timestamps in the machine's time zone. Date-time values are kept as RFC 3339 strings.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Json
+    )
+
+    $parameters = @{ ErrorAction = 'Stop' }
+    $parser = Get-Command -Name ConvertFrom-Json
+
+    if ($parser.Parameters.ContainsKey('Depth')) {
+        $parameters['Depth'] = 100
+    }
+
+    if ($parser.Parameters.ContainsKey('DateKind')) {
+        $parameters['DateKind'] = 'String'
+    }
+
+    $value = $Json | ConvertFrom-Json @parameters
+
+    if ($parser.Parameters.ContainsKey('Depth') -and -not $parser.Parameters.ContainsKey('DateKind')) {
+        # ponytail: PowerShell 7.0-7.4 cannot keep the source text; this restores RFC 3339 text
+        # for the same instant in the local offset. Drop when 7.4 support ends.
+        $value = ConvertTo-ComparisonDateText -Value $value
+    }
+
+    return $value
+}
+
 function ConvertTo-ComparisonSemanticVersion {
     [CmdletBinding()]
     param(
@@ -324,7 +390,8 @@ function Get-ComparisonValueHash {
         $sha.Dispose()
     }
 
-    return ([Convert]::ToHexString($hash)).ToLowerInvariant()
+    # [Convert]::ToHexString needs .NET 5+; BitConverter also works on Windows PowerShell 5.1.
+    return [BitConverter]::ToString($hash).Replace('-', '').ToLowerInvariant()
 }
 
 function Add-ComparisonValueDifference {
@@ -2523,6 +2590,8 @@ function New-WorkstationComparison {
 }
 
 Export-ModuleMember -Function @(
+    'ConvertFrom-WorkstationJson',
+    'ConvertTo-ComparisonDateText',
     'Assert-WorkstationComparisonReport',
     'Get-ComparisonProviderIndex',
     'Get-ComparisonComponentIndex',

@@ -175,6 +175,14 @@ jobs:
         run: |
           ./tests/version-intelligence-runtime/validate_version_intelligence_runtime.ps1
 
+      # Run-Audit.cmd uses Windows PowerShell 5.1, where JSON parsing and HTTP failure
+      # handling previously broke every version source.
+      - name: Validate version intelligence on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          ./tests/version-intelligence-runtime/validate_version_intelligence_runtime.ps1
+          ./tests/javascript-version-intelligence/validate_javascript_version_intelligence.ps1
+
       - name: Validate Node npm and pnpm version intelligence
         shell: pwsh
         run: |

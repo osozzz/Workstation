@@ -25,11 +25,10 @@ function Read-NormalizedAuditReport {
     }
 
     try {
-        return Get-Content -LiteralPath $Path -Raw -ErrorAction Stop |
-            ConvertFrom-Json -Depth 100 -ErrorAction Stop
+        return ConvertFrom-WorkstationJson -Json (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop)
     }
     catch {
-        throw "$Role report is not valid JSON: $Path"
+        throw "$Role report is not valid JSON: $Path ($($_.Exception.Message))"
     }
 }
 
