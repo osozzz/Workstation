@@ -38,6 +38,19 @@ $script:AuditEnvironmentVariableDefinitions = @{
     'DOTNET_ROOT_X86'  = @{ kind = 'path'; filesystem = $true }
 }
 
+# Mirrors schemas/provider-result.schema.json. Pester guards these values
+# against the schema and the constructor ValidateSet attributes.
+$script:AuditIdentifierPattern = '^[a-z0-9]+(?:[._-][a-z0-9]+)*$'
+$script:AuditCategoryPattern = '^[a-z][a-z0-9-]*$'
+$script:AuditIssueCodePattern = '^[A-Z0-9_]+$'
+$script:AuditDateTimePattern = '^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})$'
+$script:AuditMaximumCapturedLength = 32768
+$script:AuditProviderStatuses = @('success', 'warning', 'partial', 'failed', 'unavailable', 'not-applicable')
+$script:AuditComponentStates = @('present', 'missing', 'partial', 'unavailable', 'not-applicable', 'unknown')
+$script:AuditVersionIntelligenceStatuses = @('known', 'unknown', 'unavailable', 'not-applicable')
+$script:AuditEvidenceTypes = @('command', 'path', 'environment', 'registry', 'filesystem', 'api', 'configuration', 'derived')
+$script:AuditInstallationSources = @('command', 'registry', 'filesystem', 'environment', 'configuration', 'package-manager', 'unknown')
+
 
 function Get-AuditCommandTarget {
     [CmdletBinding()]
@@ -298,6 +311,11 @@ function Invoke-AuditCommand {
         }
     }
     else {
+        # The child exit code belongs in the normalized result only; restore the
+        # caller's value so provider commands cannot leak into the host exit code.
+        $hadExitCode = Test-Path -LiteralPath Variable:global:LASTEXITCODE
+        $previousExitCode = if ($hadExitCode) { $global:LASTEXITCODE } else { $null }
+
         try {
             $global:LASTEXITCODE = 0
             $text = (& $target @Arguments 2>&1 | Out-String).Trim()
@@ -319,6 +337,14 @@ function Invoke-AuditCommand {
                 ExitCode     = $null
                 Captured     = $null
                 ErrorMessage = $_.Exception.Message
+            }
+        }
+        finally {
+            if ($hadExitCode) {
+                $global:LASTEXITCODE = $previousExitCode
+            }
+            else {
+                Remove-Variable -Name LASTEXITCODE -Scope Global -ErrorAction SilentlyContinue
             }
         }
     }
@@ -438,6 +464,429 @@ function New-AuditIssue {
         severity    = $Severity
         componentId = $ComponentId
         evidenceIds = @($EvidenceIds | Select-Object -Unique)
+    }
+}
+
+function Test-AuditJsonArray {
+    param([AllowNull()][object]$Value)
+
+    return (
+        $null -ne $Value -and
+        $Value -is [System.Collections.IEnumerable] -and
+        $Value -isnot [string] -and
+        $Value -isnot [System.Collections.IDictionary]
+    )
+}
+
+function Test-AuditPatternValue {
+    param(
+        [AllowNull()][object]$Value,
+        [Parameter(Mandatory)][string]$Pattern
+    )
+
+    return ($Value -is [string] -and $Value -cmatch $Pattern)
+}
+
+function Test-AuditEnumValue {
+    param(
+        [AllowNull()][object]$Value,
+        [Parameter(Mandatory)][string[]]$Allowed
+    )
+
+    return ($Value -is [string] -and $Value -cin $Allowed)
+}
+
+function Test-AuditNullableString {
+    param([AllowNull()][object]$Value)
+
+    return ($null -eq $Value -or $Value -is [string])
+}
+
+function Test-AuditNonEmptyString {
+    param([AllowNull()][object]$Value)
+
+    return ($Value -is [string] -and $Value.Length -gt 0)
+}
+
+function Test-AuditInteger {
+    param([AllowNull()][object]$Value)
+
+    return ($Value -is [int] -or $Value -is [long] -or $Value -is [int16] -or $Value -is [byte])
+}
+
+function Test-AuditDateTimeText {
+    param([AllowNull()][object]$Value)
+
+    if (-not (Test-AuditPatternValue -Value $Value -Pattern $script:AuditDateTimePattern)) {
+        return $false
+    }
+
+    $parsed = [DateTimeOffset]::MinValue
+    return [DateTimeOffset]::TryParse(
+        $Value,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [Globalization.DateTimeStyles]::None,
+        [ref]$parsed
+    )
+}
+
+function Assert-AuditRecordShape {
+    param(
+        [AllowNull()][object]$Record,
+        [Parameter(Mandatory)][string[]]$PropertyNames,
+        [Parameter(Mandatory)][string]$Label
+    )
+
+    if ($Record -isnot [System.Management.Automation.PSCustomObject]) {
+        throw "$Label must be a single object record."
+    }
+
+    foreach ($name in $PropertyNames) {
+        if ($null -eq $Record.PSObject.Properties[$name]) {
+            throw "$Label is missing '$name'."
+        }
+    }
+
+    foreach ($property in $Record.PSObject.Properties) {
+        if ($property.Name -cnotin $PropertyNames) {
+            throw "$Label has unexpected property '$($property.Name)'."
+        }
+    }
+}
+
+function Assert-AuditArrayValue {
+    param(
+        [AllowNull()][object]$Value,
+        [Parameter(Mandatory)][string]$Label
+    )
+
+    if (-not (Test-AuditJsonArray -Value $Value)) {
+        throw "$Label must be an array."
+    }
+}
+
+function Assert-AuditVersionRecordShape {
+    param(
+        [AllowNull()][object]$Record,
+        [Parameter(Mandatory)][string]$Label,
+        [switch]$AllowNull
+    )
+
+    if ($AllowNull -and $null -eq $Record) {
+        return
+    }
+
+    Assert-AuditRecordShape -Record $Record -PropertyNames @('raw', 'normalized', 'channel') -Label $Label
+
+    if (-not (Test-AuditNonEmptyString -Value $Record.raw)) {
+        throw "$Label raw must be a non-empty string."
+    }
+
+    foreach ($name in @('normalized', 'channel')) {
+        if (-not (Test-AuditNullableString -Value $Record.$name)) {
+            throw "$Label $name must be a string or null."
+        }
+    }
+}
+
+function Assert-AuditComponentShape {
+    param(
+        [AllowNull()][object]$Component,
+        [Parameter(Mandatory)][string]$Label
+    )
+
+    Assert-AuditRecordShape -Record $Component -Label $Label -PropertyNames @(
+        'componentId',
+        'name',
+        'state',
+        'installed',
+        'activeVersion',
+        'discoveredVersions',
+        'installations',
+        'commandResolutions',
+        'versionIntelligence'
+    )
+
+    if (-not (Test-AuditPatternValue -Value $Component.componentId -Pattern $script:AuditIdentifierPattern)) {
+        throw "$Label has invalid componentId '$($Component.componentId)'."
+    }
+
+    $Label = "$Label '$($Component.componentId)'"
+
+    if (-not (Test-AuditNonEmptyString -Value $Component.name)) {
+        throw "$Label name must be a non-empty string."
+    }
+
+    if (-not (Test-AuditEnumValue -Value $Component.state -Allowed $script:AuditComponentStates)) {
+        throw "$Label has invalid state '$($Component.state)'."
+    }
+
+    if ($null -ne $Component.installed -and $Component.installed -isnot [bool]) {
+        throw "$Label installed must be boolean or null."
+    }
+
+    if (($Component.state -ceq 'present' -and $Component.installed -ne $true) -or
+        ($Component.state -ceq 'missing' -and $Component.installed -ne $false)) {
+        throw "$Label state '$($Component.state)' contradicts installed '$($Component.installed)'."
+    }
+
+    Assert-AuditVersionRecordShape -Record $Component.activeVersion -Label "$Label activeVersion" -AllowNull
+
+    Assert-AuditArrayValue -Value $Component.discoveredVersions -Label "$Label discoveredVersions"
+    foreach ($version in $Component.discoveredVersions) {
+        Assert-AuditVersionRecordShape -Record $version -Label "$Label discoveredVersions entry"
+    }
+
+    Assert-AuditArrayValue -Value $Component.installations -Label "$Label installations"
+    foreach ($installation in $Component.installations) {
+        $installationLabel = "$Label installations entry"
+        Assert-AuditRecordShape -Record $installation -PropertyNames @('path', 'version', 'active', 'source') -Label $installationLabel
+
+        if (-not (Test-AuditNullableString -Value $installation.path)) {
+            throw "$installationLabel path must be a string or null."
+        }
+
+        Assert-AuditVersionRecordShape -Record $installation.version -Label "$installationLabel version" -AllowNull
+
+        if ($installation.active -isnot [bool]) {
+            throw "$installationLabel active must be boolean."
+        }
+
+        if (-not (Test-AuditEnumValue -Value $installation.source -Allowed $script:AuditInstallationSources)) {
+            throw "$installationLabel has invalid source '$($installation.source)'."
+        }
+    }
+
+    Assert-AuditArrayValue -Value $Component.commandResolutions -Label "$Label commandResolutions"
+    foreach ($resolution in $Component.commandResolutions) {
+        $resolutionLabel = "$Label commandResolutions entry"
+        Assert-AuditRecordShape -Record $resolution -Label $resolutionLabel -PropertyNames @(
+            'command',
+            'path',
+            'commandType',
+            'version',
+            'precedence',
+            'active'
+        )
+
+        if (-not (Test-AuditNonEmptyString -Value $resolution.command)) {
+            throw "$resolutionLabel command must be a non-empty string."
+        }
+
+        foreach ($name in @('path', 'commandType')) {
+            if (-not (Test-AuditNullableString -Value $resolution.$name)) {
+                throw "$resolutionLabel $name must be a string or null."
+            }
+        }
+
+        Assert-AuditVersionRecordShape -Record $resolution.version -Label "$resolutionLabel version" -AllowNull
+
+        if ($null -ne $resolution.precedence -and
+            (-not (Test-AuditInteger -Value $resolution.precedence) -or $resolution.precedence -lt 0)) {
+            throw "$resolutionLabel precedence must be a non-negative integer or null."
+        }
+
+        if ($resolution.active -isnot [bool]) {
+            throw "$resolutionLabel active must be boolean."
+        }
+    }
+
+    $intelligenceLabel = "$Label versionIntelligence"
+    $intelligence = $Component.versionIntelligence
+    Assert-AuditRecordShape -Record $intelligence -Label $intelligenceLabel -PropertyNames @(
+        'status',
+        'latestStable',
+        'latestLts',
+        'latestCurrent',
+        'source',
+        'checkedAt',
+        'message'
+    )
+
+    if (-not (Test-AuditEnumValue -Value $intelligence.status -Allowed $script:AuditVersionIntelligenceStatuses)) {
+        throw "$intelligenceLabel has invalid status '$($intelligence.status)'."
+    }
+
+    foreach ($name in @('latestStable', 'latestLts', 'latestCurrent')) {
+        Assert-AuditVersionRecordShape -Record $intelligence.$name -Label "$intelligenceLabel $name" -AllowNull
+    }
+
+    foreach ($name in @('source', 'message')) {
+        if (-not (Test-AuditNullableString -Value $intelligence.$name)) {
+            throw "$intelligenceLabel $name must be a string or null."
+        }
+    }
+
+    if ($null -ne $intelligence.checkedAt -and -not (Test-AuditDateTimeText -Value $intelligence.checkedAt)) {
+        throw "$intelligenceLabel checkedAt must be an RFC 3339 date-time string or null."
+    }
+}
+
+function Assert-AuditProviderResult {
+    <#
+    .SYNOPSIS
+    Throws when a provider result does not satisfy schemas/provider-result.schema.json.
+
+    .DESCRIPTION
+    Runtime guard used by the orchestrator before a provider result is accepted.
+    Checks are case-sensitive and reject unexpected properties, matching the
+    normalized schema, so malformed output becomes an explicit failed provider
+    instead of a schema-invalid report or a crash while rendering reports.
+    #>
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [object]$Result,
+
+        [Parameter(Mandatory)]
+        [string]$ProviderId,
+
+        [Parameter(Mandatory)]
+        [string]$Category
+    )
+
+    $label = "Provider '$ProviderId'"
+
+    Assert-AuditRecordShape -Record $Result -Label "$label result" -PropertyNames @(
+        'providerId',
+        'category',
+        'status',
+        'observedAt',
+        'components',
+        'warnings',
+        'errors',
+        'evidence'
+    )
+
+    if ($Result.providerId -isnot [string] -or $Result.providerId -cne $ProviderId) {
+        throw "Provider result id '$($Result.providerId)' does not match registered id '$ProviderId'."
+    }
+
+    if ($Result.category -isnot [string] -or $Result.category -cne $Category) {
+        throw "$label returned category '$($Result.category)' instead of '$Category'."
+    }
+
+    if (-not (Test-AuditEnumValue -Value $Result.status -Allowed $script:AuditProviderStatuses)) {
+        throw "$label returned invalid status '$($Result.status)'."
+    }
+
+    if (-not (Test-AuditDateTimeText -Value $Result.observedAt)) {
+        throw "$label observedAt must be an RFC 3339 date-time string."
+    }
+
+    foreach ($collectionName in @('components', 'warnings', 'errors', 'evidence')) {
+        Assert-AuditArrayValue -Value $Result.$collectionName -Label "$label result '$collectionName'"
+    }
+
+    $componentIds = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
+
+    foreach ($component in $Result.components) {
+        Assert-AuditComponentShape -Component $component -Label "$label component"
+
+        if (-not $componentIds.Add($component.componentId)) {
+            throw "$label returned duplicate componentId '$($component.componentId)'."
+        }
+    }
+
+    $evidenceIds = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
+
+    foreach ($evidence in $Result.evidence) {
+        Assert-AuditRecordShape -Record $evidence -Label "$label evidence" -PropertyNames @(
+            'evidenceId',
+            'type',
+            'source',
+            'exitCode',
+            'captured',
+            'redacted',
+            'attributes'
+        )
+
+        $evidenceId = $evidence.evidenceId
+        if (-not (Test-AuditPatternValue -Value $evidenceId -Pattern $script:AuditIdentifierPattern)) {
+            throw "$label returned invalid evidenceId '$evidenceId'."
+        }
+
+        if (-not $evidenceIds.Add($evidenceId)) {
+            throw "$label returned duplicate evidenceId '$evidenceId'."
+        }
+
+        $evidenceLabel = "$label evidence '$evidenceId'"
+
+        if (-not (Test-AuditEnumValue -Value $evidence.type -Allowed $script:AuditEvidenceTypes)) {
+            throw "$evidenceLabel returned invalid type '$($evidence.type)'."
+        }
+
+        if (-not (Test-AuditNonEmptyString -Value $evidence.source)) {
+            throw "$evidenceLabel source must be a non-empty string."
+        }
+
+        if ($null -ne $evidence.exitCode -and -not (Test-AuditInteger -Value $evidence.exitCode)) {
+            throw "$evidenceLabel exitCode must be an integer or null."
+        }
+
+        if (-not (Test-AuditNullableString -Value $evidence.captured) -or
+            ($null -ne $evidence.captured -and $evidence.captured.Length -gt $script:AuditMaximumCapturedLength)) {
+            throw "$evidenceLabel captured must be null or a string of at most $script:AuditMaximumCapturedLength characters."
+        }
+
+        if ($evidence.redacted -isnot [bool]) {
+            throw "$evidenceLabel redacted must be boolean."
+        }
+
+        if ($evidence.attributes -isnot [System.Management.Automation.PSCustomObject] -and
+            $evidence.attributes -isnot [System.Collections.IDictionary]) {
+            throw "$evidenceLabel attributes must be an object."
+        }
+    }
+
+    foreach ($collectionName in @('warnings', 'errors')) {
+        $allowedSeverities = if ($collectionName -eq 'warnings') { @('info', 'warning') } else { @('error') }
+
+        foreach ($issue in $Result.$collectionName) {
+            $issueLabel = "$label $collectionName entry"
+            Assert-AuditRecordShape -Record $issue -Label $issueLabel -PropertyNames @(
+                'code',
+                'message',
+                'severity',
+                'componentId',
+                'evidenceIds'
+            )
+
+            if (-not (Test-AuditPatternValue -Value $issue.code -Pattern $script:AuditIssueCodePattern)) {
+                throw "$label returned invalid issue code '$($issue.code)'."
+            }
+
+            $issueLabel = "$label issue '$($issue.code)'"
+
+            if (-not (Test-AuditNonEmptyString -Value $issue.message)) {
+                throw "$issueLabel message must be a non-empty string."
+            }
+
+            if (-not (Test-AuditEnumValue -Value $issue.severity -Allowed $allowedSeverities)) {
+                throw "$issueLabel returned invalid severity '$($issue.severity)' for $collectionName."
+            }
+
+            if (-not (Test-AuditNullableString -Value $issue.componentId)) {
+                throw "$issueLabel componentId must be a string or null."
+            }
+
+            Assert-AuditArrayValue -Value $issue.evidenceIds -Label "$issueLabel evidenceIds"
+
+            $referencedIds = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
+            foreach ($reference in $issue.evidenceIds) {
+                if (-not (Test-AuditNonEmptyString -Value $reference)) {
+                    throw "$issueLabel evidenceIds must contain only non-empty strings."
+                }
+
+                if (-not $referencedIds.Add($reference)) {
+                    throw "$issueLabel returned duplicate evidenceId reference '$reference'."
+                }
+
+                if (-not $evidenceIds.Contains($reference)) {
+                    throw "$issueLabel references missing evidenceId '$reference'."
+                }
+            }
+        }
     }
 }
 
@@ -1261,6 +1710,7 @@ Export-ModuleMember -Function @(
     'Invoke-AuditCommand',
     'New-AuditEvidence',
     'New-AuditIssue',
+    'Assert-AuditProviderResult',
     'Get-AuditProviderStatus',
     'Get-AuditEnvironmentSnapshot',
     'Get-AuditEnvironmentVariableDefinition',
