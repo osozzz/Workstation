@@ -264,7 +264,7 @@ function Add-UniqueInstallation {
 }
 
 function Get-ActiveResolutionPath {
-    param([Parameter(Mandatory)][object[]]$Resolutions)
+    param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Resolutions)
 
     $active = @($Resolutions | Where-Object active | Select-Object -First 1)
     if ($active.Count -eq 0) {
@@ -863,6 +863,7 @@ if ($goResult.Found) {
 else {
     $evidence.Add((New-AuditEvidence -EvidenceId 'go.environment' -Type derived -Source 'Go CLI not detected; GOROOT/GOPATH command inspection unavailable' -Captured $null -Attributes @{
         status = 'not-applicable'
+        GOTOOLCHAIN = $null
         GOROOT = $null
         GOPATH = $null
         rawOutputRetained = $false

@@ -28,11 +28,9 @@ $evidence = New-Object System.Collections.Generic.List[object]
 function Get-PreviousProvider {
     param([Parameter(Mandatory)][string]$ProviderId)
 
-    return @(
-        @($Context.PreviousProviderResults) |
-            Where-Object providerId -eq $ProviderId |
-            Select-Object -First 1
-    )[0]
+    return @($Context.PreviousProviderResults) |
+        Where-Object providerId -eq $ProviderId |
+        Select-Object -First 1
 }
 
 function Read-OptionalText {
@@ -203,18 +201,15 @@ if ($null -eq $projectsLocal) {
     }
 }
 
-$discoveryEvidence = @(
-    $projectsLocal.evidence |
-        Where-Object evidenceId -eq 'projects.local.discovery' |
-        Select-Object -First 1
-)[0]
+$discoveryEvidence = $projectsLocal.evidence |
+    Where-Object evidenceId -eq 'projects.local.discovery' |
+    Select-Object -First 1
 
-$candidates = if ($null -ne $discoveryEvidence) {
-    @($discoveryEvidence.attributes.candidates)
-}
-else {
-    @()
-}
+$candidates = @(
+    if ($null -ne $discoveryEvidence) {
+        $discoveryEvidence.attributes.candidates
+    }
+)
 
 $projectModels = New-Object System.Collections.Generic.List[object]
 

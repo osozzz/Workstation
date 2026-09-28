@@ -162,12 +162,14 @@ function Get-PowerShellComponent {
     )
 
     $versionResult = Invoke-AuditCommand -Command $Command -Arguments $VersionArguments -TimeoutSeconds 15
-    $resolutions = if ($versionResult.Found) {
-        @($versionResult.Resolutions)
-    }
-    else {
-        @(Get-AuditCommandResolution -Command $Command)
-    }
+    $resolutions = @(
+        if ($versionResult.Found) {
+            $versionResult.Resolutions
+        }
+        else {
+            Get-AuditCommandResolution -Command $Command
+        }
+    )
 
     $versions = New-Object System.Collections.Generic.List[object]
     $installations = New-Object System.Collections.Generic.List[object]
