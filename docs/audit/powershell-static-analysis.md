@@ -12,6 +12,7 @@ The repository-owned settings file is `/PSScriptAnalyzerSettings.psd1`.
 
 Sprint 7 starts with an explicit safety-focused baseline:
 
+- `PSAvoidAssignmentToAutomaticVariable` — assigning to `$host`, `$matches`, `$error`, or similar automatic variables shadows engine state; `$Host` is constant, so the same code throws when it runs outside a module scope.
 - `PSAvoidUsingAllowUnencryptedAuthentication`
 - `PSAvoidUsingBrokenHashAlgorithms`
 - `PSAvoidUsingConvertToSecureStringWithPlainText`
@@ -42,7 +43,7 @@ These exclusions are narrow and documented. They do not suppress diagnostics inl
 `tests/static-analysis/validate_psscriptanalyzer_gate.ps1` performs two checks:
 
 1. Recursively analyzes only production PowerShell under `scripts/` with the repository settings.
-2. Creates a temporary synthetic script outside the repository that contains `Invoke-Expression` and verifies that the analyzer reports `PSAvoidUsingInvokeExpression`.
+2. Creates a temporary synthetic script outside the repository that calls `Invoke-Expression` and assigns `$matches`, and verifies that the analyzer reports `PSAvoidUsingInvokeExpression` and `PSAvoidAssignmentToAutomaticVariable` exactly once each.
 
 The negative fixture proves that the gate is capable of failing rather than reporting unconditional success. Temporary files are removed after validation.
 

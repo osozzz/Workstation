@@ -52,13 +52,15 @@ else {
 }
 
 $negativeFixtureDirectory = Join-Path $tempRoot ("workstation-pssa-negative-" + [guid]::NewGuid().ToString('N'))
-$negativeFixturePath = Join-Path $negativeFixtureDirectory 'InvokeExpression.Bad.ps1'
+$negativeFixturePath = Join-Path $negativeFixtureDirectory 'ControlledViolations.Bad.ps1'
 
 New-Item -ItemType Directory -Path $negativeFixtureDirectory -Force | Out-Null
 
 try {
-    "Invoke-Expression 'Get-Date'" |
-        Set-Content -LiteralPath $negativeFixturePath -Encoding UTF8
+    @(
+        "Invoke-Expression 'Get-Date'"
+        '$matches = @()'
+    ) | Set-Content -LiteralPath $negativeFixturePath -Encoding UTF8
 
     $negativeAnalyzerArgs = @{
         Path = $negativeFixturePath
@@ -69,13 +71,15 @@ try {
         Invoke-ScriptAnalyzer @negativeAnalyzerArgs
     )
 
-    $expectedDiagnostic = @(
-        $negativeDiagnostics |
-        Where-Object RuleName -eq 'PSAvoidUsingInvokeExpression'
-    )
+    foreach ($expectedRule in @('PSAvoidUsingInvokeExpression', 'PSAvoidAssignmentToAutomaticVariable')) {
+        $expectedDiagnostic = @(
+            $negativeDiagnostics |
+            Where-Object RuleName -eq $expectedRule
+        )
 
-    if ($expectedDiagnostic.Count -ne 1) {
-        throw 'The controlled negative fixture did not trigger PSAvoidUsingInvokeExpression exactly once.'
+        if ($expectedDiagnostic.Count -ne 1) {
+            throw "The controlled negative fixture did not trigger $expectedRule exactly once."
+        }
     }
 }
 finally {

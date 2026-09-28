@@ -5,6 +5,7 @@
     )
 
     IncludeRules = @(
+        'PSAvoidAssignmentToAutomaticVariable'
         'PSAvoidUsingAllowUnencryptedAuthentication'
         'PSAvoidUsingBrokenHashAlgorithms'
         'PSAvoidUsingConvertToSecureStringWithPlainText'
