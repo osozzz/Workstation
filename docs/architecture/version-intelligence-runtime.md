@@ -95,6 +95,8 @@ Synthetic transports represent:
 
 This keeps release-channel parsers deterministic while production providers can later use public official/package-registry HTTPS endpoints.
 
+The runtime and JavaScript validators also run under Windows PowerShell 5.1, the host used by `Run-Audit.cmd`. On that host, `ConvertFrom-Json` has no `-Depth` parameter and `System.Net.Http` is not loaded by default. The runtime passes `-Depth` only where it is supported and loads the assembly explicitly, so valid sources are no longer reported as malformed and transport failures are no longer raised as type-resolution errors.
+
 
 ## Audit offline mode
 

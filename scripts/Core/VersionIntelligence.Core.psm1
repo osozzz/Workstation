@@ -1,6 +1,10 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Windows PowerShell 5.1 does not load System.Net.Http by default, so the typed
+# HttpRequestException handler below would fail to resolve on any transport error.
+Add-Type -AssemblyName System.Net.Http
+
 function Get-OptionalPropertyValue {
     [CmdletBinding()]
     param(
@@ -435,8 +439,14 @@ function ConvertFrom-AuditVersionSourceJson {
         }
     }
 
+    # Windows PowerShell 5.1 has no -Depth parameter; passing it made every source look malformed.
+    $parameters = @{ ErrorAction = 'Stop' }
+    if ((Get-Command -Name ConvertFrom-Json).Parameters.ContainsKey('Depth')) {
+        $parameters['Depth'] = $Depth
+    }
+
     try {
-        $data = [string]$body | ConvertFrom-Json -Depth $Depth -ErrorAction Stop
+        $data = [string]$body | ConvertFrom-Json @parameters
         return [pscustomobject][ordered]@{
             status    = 'known'
             source    = $source
