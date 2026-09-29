@@ -221,6 +221,27 @@ function ConvertTo-ProjectDiscoveryRoot {
     }
 }
 
+function Get-RootRelativePath {
+    param(
+        [Parameter(Mandatory)][string]$RootPath,
+        [Parameter(Mandatory)][string]$Path
+    )
+
+    # [IO.Path]::GetRelativePath needs .NET Core 2.0+ and fails under Windows PowerShell 5.1.
+    # Candidates are always the normalized root itself or a directory reached by walking it.
+    if ($Path.Equals($RootPath, [StringComparison]::OrdinalIgnoreCase)) {
+        return '.'
+    }
+
+    foreach ($separator in @('\', '/')) {
+        if ($Path.StartsWith($RootPath + $separator, [StringComparison]::OrdinalIgnoreCase)) {
+            return $Path.Substring($RootPath.Length + 1)
+        }
+    }
+
+    throw "Project candidate '$Path' is not under development root '$RootPath'."
+}
+
 function Get-CandidateMarkers {
     param(
         [Parameter(Mandatory)]
@@ -310,8 +331,7 @@ function Get-BoundedProjectDiscovery {
                 $candidateKey = $candidatePath.ToLowerInvariant()
 
                 if (-not $candidatesByKey.ContainsKey($candidateKey)) {
-                    $rootPath = [string]$root.normalized
-                    $relativePath = [IO.Path]::GetRelativePath($rootPath, $candidatePath)
+                    $relativePath = Get-RootRelativePath -RootPath ([string]$root.normalized) -Path $candidatePath
 
                     $candidatesByKey[$candidateKey] = [pscustomobject][ordered]@{
                         path             = $candidatePath

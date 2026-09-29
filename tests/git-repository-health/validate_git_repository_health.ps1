@@ -22,6 +22,9 @@ function Invoke-Git {
         [Parameter(Mandatory)][string[]]$Arguments
     )
 
+    # Windows PowerShell 5.1 turns redirected native stderr (for example git's
+    # 'HEAD is now at ...') into terminating errors under Stop; rely on the exit code.
+    $ErrorActionPreference = 'Continue'
     $output = & git -C $WorkingDirectory @Arguments 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Git setup command failed in '$WorkingDirectory': git $($Arguments -join ' ') | $($output -join ' ')"
@@ -105,6 +108,8 @@ try {
             [Parameter(Mandatory)][string]$Destination
         )
 
+        # git clone reports progress on stderr; see Invoke-Git for the 5.1 behavior.
+        $ErrorActionPreference = 'Continue'
         $cloneOutput = & git clone $remote $Destination 2>&1
         if ($LASTEXITCODE -ne 0) {
             throw "Synthetic clone failed: $($cloneOutput -join ' ')"

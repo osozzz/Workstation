@@ -165,6 +165,17 @@ jobs:
         run: |
           ./tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1
 
+      # Run-Audit.cmd uses Windows PowerShell 5.1, where project discovery previously
+      # failed on a .NET Core-only API and disabled every project and Git provider.
+      - name: Validate project and Git discovery on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          ./tests/projects-local/validate_projects_local.ps1
+          ./tests/projects-javascript/validate_javascript_projects.ps1
+          ./tests/projects-non-javascript/validate_non_javascript_projects.ps1
+          ./tests/git-repository-health/validate_git_repository_health.ps1
+          ./tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1
+
       - name: Validate Sprint 4 Project and Git Discovery integration gate
         shell: pwsh
         run: |
