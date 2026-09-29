@@ -560,11 +560,12 @@ jobs:
               }
           }
 
+          # Workload inspection needs the .NET SDK; a workstation without it has no workload evidence.
           $dotnetWorkloadEvidence = $dotnetProvider.evidence | Where-Object evidenceId -eq 'dotnet.workloads'
-          if (-not $dotnetWorkloadEvidence) {
-              throw "Expected .NET workload evidence."
+          if ($dotnetSdkComponent.state -eq 'present' -and -not $dotnetWorkloadEvidence) {
+              throw "Expected .NET workload evidence when the .NET SDK is present."
           }
-          if (-not $dotnetWorkloadEvidence.attributes.updateMetadataIgnored) {
+          if ($dotnetWorkloadEvidence -and -not $dotnetWorkloadEvidence.attributes.updateMetadataIgnored) {
               throw ".NET workload update metadata must remain outside Sprint 2 normalization."
           }
 
@@ -600,7 +601,8 @@ jobs:
               throw "Raw go env JSON must not be retained."
           }
 
-          if ($goEnvironmentEvidence.attributes.GOTOOLCHAIN -ne 'local') {
+          # Without a Go CLI no probe runs, so there is no GOTOOLCHAIN guard to verify.
+          if ($goEnvironmentEvidence.attributes.status -ne 'not-applicable' -and $goEnvironmentEvidence.attributes.GOTOOLCHAIN -ne 'local') {
               throw "Go probes must force GOTOOLCHAIN=local."
           }
 
