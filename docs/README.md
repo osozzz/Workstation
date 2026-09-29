@@ -6,11 +6,13 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 
 - `architecture/` — system boundaries, provider model, data flow, and normalized schemas.
 - `audit/` — audit capabilities, detection coverage, comparison behavior, and safety requirements.
+  - `audit/ci-coverage.md` — CI check names, what each covers, the required `validate` aggregator, and known coverage gaps.
   - `audit/powershell-static-analysis.md` — pinned PSScriptAnalyzer baseline, explicit exclusions, and CI gate behavior.
   - `audit/pester-testing.md` — direct core/provider contract testing conventions and deterministic CI behavior.
   - `audit/collection-safety.md` — StrictMode-safe collection idioms and the no-developer-tools audit regression.
   - `audit/schema-fixture-hardening.md` — normalized audit/comparison schema matrix, compatibility gates, fixture safety, and deterministic digests.
   - `audit/failure-path-testing.md` — controlled command, provider, discovery, malformed-result, and offline-source failure coverage, plus runtime provider-result validation.
+  - `audit/privacy-testing.md` — report and comparison privacy boundaries, planted-canary checks, and committed-source secret scanning.
 - `governance/` — repository workflow, issue/PR conventions, branch hygiene, and project management.
 - `policies/` — workstation standards and version/update policies.
   - `policies/powershell-runtime.md` — supported PowerShell runtimes, how they are enforced, and handled runtime differences.
