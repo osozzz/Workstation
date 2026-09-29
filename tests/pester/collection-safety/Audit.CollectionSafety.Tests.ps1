@@ -115,10 +115,25 @@ $failed = @(
         ForEach-Object { '{0}: {1}' -f $_.providerId, (@($_.errors)[0].message) }
 )
 
+# An installation with no path, no version, and an unknown source carries no evidence;
+# it can only come from a null collection element turned into a record.
+$phantomInstallations = @(
+    foreach ($provider in $result.Report.providers) {
+        foreach ($component in @($provider.components)) {
+            foreach ($installation in @($component.installations)) {
+                if ([string]::IsNullOrEmpty([string]$installation.path) -and $null -eq $installation.version -and $installation.source -eq 'unknown') {
+                    '{0}/{1}' -f $provider.providerId, $component.componentId
+                }
+            }
+        }
+    }
+)
+
 [pscustomobject]@{
     providerCount = $result.Report.summary.providerCount
     reportErrors  = @($result.Report.errors | ForEach-Object { $_.code })
     failed        = $failed
+    phantoms      = $phantomInstallations
 } | ConvertTo-Json -Compress
 '@ | Set-Content -LiteralPath $runnerPath -Encoding UTF8
 
@@ -133,5 +148,6 @@ $failed = @(
         $summary.providerCount | Should -BeGreaterThan 0
         @($summary.reportErrors) | Should -HaveCount 0
         @($summary.failed) -join [Environment]::NewLine | Should -BeNullOrEmpty
+        @($summary.phantoms) -join ', ' | Should -BeNullOrEmpty -Because 'absent tools must not produce empty installation records'
     }
 }

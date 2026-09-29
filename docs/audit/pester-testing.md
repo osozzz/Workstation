@@ -4,11 +4,13 @@ Workstation uses `Pester 6.2.0` as the direct PowerShell test framework for audi
 
 ## Scope
 
-The Sprint 7 Pester baseline covers three layers:
+The Sprint 7 Pester baseline covers these layers:
 
 1. `tests/pester/core/Audit.Core.Tests.ps1` directly tests normalized core behavior such as provider status, evidence redaction, issue normalization, missing-command handling, command exit-code isolation, and runtime provider-result validation.
 2. `tests/pester/provider-contract/Audit.Orchestrator.Tests.ps1` runs the real audit orchestrator against a temporary synthetic provider directory.
 3. `tests/pester/failure-paths/Audit.FailurePaths.Tests.ps1` runs the real orchestrator against deliberate failures; see `failure-path-testing.md`.
+4. `tests/pester/collection-safety/Audit.CollectionSafety.Tests.ps1` guards StrictMode-unsafe idioms and audits a workstation without developer tools on both PowerShell hosts; see `collection-safety.md`.
+5. `tests/pester/providers/` runs individual built-in providers against fake commands on a controlled `PATH`, so detection logic is tested independently of what the runner has installed.
 
 The provider-contract suite intentionally does not use the repository's production provider directory. Its synthetic providers represent:
 

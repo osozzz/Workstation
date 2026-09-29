@@ -50,6 +50,36 @@ function Get-VersionRecordFromText {
         return $null
     }
 
+    # Some CLIs (Prisma 8+) print a JSON document. Use its version field rather than the
+    # first version-like token, which could come from another field such as a timestamp.
+    $trimmedText = $Text.Trim()
+    if ($trimmedText.StartsWith('{')) {
+        try {
+            $document = $trimmedText | ConvertFrom-Json -ErrorAction Stop
+            $envelope = Get-OptionalPropertyValue -InputObject $document -Name 'envelope'
+            $documentVersion = $null
+
+            # Prisma: envelope.result.version; plain documents: result.version or version.
+            foreach ($container in @(
+                    (Get-OptionalPropertyValue -InputObject $envelope -Name 'result'),
+                    (Get-OptionalPropertyValue -InputObject $document -Name 'result'),
+                    $document
+                )) {
+                $documentVersion = Get-OptionalPropertyValue -InputObject $container -Name 'version'
+                if ($null -ne $documentVersion) {
+                    break
+                }
+            }
+
+            if ($documentVersion -is [string] -and $documentVersion -ne $trimmedText) {
+                return Get-VersionRecordFromText -Text $documentVersion
+            }
+        }
+        catch {
+            # Not JSON after all; fall back to token matching.
+        }
+    }
+
     $match = [regex]::Match(
         $Text,
         '(?i)(?<![0-9A-Za-z])v?(?<version>\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?)'
@@ -518,7 +548,9 @@ function New-CommandComponent {
         $installations = New-Object System.Collections.Generic.List[object]
         $versions = New-Object System.Collections.Generic.List[object]
 
-        foreach ($candidate in @($AdditionalInstallations)) {
+        # An empty result can arrive as $null; on PowerShell 7 @($null) has one element,
+        # which the null-tolerant accessors below would turn into a phantom installation.
+        foreach ($candidate in @($AdditionalInstallations | Where-Object { $null -ne $_ })) {
             $candidatePath = Get-OptionalPropertyValue -InputObject $candidate -Name 'path'
             $candidateVersion = Get-OptionalPropertyValue -InputObject $candidate -Name 'version'
             $candidateActive = [bool](Get-OptionalPropertyValue -InputObject $candidate -Name 'active')
