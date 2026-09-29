@@ -15,10 +15,10 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 - `policies/` — workstation standards and version/update policies.
   - `policies/powershell-runtime.md` — supported PowerShell runtimes, how they are enforced, and handled runtime differences.
 - `releases/` — versioning, milestones, release readiness, and changelog rules.
-- `security/` — security-specific implementation guidance that complements `SECURITY.md`.
+- `security/` — planned home for security-specific implementation guidance that complements `SECURITY.md`; not created yet, so `SECURITY.md` and `policies/audit-safety.md` are authoritative today.
 
 ## Current phase
 
-The repository is in **v0.2.0 — Repository Foundation**.
+The repository is in **v0.9.0 — Audit Hardening**. `v0.8.0 — Cross-PC Comparison` is complete and published.
 
 No real workstation baseline is considered authoritative until the complete read-only audit system reaches **v1.0.0 — Baseline Ready**.

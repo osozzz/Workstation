@@ -97,6 +97,10 @@ This keeps release-channel parsers deterministic while production providers can 
 
 The runtime and JavaScript validators also run under Windows PowerShell 5.1, the host used by `Run-Audit.cmd`. On that host, `ConvertFrom-Json` has no `-Depth` parameter and `System.Net.Http` is not loaded by default. The runtime passes `-Depth` only where it is supported and loads the assembly explicitly, so valid sources are no longer reported as malformed and transport failures are no longer raised as type-resolution errors.
 
+The default transport also differs by host. `-SkipHttpErrorCheck` exists only in PowerShell 7, and Windows PowerShell 5.1 throws `WebException` for non-2xx responses. The transport returns those statuses as data and maps 5.1 timeouts and unreachable hosts onto the same exception types PowerShell 7 raises, so both hosts produce the same failure kinds. The runtime validator exercises the real default transport against a loopback `HttpListener`, so this check needs no Internet access.
+
+Providers must size `MaximumResponseBytes` to the real source. The Node release index is about 330 KB and npm package manifests about 70 KB, well above the 64 KiB default.
+
 
 ## Audit offline mode
 

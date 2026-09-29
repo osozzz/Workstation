@@ -115,11 +115,38 @@ function Invoke-DefaultVersionSourceTransport {
         Headers            = $headers
         TimeoutSec         = [int]$Request.timeoutSeconds
         MaximumRedirection = 5
-        SkipHttpErrorCheck = $true
+        UseBasicParsing    = $true
         ErrorAction        = 'Stop'
     }
 
-    $response = Invoke-WebRequest @parameters
+    # -SkipHttpErrorCheck exists only in PowerShell 7; Windows PowerShell 5.1 throws a
+    # WebException for non-2xx responses instead, handled below.
+    if ((Get-Command -Name Invoke-WebRequest).Parameters.ContainsKey('SkipHttpErrorCheck')) {
+        $parameters['SkipHttpErrorCheck'] = $true
+    }
+
+    try {
+        $response = Invoke-WebRequest @parameters
+    }
+    catch [System.Net.WebException] {
+        $webException = $_.Exception
+
+        if ($null -ne $webException.Response) {
+            return [pscustomobject][ordered]@{
+                statusCode  = [int]$webException.Response.StatusCode
+                contentType = [string]$webException.Response.ContentType
+                body        = $null
+            }
+        }
+
+        # Map 5.1 failures onto the exception types PowerShell 7 raises so both hosts
+        # report the same failure kinds.
+        if ($webException.Status -eq [System.Net.WebExceptionStatus]::Timeout) {
+            throw [System.TimeoutException]::new($webException.Message, $webException)
+        }
+
+        throw [System.Net.Http.HttpRequestException]::new($webException.Message, $webException)
+    }
 
     $contentType = $null
     if ($response.Headers) {

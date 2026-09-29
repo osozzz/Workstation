@@ -50,6 +50,36 @@ function Get-VersionRecordFromText {
         return $null
     }
 
+    # Some CLIs (Prisma 8+) print a JSON document. Use its version field rather than the
+    # first version-like token, which could come from another field such as a timestamp.
+    $trimmedText = $Text.Trim()
+    if ($trimmedText.StartsWith('{')) {
+        try {
+            $document = $trimmedText | ConvertFrom-Json -ErrorAction Stop
+            $envelope = Get-OptionalPropertyValue -InputObject $document -Name 'envelope'
+            $documentVersion = $null
+
+            # Prisma: envelope.result.version; plain documents: result.version or version.
+            foreach ($container in @(
+                    (Get-OptionalPropertyValue -InputObject $envelope -Name 'result'),
+                    (Get-OptionalPropertyValue -InputObject $document -Name 'result'),
+                    $document
+                )) {
+                $documentVersion = Get-OptionalPropertyValue -InputObject $container -Name 'version'
+                if ($null -ne $documentVersion) {
+                    break
+                }
+            }
+
+            if ($documentVersion -is [string] -and $documentVersion -ne $trimmedText) {
+                return Get-VersionRecordFromText -Text $documentVersion
+            }
+        }
+        catch {
+            # Not JSON after all; fall back to token matching.
+        }
+    }
+
     $match = [regex]::Match(
         $Text,
         '(?i)(?<![0-9A-Za-z])v?(?<version>\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?)'
@@ -518,7 +548,9 @@ function New-CommandComponent {
         $installations = New-Object System.Collections.Generic.List[object]
         $versions = New-Object System.Collections.Generic.List[object]
 
-        foreach ($candidate in @($AdditionalInstallations)) {
+        # An empty result can arrive as $null; on PowerShell 7 @($null) has one element,
+        # which the null-tolerant accessors below would turn into a phantom installation.
+        foreach ($candidate in @($AdditionalInstallations | Where-Object { $null -ne $_ })) {
             $candidatePath = Get-OptionalPropertyValue -InputObject $candidate -Name 'path'
             $candidateVersion = Get-OptionalPropertyValue -InputObject $candidate -Name 'version'
             $candidateActive = [bool](Get-OptionalPropertyValue -InputObject $candidate -Name 'active')
@@ -1019,7 +1051,11 @@ function Get-JavaScriptVersionSource {
     param(
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][uri]$Uri,
-        [Parameter(Mandatory)][string]$EvidenceId
+        [Parameter(Mandatory)][string]$EvidenceId,
+
+        # The Node release index (~330 KB) and npm package manifests (~70 KB) exceed the
+        # 64 KiB runtime default; dist-tags responses are small.
+        [ValidateRange(256, 1048576)][int]$MaximumResponseBytes = 65536
     )
 
     $parameters = @{
@@ -1027,6 +1063,7 @@ function Get-JavaScriptVersionSource {
         Uri = $Uri
         CheckedAt = $versionCheckedAt
         Offline = $versionIntelligenceOffline
+        MaximumResponseBytes = $MaximumResponseBytes
     }
 
     if ($null -ne $versionIntelligenceTransport) {
@@ -1039,7 +1076,7 @@ function Get-JavaScriptVersionSource {
 }
 
 if ($nodeComponent.state -in @('present', 'partial')) {
-    $nodeSource = Get-JavaScriptVersionSource -Source 'nodejs-release-index' -Uri 'https://nodejs.org/dist/index.json' -EvidenceId 'javascript.version-intelligence.node-source'
+    $nodeSource = Get-JavaScriptVersionSource -Source 'nodejs-release-index' -Uri 'https://nodejs.org/dist/index.json' -EvidenceId 'javascript.version-intelligence.node-source' -MaximumResponseBytes 1048576
     $nodeVersionResult = Resolve-NodeVersionIntelligence -DecodedSource $nodeSource -InstalledVersion $nodeComponent.activeVersion
     $nodeComponent.versionIntelligence = $nodeVersionResult.intelligence
 
@@ -1055,7 +1092,7 @@ if ($nodeComponent.state -in @('present', 'partial')) {
 }
 
 if ($npmComponent.state -in @('present', 'partial')) {
-    $npmSource = Get-JavaScriptVersionSource -Source 'npm-registry:npm' -Uri 'https://registry.npmjs.org/npm/latest' -EvidenceId 'javascript.version-intelligence.npm-source'
+    $npmSource = Get-JavaScriptVersionSource -Source 'npm-registry:npm' -Uri 'https://registry.npmjs.org/npm/latest' -EvidenceId 'javascript.version-intelligence.npm-source' -MaximumResponseBytes 262144
     $npmVersionResult = Resolve-NpmPackageVersionIntelligence -PackageName npm -DecodedSource $npmSource -InstalledVersion $npmComponent.activeVersion
     $npmComponent.versionIntelligence = $npmVersionResult.intelligence
 
@@ -1067,7 +1104,7 @@ if ($npmComponent.state -in @('present', 'partial')) {
 }
 
 if ($pnpmComponent.state -in @('present', 'partial')) {
-    $pnpmSource = Get-JavaScriptVersionSource -Source 'npm-registry:pnpm' -Uri 'https://registry.npmjs.org/pnpm/latest' -EvidenceId 'javascript.version-intelligence.pnpm-source'
+    $pnpmSource = Get-JavaScriptVersionSource -Source 'npm-registry:pnpm' -Uri 'https://registry.npmjs.org/pnpm/latest' -EvidenceId 'javascript.version-intelligence.pnpm-source' -MaximumResponseBytes 262144
     $pnpmVersionResult = Resolve-NpmPackageVersionIntelligence -PackageName pnpm -DecodedSource $pnpmSource -InstalledVersion $pnpmComponent.activeVersion
     $pnpmComponent.versionIntelligence = $pnpmVersionResult.intelligence
 

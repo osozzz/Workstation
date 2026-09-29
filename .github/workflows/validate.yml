@@ -170,6 +170,17 @@ jobs:
         run: |
           ./tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1
 
+      # Run-Audit.cmd uses Windows PowerShell 5.1, where project discovery previously
+      # failed on a .NET Core-only API and disabled every project and Git provider.
+      - name: Validate project and Git discovery on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          ./tests/projects-local/validate_projects_local.ps1
+          ./tests/projects-javascript/validate_javascript_projects.ps1
+          ./tests/projects-non-javascript/validate_non_javascript_projects.ps1
+          ./tests/git-repository-health/validate_git_repository_health.ps1
+          ./tests/git-branch-worktree-hygiene/validate_git_branch_worktree_hygiene.ps1
+
       - name: Validate Sprint 4 Project and Git Discovery integration gate
         shell: pwsh
         run: |
@@ -565,11 +576,12 @@ jobs:
               }
           }
 
+          # Workload inspection needs the .NET SDK; a workstation without it has no workload evidence.
           $dotnetWorkloadEvidence = $dotnetProvider.evidence | Where-Object evidenceId -eq 'dotnet.workloads'
-          if (-not $dotnetWorkloadEvidence) {
-              throw "Expected .NET workload evidence."
+          if ($dotnetSdkComponent.state -eq 'present' -and -not $dotnetWorkloadEvidence) {
+              throw "Expected .NET workload evidence when the .NET SDK is present."
           }
-          if (-not $dotnetWorkloadEvidence.attributes.updateMetadataIgnored) {
+          if ($dotnetWorkloadEvidence -and -not $dotnetWorkloadEvidence.attributes.updateMetadataIgnored) {
               throw ".NET workload update metadata must remain outside Sprint 2 normalization."
           }
 
@@ -605,7 +617,8 @@ jobs:
               throw "Raw go env JSON must not be retained."
           }
 
-          if ($goEnvironmentEvidence.attributes.GOTOOLCHAIN -ne 'local') {
+          # Without a Go CLI no probe runs, so there is no GOTOOLCHAIN guard to verify.
+          if ($goEnvironmentEvidence.attributes.status -ne 'not-applicable' -and $goEnvironmentEvidence.attributes.GOTOOLCHAIN -ne 'local') {
               throw "Go probes must force GOTOOLCHAIN=local."
           }
 

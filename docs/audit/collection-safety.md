@@ -34,7 +34,9 @@ $first = $items | Where-Object Name -eq $name | Select-Object -First 1
 `tests/pester/collection-safety/Audit.CollectionSafety.Tests.ps1`:
 
 - parses every script under `scripts/` and rejects both idioms;
-- runs the real audit under Windows PowerShell 5.1 and PowerShell 7 with a minimal `PATH` (operating system and PowerShell only) and no local configuration, and requires that no provider fails and no report-level error is raised.
+- runs the real audit under Windows PowerShell 5.1 and PowerShell 7 with a minimal `PATH` (operating system and PowerShell only) and no local configuration, and requires that no provider fails, no report-level error is raised, and no installation record is empty (no path, no version, `unknown` source).
+
+The empty-record check exists because the two hosts disagree on `@($null)` for an `[object[]]` parameter bound to `$null`: PowerShell 7 yields one element and Windows PowerShell 5.1 yields none. Loops over such parameters must skip `$null` items, or null-tolerant property accessors will turn the element into a phantom record.
 
 The second check covers the most common real-world case, a workstation that lacks some developer tools. The GitHub runner has most tools installed, so without it that case would never execute in CI.
 
