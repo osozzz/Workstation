@@ -10,7 +10,7 @@ The `main` ruleset requires a single status check, `validate`. It is an aggregat
 
 | Check | What it runs | Documented in |
 |---|---|---|
-| `static-analysis` | PSScriptAnalyzer gate, Windows PowerShell 5.1 compatibility gate, PowerShell syntax, JSON configuration | `powershell-static-analysis.md`, `../policies/powershell-runtime.md` |
+| `static-analysis` | PSScriptAnalyzer gate, Windows PowerShell 5.1 compatibility gate, PowerShell syntax, the Sprint 7 hardening gate (acceptance coverage, check integrity, documentation index, no workstation mutation), JSON configuration | `powershell-static-analysis.md`, `../policies/powershell-runtime.md`, `tests/sprint7-integration/README.md` |
 | `pester` | Pester core, orchestrator contract, failure paths, collection safety (both hosts), provider tests, and privacy (both hosts) | `pester-testing.md`, `failure-path-testing.md`, `collection-safety.md`, `privacy-testing.md` |
 | `contracts` | Normalized schemas, hardening fixture matrix, per-provider fixtures, Sprint 2 fixtures | `schema-fixture-hardening.md`, `../architecture/audit-provider-contract.md` |
 | `providers` | PATH/environment models, precedence, project discovery, Git health and hygiene, version intelligence, and the Sprint 3, 4, and 5 gates | `../architecture/version-intelligence-runtime.md` |
@@ -26,6 +26,7 @@ Each gate is backed by a controlled failing example, so a green run is meaningfu
 - The Pester gate runs a child suite with a deliberately failing assertion and requires it to fail.
 - Failure-path, collection-safety, and privacy suites include negative cases: malformed provider output, unsafe idioms, and prohibited secret examples.
 - Schema validators generate invalid cases in memory that must be rejected, so no invalid fixture is ever committed.
+- The Sprint 7 gate rejects a broken coverage matrix and 13 controlled workstation-mutating invocations.
 
 ## Known gaps
 
