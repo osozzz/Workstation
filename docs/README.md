@@ -13,6 +13,7 @@ The `/docs` directory is the canonical documentation source for Workstation. The
   - `audit/failure-path-testing.md` — controlled command, provider, discovery, malformed-result, and offline-source failure coverage, plus runtime provider-result validation.
 - `governance/` — repository workflow, issue/PR conventions, branch hygiene, and project management.
 - `policies/` — workstation standards and version/update policies.
+  - `policies/powershell-runtime.md` — supported PowerShell runtimes, how they are enforced, and handled runtime differences.
 - `releases/` — versioning, milestones, release readiness, and changelog rules.
 - `security/` — planned home for security-specific implementation guidance that complements `SECURITY.md`; not created yet, so `SECURITY.md` and `policies/audit-safety.md` are authoritative today.
 

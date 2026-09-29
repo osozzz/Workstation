@@ -23,6 +23,11 @@ jobs:
         run: |
           ./tests/static-analysis/validate_psscriptanalyzer_gate.ps1
 
+      - name: Validate Windows PowerShell 5.1 compatibility
+        shell: pwsh
+        run: |
+          ./tests/static-analysis/validate_windows_powershell_compatibility.ps1
+
       - name: Install Pester
         shell: pwsh
         run: |
