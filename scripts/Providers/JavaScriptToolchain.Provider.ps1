@@ -1019,7 +1019,11 @@ function Get-JavaScriptVersionSource {
     param(
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][uri]$Uri,
-        [Parameter(Mandatory)][string]$EvidenceId
+        [Parameter(Mandatory)][string]$EvidenceId,
+
+        # The Node release index (~330 KB) and npm package manifests (~70 KB) exceed the
+        # 64 KiB runtime default; dist-tags responses are small.
+        [ValidateRange(256, 1048576)][int]$MaximumResponseBytes = 65536
     )
 
     $parameters = @{
@@ -1027,6 +1031,7 @@ function Get-JavaScriptVersionSource {
         Uri = $Uri
         CheckedAt = $versionCheckedAt
         Offline = $versionIntelligenceOffline
+        MaximumResponseBytes = $MaximumResponseBytes
     }
 
     if ($null -ne $versionIntelligenceTransport) {
@@ -1039,7 +1044,7 @@ function Get-JavaScriptVersionSource {
 }
 
 if ($nodeComponent.state -in @('present', 'partial')) {
-    $nodeSource = Get-JavaScriptVersionSource -Source 'nodejs-release-index' -Uri 'https://nodejs.org/dist/index.json' -EvidenceId 'javascript.version-intelligence.node-source'
+    $nodeSource = Get-JavaScriptVersionSource -Source 'nodejs-release-index' -Uri 'https://nodejs.org/dist/index.json' -EvidenceId 'javascript.version-intelligence.node-source' -MaximumResponseBytes 1048576
     $nodeVersionResult = Resolve-NodeVersionIntelligence -DecodedSource $nodeSource -InstalledVersion $nodeComponent.activeVersion
     $nodeComponent.versionIntelligence = $nodeVersionResult.intelligence
 
@@ -1055,7 +1060,7 @@ if ($nodeComponent.state -in @('present', 'partial')) {
 }
 
 if ($npmComponent.state -in @('present', 'partial')) {
-    $npmSource = Get-JavaScriptVersionSource -Source 'npm-registry:npm' -Uri 'https://registry.npmjs.org/npm/latest' -EvidenceId 'javascript.version-intelligence.npm-source'
+    $npmSource = Get-JavaScriptVersionSource -Source 'npm-registry:npm' -Uri 'https://registry.npmjs.org/npm/latest' -EvidenceId 'javascript.version-intelligence.npm-source' -MaximumResponseBytes 262144
     $npmVersionResult = Resolve-NpmPackageVersionIntelligence -PackageName npm -DecodedSource $npmSource -InstalledVersion $npmComponent.activeVersion
     $npmComponent.versionIntelligence = $npmVersionResult.intelligence
 
@@ -1067,7 +1072,7 @@ if ($npmComponent.state -in @('present', 'partial')) {
 }
 
 if ($pnpmComponent.state -in @('present', 'partial')) {
-    $pnpmSource = Get-JavaScriptVersionSource -Source 'npm-registry:pnpm' -Uri 'https://registry.npmjs.org/pnpm/latest' -EvidenceId 'javascript.version-intelligence.pnpm-source'
+    $pnpmSource = Get-JavaScriptVersionSource -Source 'npm-registry:pnpm' -Uri 'https://registry.npmjs.org/pnpm/latest' -EvidenceId 'javascript.version-intelligence.pnpm-source' -MaximumResponseBytes 262144
     $pnpmVersionResult = Resolve-NpmPackageVersionIntelligence -PackageName pnpm -DecodedSource $pnpmSource -InstalledVersion $pnpmComponent.activeVersion
     $pnpmComponent.versionIntelligence = $pnpmVersionResult.intelligence
 

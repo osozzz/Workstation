@@ -78,21 +78,27 @@ Assert-True ($offlineNode.latestLts -eq $null) 'Offline Node intelligence must n
 $offlineNpm = Resolve-NpmPackageVersionIntelligence -PackageName npm -DecodedSource (New-Decoded -Source 'npm-registry:npm' -Data $null -Status unavailable) -InstalledVersion $npm.intelligence.latestStable
 Assert-True ($offlineNpm.intelligence.status -eq 'unavailable') 'Offline npm intelligence must be unavailable.'
 
+# Real responses exceed the 64 KiB runtime default (the Node index is ~330 KB and npm
+# manifests ~70 KB), so the synthetic bodies are padded to realistic sizes.
+$nodeIndexBody = '[{"version":"v26.2.0","lts":false},{"version":"v24.12.0","lts":"Krypton"}' +
+    ((1..12000 | ForEach-Object { ',{"version":"v0.0.' + $_ + '","lts":false}' }) -join '') + ']'
+$manifestPadding = 'x' * 100000
+
 $transport = {
     param($request)
     switch ($request.source) {
         'nodejs-release-index' {
-            return [pscustomobject]@{statusCode=200;contentType='application/json';body='[{"version":"v26.2.0","lts":false},{"version":"v24.12.0","lts":"Krypton"}]'}
+            return [pscustomobject]@{statusCode=200;contentType='application/json';body=$nodeIndexBody}
         }
         'npm-registry:npm' {
-            return [pscustomobject]@{statusCode=200;contentType='application/json';body='{"version":"11.20.0"}'}
+            return [pscustomobject]@{statusCode=200;contentType='application/json';body='{"version":"11.20.0","readme":"' + $manifestPadding + '"}'}
         }
         'npm-registry:pnpm' {
-            return [pscustomobject]@{statusCode=200;contentType='application/json';body='{"version":"12.4.2"}'}
+            return [pscustomobject]@{statusCode=200;contentType='application/json';body='{"version":"12.4.2","readme":"' + $manifestPadding + '"}'}
         }
         default { throw "Unexpected source $($request.source)" }
     }
-}
+}.GetNewClosure()
 
 $context = [pscustomobject][ordered]@{
     ObservedAt='2026-09-23T15:00:00+00:00'
@@ -110,6 +116,14 @@ foreach ($id in @('node','npm','pnpm')) {
     if ($component.Count -ne 1) { throw "Missing component $id." }
     if ($component[0].state -in @('present','partial') -and $component[0].versionIntelligence.status -notin @('known','unknown','unavailable')) {
         throw "$id must expose normalized version intelligence when installed."
+    }
+
+    if ($component[0].state -in @('present','partial')) {
+        $sourceEvidence = @($result.evidence | Where-Object evidenceId -eq "javascript.version-intelligence.$id-source")
+        if ($sourceEvidence.Count -ne 1) { throw "Missing version source evidence for installed $id." }
+        if ($sourceEvidence[0].attributes.sourceStatus -ne 'success' -or $sourceEvidence[0].attributes.truncated -ne $false) {
+            throw "$id version source must capture a realistic-size response without truncation."
+        }
     }
 }
 
