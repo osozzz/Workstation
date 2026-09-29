@@ -126,4 +126,4 @@ Do not commit:
 
 ## Security
 
-Follow `SECURITY.md` and the security guidance under `/docs/security` and `/docs/policies`.
+Follow `SECURITY.md` and the security guidance under `/docs/policies` (and `/docs/security` once it exists).
