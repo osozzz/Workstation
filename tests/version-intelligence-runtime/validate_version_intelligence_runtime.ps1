@@ -263,4 +263,70 @@ foreach ($requiredMarker in @(
     }
 }
 
+# The default transport must behave the same on Windows PowerShell 5.1 and PowerShell 7.
+# A loopback listener keeps this offline: 2xx returns the body, non-2xx returns the status
+# as data instead of throwing, and an unreachable host raises HttpRequestException.
+function Get-FreeLoopbackPort {
+    $probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    $probe.Start()
+    try { return ([System.Net.IPEndPoint]$probe.LocalEndpoint).Port } finally { $probe.Stop() }
+}
+
+$listenerPort = Get-FreeLoopbackPort
+$listener = [System.Net.HttpListener]::new()
+$listener.Prefixes.Add("http://localhost:$listenerPort/")
+$listener.Start()
+
+$server = [PowerShell]::Create()
+$null = $server.AddScript({
+        param($Listener)
+
+        while ($Listener.IsListening) {
+            try {
+                $context = $Listener.GetContext()
+            }
+            catch {
+                break
+            }
+
+            $found = $context.Request.Url.AbsolutePath -eq '/versions.json'
+            $bytes = [Text.Encoding]::UTF8.GetBytes($(if ($found) { '{"stable":"1.2.3"}' } else { '{"error":"missing"}' }))
+            $context.Response.StatusCode = $(if ($found) { 200 } else { 404 })
+            $context.Response.ContentType = 'application/json'
+            $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+            $context.Response.Close()
+        }
+    }).AddArgument($listener)
+$serverHandle = $server.BeginInvoke()
+
+$versionModule = Get-Module VersionIntelligence.Core
+$invokeDefaultTransport = {
+    param($Uri)
+    Invoke-DefaultVersionSourceTransport -Request ([pscustomobject]@{ uri = $Uri; timeoutSeconds = 10 })
+}
+
+try {
+    $okResponse = & $versionModule $invokeDefaultTransport "http://localhost:$listenerPort/versions.json"
+    Assert-True ($okResponse.statusCode -eq 200) "Default transport must return HTTP 200 on PowerShell $($PSVersionTable.PSVersion.Major)."
+    Assert-True ([string]$okResponse.body -match '"stable":"1\.2\.3"') 'Default transport must return the response body.'
+
+    $missingResponse = & $versionModule $invokeDefaultTransport "http://localhost:$listenerPort/missing.json"
+    Assert-True ($missingResponse.statusCode -eq 404) "Default transport must return non-2xx statuses as data on PowerShell $($PSVersionTable.PSVersion.Major)."
+
+    $unreachableKind = $null
+    try {
+        & $versionModule $invokeDefaultTransport "http://localhost:$(Get-FreeLoopbackPort)/versions.json" | Out-Null
+    }
+    catch [System.Net.Http.HttpRequestException] {
+        $unreachableKind = 'unreachable'
+    }
+    Assert-True ($unreachableKind -eq 'unreachable') "An unreachable host must raise HttpRequestException on PowerShell $($PSVersionTable.PSVersion.Major)."
+}
+finally {
+    $listener.Stop()
+    $listener.Close()
+    $server.EndInvoke($serverHandle) | Out-Null
+    $server.Dispose()
+}
+
 Write-Host 'Shared version-intelligence source runtime validation passed.'
