@@ -34,7 +34,7 @@ The initial hardening gate does not enable the following rules:
 - `PSUseBOMForUnicodeEncodedFile` — repository encoding policy is UTF-8 and is not coupled to a BOM requirement.
 - `PSUseShouldProcessForStateChangingFunctions` — the audit product remains read-only; some internal helper names can look state-changing even though they operate only on in-memory/ephemeral audit data.
 
-Compatibility-specific analyzer rules are intentionally deferred to #117, where Windows PowerShell 5.1 and PowerShell 7 support is tested as an explicit runtime matrix.
+Compatibility rules run in a separate gate, `tests/static-analysis/validate_windows_powershell_compatibility.ps1`, described in `docs/policies/powershell-runtime.md`.
 
 These exclusions are narrow and documented. They do not suppress diagnostics inline in production scripts.
 
