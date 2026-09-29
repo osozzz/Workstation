@@ -13,7 +13,7 @@
 
 - Normal changes to `main` go through a Pull Request.
 - Keep each PR scoped to one Issue or one cohesive governance task.
-- Required checks must pass before merge.
+- Required checks must pass before merge. The `main` ruleset requires `validate`, which passes only when every CI area passes (see `docs/audit/ci-coverage.md`).
 - Resolve review conversations before merge.
 - Squash merge is the default merge method.
 - Force pushes and direct history rewrites on `main` are not part of the normal workflow.
