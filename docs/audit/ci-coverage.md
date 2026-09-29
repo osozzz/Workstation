@@ -6,6 +6,8 @@
 
 The `main` ruleset requires a single status check, `validate`. It is an aggregator job that runs after every area job and passes only when all of them pass; it prints each area's result. The area jobs can be added, split, or renamed without editing the ruleset, and a skipped or cancelled area still blocks the merge.
 
+Pinned PowerShell modules are installed through `.github/scripts/Install-PinnedModule.ps1`. Hosted runners intermittently lose the PSGallery registration, so the helper re-registers it and retries with backoff. That infrastructure noise does not fail a required check, while a real installation failure still does after the last attempt.
+
 ## Area checks
 
 | Check | What it runs | Documented in |
