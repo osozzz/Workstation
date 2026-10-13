@@ -4,6 +4,23 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 0.9.0 — 2026-10-13
+
+### Audit Hardening
+
+- Added a deterministic PSScriptAnalyzer gate, enforced `PSAvoidAssignmentToAutomaticVariable`, and removed assignments to automatic variables.
+- Added Pester coverage for audit core, provider contracts, deliberate failure paths, collection safety, individual providers, and privacy boundaries, plus the normalized schema and hardening fixture matrix.
+- Validated full provider results at runtime against `provider-result.schema.json` and contract invariants, so malformed provider output becomes an explicit failed provider instead of crashing the audit or producing schema-invalid reports.
+- Kept provider command exit codes out of the audit session and made discovery fallback identifiers always valid.
+- Fixed providers that failed on workstations without Rust, Go, or configured project roots, and replaced StrictMode-unsafe collection idioms across providers.
+- Restored Windows PowerShell 5.1 support (the `Run-Audit.cmd` host) for comparison, online version intelligence, and project/Git discovery, and stopped comparison output from rewriting timestamps by time zone.
+- Sized JavaScript version sources for real Node and npm responses, and stopped PowerShell 7 from reporting phantom JavaScript CLI installations; Prisma 8 JSON version output is parsed correctly.
+- Declared the supported PowerShell runtime policy (Windows PowerShell 5.1 and PowerShell 7) and added a Windows PowerShell 5.1 compatibility gate plus 5.1 runtime checks in CI.
+- Added privacy tests with planted canaries for audit and comparison output, committed-source secret scanning, and a documented local-report versus shareable-output boundary.
+- Split CI into stable per-area checks behind the required `validate` aggregator, with resilient pinned-module installation.
+- Added the Sprint 7 integration gate mapping all nine acceptance criteria of #11 to evidence and rejecting workstation-mutating invocations in scripts and tests.
+- Updated the repository tool version to `0.9.0`.
+
 ## 0.8.0 — 2026-09-24
 
 ### Cross-PC Comparison
