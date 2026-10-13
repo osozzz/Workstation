@@ -1,0 +1,107 @@
+{
+  "issue": 11,
+  "milestone": "v0.9.0 — Audit Hardening",
+  "criteria": [
+    {
+      "id": "psscriptanalyzer-configured",
+      "acceptance": "PSScriptAnalyzer is configured.",
+      "checks": ["static-analysis"],
+      "evidence": [
+        "PSScriptAnalyzerSettings.psd1",
+        "tests/static-analysis/validate_psscriptanalyzer_gate.ps1",
+        "docs/audit/powershell-static-analysis.md"
+      ]
+    },
+    {
+      "id": "pester-core-provider-behavior",
+      "acceptance": "Pester covers core provider behavior.",
+      "checks": ["pester"],
+      "evidence": [
+        "PesterConfiguration.psd1",
+        "tests/pester/validate_pester_gate.ps1",
+        "tests/pester/core/Audit.Core.Tests.ps1",
+        "tests/pester/provider-contract/Audit.Orchestrator.Tests.ps1",
+        "tests/pester/providers/JavaScriptToolchain.Tests.ps1",
+        "docs/audit/pester-testing.md"
+      ]
+    },
+    {
+      "id": "report-schemas-validated",
+      "acceptance": "Normalized report schemas are validated.",
+      "checks": ["contracts", "pester"],
+      "evidence": [
+        "schemas/provider-result.schema.json",
+        "schemas/audit-report.schema.json",
+        "schemas/comparison-result.schema.json",
+        "tests/contract/validate_contract_fixtures.py",
+        "tests/hardening-contract/validate_hardening_fixtures.py",
+        "scripts/Core/Audit.Core.psm1",
+        "docs/audit/schema-fixture-hardening.md"
+      ]
+    },
+    {
+      "id": "fixtures-cover-installed-missing-conflicting-offline",
+      "acceptance": "Fixtures cover installed, missing, conflicting, and offline scenarios.",
+      "checks": ["contracts", "pester", "providers"],
+      "evidence": [
+        "tests/hardening-contract/fixtures/audit-state-matrix.json",
+        "tests/pester/failure-paths/Audit.FailurePaths.Tests.ps1",
+        "tests/pester/collection-safety/Audit.CollectionSafety.Tests.ps1",
+        "tests/javascript-precedence/validate_javascript_precedence.ps1",
+        "tests/version-intelligence-runtime/validate_version_intelligence_runtime.ps1"
+      ]
+    },
+    {
+      "id": "provider-failure-isolation",
+      "acceptance": "One failing/missing provider cannot collapse the full audit.",
+      "checks": ["pester"],
+      "evidence": [
+        "scripts/Audit-Workstation.ps1",
+        "tests/pester/failure-paths/Audit.FailurePaths.Tests.ps1",
+        "tests/pester/collection-safety/Audit.CollectionSafety.Tests.ps1",
+        "docs/audit/failure-path-testing.md"
+      ]
+    },
+    {
+      "id": "powershell-runtime-compatibility",
+      "acceptance": "Windows PowerShell 5.1 and PowerShell 7 compatibility is tested or explicitly constrained.",
+      "checks": ["static-analysis", "pester", "windows-powershell"],
+      "evidence": [
+        "docs/policies/powershell-runtime.md",
+        "tests/static-analysis/validate_windows_powershell_compatibility.ps1",
+        "tests/pester/collection-safety/Audit.CollectionSafety.Tests.ps1",
+        "tests/comparison-output/validate_comparison_output.ps1"
+      ]
+    },
+    {
+      "id": "stable-required-checks",
+      "acceptance": "CI exposes stable required-check names suitable for the main ruleset.",
+      "checks": ["validate"],
+      "evidence": [
+        ".github/workflows/validate.yml",
+        "docs/audit/ci-coverage.md",
+        "docs/governance/repository-governance.md"
+      ]
+    },
+    {
+      "id": "redaction-security-tested",
+      "acceptance": "Report redaction/security behavior is tested.",
+      "checks": ["pester"],
+      "evidence": [
+        "tests/pester/privacy/Audit.Privacy.Tests.ps1",
+        "docs/audit/privacy-testing.md",
+        "docs/policies/audit-safety.md"
+      ]
+    },
+    {
+      "id": "documentation-matches-coverage",
+      "acceptance": "Documentation matches actual tested coverage.",
+      "checks": ["static-analysis"],
+      "evidence": [
+        "docs/README.md",
+        "docs/audit/ci-coverage.md",
+        "tests/sprint7-integration/validate_sprint7_hardening.ps1"
+      ]
+    }
+  ]
+}
