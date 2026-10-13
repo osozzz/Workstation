@@ -180,7 +180,9 @@ function New-VersionCommandComponent {
         [AllowNull()][string]$VersionPattern
     )
 
-    $result = Invoke-AuditCommand -Command $Command -Arguments $Arguments -TimeoutSeconds 20
+    # Node-based CLIs (Heroku, Vercel, Supabase) need 8-9 s just to start at idle and exceeded
+    # 20 s under a full audit; a slow probe still ends as an explicit timed-out result.
+    $result = Invoke-AuditCommand -Command $Command -Arguments $Arguments -TimeoutSeconds 60
 
     if (-not $result.Found) {
         return [pscustomobject][ordered]@{
