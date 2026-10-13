@@ -33,27 +33,16 @@ The GitHub Wiki, when used, is a navigation/help layer only and must not overrid
 
 ## Current audit system
 
-The current scripts form a modular read-only audit foundation and are **not yet the complete baseline system**.
+The read-only audit covers Windows and PowerShell, WinGet applications and updates, JavaScript/Java/Flutter/Android/Python/.NET/Rust/Go toolchains, developer CLIs, PATH and approved environment variables, command precedence, local projects, Git health and hygiene, latest-version intelligence, and cross-PC comparison. The full coverage statement and its limitations are in `docs/architecture/audit-system-roadmap.md`.
 
-Today the repository can inspect parts of:
+## Quick start
 
-- Windows and PowerShell
-- Node / npm / pnpm / NVM
-- Angular / TypeScript / Prisma
-- Zoho tooling
-- Flutter / Dart
-- Python
-- Java
-- .NET
-- Rust / Cargo
-- Go
-- Git / GitHub CLI
-- Docker
-- ADB
-- WinGet
-- PATH and selected environment variables
+```powershell
+.\Run-Audit.cmd                                   # audit this PC; reports go to .\reports (ignored by Git)
+.\Run-Compare.cmd <reference.json> <target.json>  # compare two audit reports
+```
 
-The detector system will expand the current modular provider architecture with deeper runtime/SDK coverage, version intelligence, local-project discovery, Git/worktree hygiene, and cross-PC comparison.
+Optional project and Git discovery needs `config\workstation.local.json`; see `config/README.md`. The step-by-step procedure for auditing PC #1 and comparing PC #2 is in `docs/audit/running-the-audit.md`.
 
 ## Roadmap
 

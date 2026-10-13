@@ -299,6 +299,11 @@ jobs:
         run: |
           ./tests/comparison-output/validate_comparison_output.ps1
 
+      - name: Validate audit and comparison launchers
+        shell: pwsh
+        run: |
+          ./tests/launchers/validate_launchers.ps1
+
       - name: Validate normalized comparison contract
         shell: pwsh
         run: |
