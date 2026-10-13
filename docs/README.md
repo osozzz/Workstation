@@ -5,6 +5,7 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 ## Documentation map
 
 - `architecture/` — system boundaries, provider model, data flow, and normalized schemas.
+  - `architecture/audit-system-roadmap.md` — authoritative v1.0.0 coverage by category, version-intelligence availability, safety guarantees, and limitations.
 - `audit/` — audit capabilities, detection coverage, comparison behavior, and safety requirements.
   - `audit/ci-coverage.md` — CI check names, what each covers, the required `validate` aggregator, and known coverage gaps.
   - `audit/powershell-static-analysis.md` — pinned PSScriptAnalyzer baseline, explicit exclusions, and CI gate behavior.
