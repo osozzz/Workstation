@@ -11,6 +11,7 @@ The Sprint 7 Pester baseline covers these layers:
 3. `tests/pester/failure-paths/Audit.FailurePaths.Tests.ps1` runs the real orchestrator against deliberate failures; see `failure-path-testing.md`.
 4. `tests/pester/collection-safety/Audit.CollectionSafety.Tests.ps1` guards StrictMode-unsafe idioms and audits a workstation without developer tools on both PowerShell hosts; see `collection-safety.md`.
 5. `tests/pester/providers/` runs individual built-in providers against fake commands on a controlled `PATH`, so detection logic is tested independently of what the runner has installed.
+6. `tests/pester/privacy/Audit.Privacy.Tests.ps1` enforces the report and comparison privacy boundary and scans committed sources; see `privacy-testing.md`.
 
 The provider-contract suite intentionally does not use the repository's production provider directory. Its synthetic providers represent:
 

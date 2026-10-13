@@ -23,3 +23,5 @@ It must not, during audit:
 - commit machine-specific reports.
 
 Offline or unreachable version sources should produce an explicit unknown/unavailable state rather than fail the entire audit.
+
+Local reports may contain machine-specific paths and commit IDs because they stay on the machine. Comparison output is the shareable form and excludes them. `docs/audit/privacy-testing.md` lists the automated checks behind these rules.
