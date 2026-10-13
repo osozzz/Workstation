@@ -1,14 +1,14 @@
 [CmdletBinding()]
 param(
-    [string]$OutputDirectory = (Join-Path $PSScriptRoot '..\reports'),
+    [string]$OutputDirectory,
 
     [switch]$IncludeWingetInventory,
 
     [switch]$OfflineVersionIntelligence,
 
-    [string]$LocalConfigurationPath = (Join-Path $PSScriptRoot '..\config\workstation.local.json'),
+    [string]$LocalConfigurationPath,
 
-    [string]$ProviderDirectory = (Join-Path $PSScriptRoot 'Providers'),
+    [string]$ProviderDirectory,
 
     [string[]]$AdditionalProviderPath = @(),
 
@@ -17,6 +17,12 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Windows PowerShell 5.1 leaves $PSScriptRoot empty inside param() defaults under -File,
+# so default paths are resolved here, where it is always set.
+if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { $OutputDirectory = Join-Path $PSScriptRoot '..\reports' }
+if ([string]::IsNullOrWhiteSpace($LocalConfigurationPath)) { $LocalConfigurationPath = Join-Path $PSScriptRoot '..\config\workstation.local.json' }
+if ([string]::IsNullOrWhiteSpace($ProviderDirectory)) { $ProviderDirectory = Join-Path $PSScriptRoot 'Providers' }
 
 $corePath = Join-Path $PSScriptRoot 'Core\Audit.Core.psm1'
 Import-Module $corePath -Force
