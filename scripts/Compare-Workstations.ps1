@@ -25,7 +25,7 @@ function Read-NormalizedAuditReport {
     }
 
     try {
-        return ConvertFrom-WorkstationJson -Json (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop)
+        return ConvertFrom-WorkstationJson -Json (Get-Content -LiteralPath $Path -Encoding UTF8 -Raw -ErrorAction Stop)
     }
     catch {
         throw "$Role report is not valid JSON: $Path ($($_.Exception.Message))"

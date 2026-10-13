@@ -268,7 +268,7 @@ function Get-JavaReleaseMetadata {
 
     if (Test-Path -LiteralPath $releasePath -PathType Leaf) {
         try {
-            foreach ($line in @(Get-Content -LiteralPath $releasePath -ErrorAction Stop)) {
+            foreach ($line in @(Get-Content -LiteralPath $releasePath -Encoding UTF8 -ErrorAction Stop)) {
                 if ($line -notmatch '^(?<key>[A-Z0-9_]+)=(?<value>.*)$') {
                     continue
                 }
