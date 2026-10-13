@@ -36,6 +36,15 @@ $reportsRoot = Join-Path $root 'reports'
 $existed = Test-Path -LiteralPath $reportsRoot
 
 try {
+    # Run-Audit.cmd passes no paths, so the audit must work with its default paths on the
+    # launcher host. (Run-Audit.cmd itself is not run: it queries live sources online.)
+    $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $auditOutput = & $windowsPowerShell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root 'scripts\Audit-Workstation.ps1') -OfflineVersionIntelligence 2>&1
+    $auditExitCode = $LASTEXITCODE
+    $global:LASTEXITCODE = 0
+    Assert-True ($auditExitCode -eq 0) "The audit with default paths failed on Windows PowerShell 5.1: $($auditOutput | Out-String)"
+    Assert-True (@(Get-ChildItem -LiteralPath $reportsRoot -Filter '*.json' -File -ErrorAction SilentlyContinue).Count -ge 1) 'The audit with default paths must write its JSON report under reports\.'
+
     # `< NUL` answers the launcher's closing `pause` without user input.
     $output = cmd.exe /d /c "`"$(Join-Path $root 'Run-Compare.cmd')`" `"$fixture`" `"$fixture`" < NUL" 2>&1
     $exitCode = $LASTEXITCODE
