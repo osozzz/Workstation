@@ -52,6 +52,11 @@ jobs:
         run: |
           ./tests/sprint7-integration/validate_sprint7_hardening.ps1
 
+      - name: Validate Sprint 8 Baseline Ready integration gate
+        shell: pwsh
+        run: |
+          ./tests/sprint8-integration/validate_sprint8_baseline_ready.ps1
+
       - name: Validate JSON configuration
         shell: pwsh
         run: |

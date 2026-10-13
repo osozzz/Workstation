@@ -1,0 +1,123 @@
+{
+  "issue": 12,
+  "milestone": "v1.0.0 — Baseline Ready",
+  "criteria": [
+    {
+      "id": "required-categories-covered",
+      "acceptance": "Required workstation categories are covered by the provider architecture.",
+      "checks": ["static-analysis", "integration"],
+      "evidence": [
+        "docs/architecture/audit-system-roadmap.md",
+        "docs/releases/versioning-and-releases.md",
+        "scripts/Providers"
+      ]
+    },
+    {
+      "id": "audit-without-mutation",
+      "acceptance": "The complete audit runs without mutating the machine.",
+      "checks": ["static-analysis", "pester"],
+      "evidence": [
+        "docs/policies/audit-safety.md",
+        "tests/sprint7-integration/validate_sprint7_hardening.ps1"
+      ]
+    },
+    {
+      "id": "normalized-json-output",
+      "acceptance": "Normalized JSON output is generated locally.",
+      "checks": ["integration", "contracts"],
+      "evidence": [
+        "schemas/audit-report.schema.json",
+        "tests/integration/validate_sprint2_suite.py"
+      ]
+    },
+    {
+      "id": "human-readable-output",
+      "acceptance": "Human-readable output is generated locally.",
+      "checks": ["pester", "comparison"],
+      "evidence": [
+        "scripts/Audit-Workstation.ps1",
+        "tests/pester/failure-paths/Audit.FailurePaths.Tests.ps1",
+        "tests/comparison-output/validate_comparison_output.ps1"
+      ]
+    },
+    {
+      "id": "outputs-ignored-by-git",
+      "acceptance": "Machine-specific outputs remain ignored by Git.",
+      "checks": ["pester", "comparison"],
+      "evidence": [
+        ".gitignore",
+        "tests/pester/privacy/Audit.Privacy.Tests.ps1",
+        "tests/launchers/validate_launchers.ps1"
+      ]
+    },
+    {
+      "id": "version-intelligence-explicit",
+      "acceptance": "Version intelligence is available or explicitly unavailable per provider.",
+      "checks": ["providers", "windows-powershell"],
+      "evidence": [
+        "docs/architecture/version-intelligence-runtime.md",
+        "docs/architecture/audit-system-roadmap.md",
+        "tests/version-intelligence-runtime/validate_version_intelligence_runtime.ps1"
+      ]
+    },
+    {
+      "id": "projects-and-git-health",
+      "acceptance": "Project discovery and Git/worktree health are included.",
+      "checks": ["providers", "windows-powershell", "integration"],
+      "evidence": [
+        "scripts/Providers/ProjectsLocal.Provider.ps1",
+        "scripts/Providers/GitRepositoryHealth.Provider.ps1",
+        "scripts/Providers/GitBranchWorktreeHygiene.Provider.ps1"
+      ]
+    },
+    {
+      "id": "comparison-on-final-schema",
+      "acceptance": "Cross-PC comparison operates on the final schema.",
+      "checks": ["comparison"],
+      "evidence": [
+        "schemas/comparison-result.schema.json",
+        "docs/architecture/comparison-contract.md",
+        "tests/sprint6-integration/validate_sprint6_cross_pc_comparison.ps1"
+      ]
+    },
+    {
+      "id": "ci-suite-passes",
+      "acceptance": "CI/test suite passes.",
+      "checks": ["validate"],
+      "evidence": [
+        ".github/workflows/validate.yml",
+        "docs/audit/ci-coverage.md"
+      ]
+    },
+    {
+      "id": "documentation-coverage-limitations-safety",
+      "acceptance": "Documentation identifies supported coverage, limitations, and safety guarantees.",
+      "checks": ["static-analysis"],
+      "evidence": [
+        "docs/architecture/audit-system-roadmap.md",
+        "docs/policies/audit-safety.md",
+        "docs/audit/running-the-audit.md"
+      ]
+    },
+    {
+      "id": "pc1-audit",
+      "acceptance": "PC #1 can be audited with this release.",
+      "checks": ["comparison"],
+      "evidence": [
+        "Run-Audit.cmd",
+        "docs/audit/running-the-audit.md"
+      ],
+      "manual": "Run the released audit on PC #1 (#148)."
+    },
+    {
+      "id": "pc2-comparison",
+      "acceptance": "PC #2 can run the same release for comparison.",
+      "checks": ["comparison"],
+      "evidence": [
+        "Run-Compare.cmd",
+        "docs/audit/running-the-audit.md"
+      ],
+      "manual": "Run the same release on PC #2 and compare with PC #1 (#148)."
+    }
+  ]
+}
