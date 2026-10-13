@@ -100,6 +100,34 @@ try {
         throw "Found $($productionDiagnostics.Count) Windows PowerShell 5.1 compatibility diagnostic(s) in production scripts."
     }
 
+    # Windows PowerShell 5.1 reads text as ANSI unless told otherwise, which corrupts UTF-8
+    # without a BOM (PowerShell 7 reports, edited local configuration, project manifests).
+    $findUnencodedReads = {
+        param([System.Management.Automation.Language.Ast]$Ast)
+        @($Ast.FindAll({
+                    param($node)
+                    $node -is [System.Management.Automation.Language.CommandAst] -and
+                    $node.GetCommandName() -in @('Get-Content', 'gc', 'cat', 'type') -and
+                    @($node.CommandElements | Where-Object { $_ -is [System.Management.Automation.Language.CommandParameterAst] -and $_.ParameterName -like 'Enc*' }).Count -eq 0
+                }, $true))
+    }
+
+    $unencodedReads = foreach ($file in Get-ChildItem -LiteralPath $scriptsPath -Recurse -File -Include '*.ps1', '*.psm1') {
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$null, [ref]$null)
+        foreach ($node in & $findUnencodedReads $ast) {
+            '{0}:{1}' -f $file.Name, $node.Extent.StartLineNumber
+        }
+    }
+
+    if (@($unencodedReads).Count -gt 0) {
+        throw "Text reads must pass -Encoding UTF8 for Windows PowerShell 5.1: $(@($unencodedReads) -join ', ')"
+    }
+
+    $encodingSample = [System.Management.Automation.Language.Parser]::ParseInput("Get-Content -LiteralPath `$path -Raw; Get-Content -LiteralPath `$path -Encoding UTF8 -Raw", [ref]$null, [ref]$null)
+    if (@(& $findUnencodedReads $encodingSample).Count -ne 1) {
+        throw 'The encoding check must flag exactly the read without -Encoding in its controlled sample.'
+    }
+
     # Controlled negative fixture: every construct that has broken Windows PowerShell 5.1
     # in this repository, written the way production code writes them (short type names).
     $fixtureSource = Join-Path $scratchRoot 'fixture-source'

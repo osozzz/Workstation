@@ -44,7 +44,7 @@ function Read-OptionalText {
     }
 
     try {
-        $value = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+        $value = Get-Content -LiteralPath $Path -Encoding UTF8 -Raw -ErrorAction Stop
         if ($value.Length -gt $MaximumLength) {
             return [pscustomobject][ordered]@{
                 state = 'too-large'
@@ -76,7 +76,7 @@ function Read-PackageJson {
     }
 
     try {
-        $raw = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+        $raw = Get-Content -LiteralPath $Path -Encoding UTF8 -Raw -ErrorAction Stop
         if ($raw.Length -gt 1048576) {
             return [pscustomobject][ordered]@{
                 state = 'too-large'

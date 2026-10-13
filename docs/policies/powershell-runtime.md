@@ -33,6 +33,7 @@ The Pester suites and the Python validators are test tooling, not production cod
 | `System.Net.Http` is not loaded by default on 5.1 | `VersionIntelligence.Core` loads it explicitly. |
 | .NET Core-only APIs such as `[IO.Path]::GetRelativePath` and `[Convert]::ToHexString` | Replaced with .NET Framework equivalents. The static gate rejects new uses. |
 | `.Count` on a single item fails under StrictMode on 5.1; `@($null)` on an `[object[]]` parameter has one element on 7 and none on 5.1 | Collection-safe idioms (`docs/audit/collection-safety.md`) and null filtering. |
+| `Get-Content` decodes as ANSI on 5.1 and as UTF-8 on 7 | Every text read under `scripts/` passes `-Encoding UTF8`, which reads UTF-8 with or without a BOM on both runtimes; the compatibility gate rejects reads without `-Encoding`. |
 | Native stderr redirected with `2>&1` becomes a terminating error under `$ErrorActionPreference = 'Stop'` on 5.1 | Production commands run through `Invoke-AuditCommand`, whose module scope keeps the default preference. Test helpers that call `git` directly lower the preference locally and check `$LASTEXITCODE`. |
 
 ## Known limitations
