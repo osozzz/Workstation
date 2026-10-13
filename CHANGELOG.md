@@ -4,6 +4,19 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 1.0.0 — 2026-10-13
+
+### Baseline Ready
+
+- Declared the authoritative v1.0.0 coverage: every workstation category mapped to its provider and components, latest-version intelligence availability, safety guarantees, and limitations (`docs/architecture/audit-system-roadmap.md`).
+- Added `Run-Compare.cmd` and the operator runbook (`docs/audit/running-the-audit.md`) for auditing PC #1, auditing PC #2 with the same release, and comparing them; added a README quick start.
+- Fixed `Run-Audit.cmd` on Windows PowerShell 5.1: default output, configuration, and provider paths were empty under `powershell.exe -File`, so the launcher failed before auditing.
+- Fixed UTF-8 decoding on Windows PowerShell 5.1: reports, local configuration, and project manifests without a BOM no longer corrupt non-ASCII text such as accented folder names.
+- Gave developer CLI version probes 60 seconds so slow Node-based CLIs such as Heroku report consistently.
+- Added the Sprint 8 Baseline Ready gate mapping all twelve acceptance criteria of #12 to evidence, and CI checks for the launchers, default-path audits on Windows PowerShell 5.1, and unencoded reads.
+- Validated the release candidate end to end: the documented runbook on both PowerShell hosts with real development roots, schema-valid reports and comparison, and identical results across hosts.
+- Updated the repository tool version to `1.0.0`. The first authoritative baselines (PC #1 and PC #2) are taken with this release (#148).
+
 ## 0.9.0 — 2026-10-13
 
 ### Audit Hardening
