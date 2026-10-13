@@ -45,7 +45,7 @@ function Read-SafeText {
     }
 
     try {
-        $raw = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop
+        $raw = Get-Content -LiteralPath $Path -Encoding UTF8 -Raw -ErrorAction Stop
         if ($raw.Length -gt $MaximumLength) {
             return [pscustomobject][ordered]@{ state = 'too-large'; value = $null }
         }

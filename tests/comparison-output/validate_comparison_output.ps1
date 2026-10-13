@@ -126,7 +126,8 @@ try {
             toolVersion = '0.8.0'
         }
         host          = [pscustomobject][ordered]@{
-            name         = 'ENTRY-REFERENCE'
+            # Non-ASCII, written without a BOM by PowerShell 7: Windows PowerShell 5.1 must decode UTF-8.
+            name         = 'ENTRY-REFERENCIA-ESTACI' + [char]0x00D3 + 'N'
             platform     = 'windows'
             architecture = 'x64'
         }
@@ -211,6 +212,7 @@ try {
         foreach ($endpoint in @($written.reference, $written.target)) {
             Assert-True ($endpoint.generatedAt -is [string] -and $endpoint.generatedAt -eq $referenceAudit.generatedAt) "Comparison output on $($entryHost.Name) must preserve report timestamps exactly; got '$($endpoint.generatedAt)'."
         }
+        Assert-True ($written.reference.host.name -ceq $referenceAudit.host.name) "Comparison output on $($entryHost.Name) must preserve non-ASCII report text; got '$($written.reference.host.name)'."
     }
 }
 finally {

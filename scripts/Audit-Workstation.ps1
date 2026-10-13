@@ -1,14 +1,14 @@
 [CmdletBinding()]
 param(
-    [string]$OutputDirectory = (Join-Path $PSScriptRoot '..\reports'),
+    [string]$OutputDirectory,
 
     [switch]$IncludeWingetInventory,
 
     [switch]$OfflineVersionIntelligence,
 
-    [string]$LocalConfigurationPath = (Join-Path $PSScriptRoot '..\config\workstation.local.json'),
+    [string]$LocalConfigurationPath,
 
-    [string]$ProviderDirectory = (Join-Path $PSScriptRoot 'Providers'),
+    [string]$ProviderDirectory,
 
     [string[]]$AdditionalProviderPath = @(),
 
@@ -17,6 +17,12 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Windows PowerShell 5.1 leaves $PSScriptRoot empty inside param() defaults under -File,
+# so default paths are resolved here, where it is always set.
+if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { $OutputDirectory = Join-Path $PSScriptRoot '..\reports' }
+if ([string]::IsNullOrWhiteSpace($LocalConfigurationPath)) { $LocalConfigurationPath = Join-Path $PSScriptRoot '..\config\workstation.local.json' }
+if ([string]::IsNullOrWhiteSpace($ProviderDirectory)) { $ProviderDirectory = Join-Path $PSScriptRoot 'Providers' }
 
 $corePath = Join-Path $PSScriptRoot 'Core\Audit.Core.psm1'
 Import-Module $corePath -Force
@@ -51,7 +57,7 @@ function Get-LocalAuditConfiguration {
     }
 
     try {
-        $configuration = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        $configuration = Get-Content -LiteralPath $Path -Encoding UTF8 -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
         $developmentRoots = @()
         $maxDiscoveryDepth = $defaultMaxDepth
         $gitBranchStaleDays = $defaultGitBranchStaleDays
@@ -230,7 +236,7 @@ $safeComputerName = $computerName -replace '[^A-Za-z0-9._-]', '_'
 
 $versionPath = Join-Path $PSScriptRoot '..\VERSION'
 $toolVersion = if (Test-Path -LiteralPath $versionPath) {
-    (Get-Content -LiteralPath $versionPath -Raw).Trim()
+    (Get-Content -LiteralPath $versionPath -Encoding UTF8 -Raw).Trim()
 }
 else {
     '0.0.0'

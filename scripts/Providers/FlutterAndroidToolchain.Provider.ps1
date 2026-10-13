@@ -422,7 +422,7 @@ function Get-SourceProperties {
     $values = [ordered]@{}
 
     try {
-        foreach ($line in @(Get-Content -LiteralPath $Path -ErrorAction Stop)) {
+        foreach ($line in @(Get-Content -LiteralPath $Path -Encoding UTF8 -ErrorAction Stop)) {
             if ($line -notmatch '^\s*(?<key>[^#=]+?)\s*=\s*(?<value>.*)\s*$') {
                 continue
             }
