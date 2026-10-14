@@ -2600,5 +2600,12 @@ Export-ModuleMember -Function @(
     'ConvertTo-ComparisonInstallationValue',
     'ConvertTo-ComparisonCommandResolutionValue',
     'New-ComparisonDifference',
-    'New-WorkstationComparison'
+    'New-WorkstationComparison',
+    # Shared with policy evaluation so both outputs describe reports and projects identically.
+    'Get-ComparisonOptionalPropertyValue',
+    'New-ComparisonEndpointDescriptor',
+    'ConvertTo-ComparisonCanonicalJson',
+    'Get-ComparisonValueHash',
+    'ConvertTo-ComparisonProjectRelativePath',
+    'Get-ComparisonProjectLeafName'
 )

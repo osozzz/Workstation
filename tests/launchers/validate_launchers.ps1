@@ -4,12 +4,13 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# The operator runbook tells maintainers to use Run-Audit.cmd and Run-Compare.cmd on each PC,
-# so both launchers must keep pointing at real scripts and Run-Compare.cmd must work end to end.
+# The operator runbook tells maintainers to use Run-Audit.cmd, Run-Compare.cmd and Run-Evaluate.cmd,
+# so every launcher must point at real scripts and the report launchers must work end to end.
 
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 $fixture = Join-Path $root 'tests\fixtures\reports\mixed-provider-report.json'
 $comparisonDirectory = Join-Path $root 'reports\comparison'
+$evaluationDirectory = Join-Path $root 'reports\evaluation'
 
 function Assert-True {
     param(
@@ -22,7 +23,7 @@ function Assert-True {
     }
 }
 
-foreach ($launcher in @('Run-Audit.cmd', 'Run-Compare.cmd')) {
+foreach ($launcher in @('Run-Audit.cmd', 'Run-Compare.cmd', 'Run-Evaluate.cmd')) {
     $text = [IO.File]::ReadAllText((Join-Path $root $launcher))
     $scripts = @([regex]::Matches($text, '%~dp0(scripts\\[A-Za-z-]+\.ps1)') | ForEach-Object { $_.Groups[1].Value })
     Assert-True ($scripts.Count -ge 1) "$launcher must launch a repository script."
@@ -59,8 +60,31 @@ try {
     $global:LASTEXITCODE = 0
     Assert-True ($usageExitCode -eq 2 -and ($usage -join "`n") -match 'Usage:') 'Run-Compare.cmd without reports must print usage and exit 2.'
 
+    $output = cmd.exe /d /c "`"$(Join-Path $root 'Run-Evaluate.cmd')`" `"$fixture`" < NUL" 2>&1
+    $exitCode = $LASTEXITCODE
+    $global:LASTEXITCODE = 0
+    Assert-True ($exitCode -eq 0) "Run-Evaluate.cmd failed: $($output | Out-String)"
+    Assert-True (($output -join "`n") -match 'Workstation policy evaluation: ') 'Run-Evaluate.cmd must print the human-readable evaluation.'
+
+    # Windows PowerShell 5.1 (the launcher) and PowerShell 7 must write the same evaluation bytes.
+    $pwshDirectory = Join-Path $evaluationDirectory 'pwsh'
+    & pwsh -NoLogo -NoProfile -NonInteractive -File (Join-Path $root 'scripts\Evaluate-Workstation.ps1') -Report $fixture -OutputDirectory $pwshDirectory | Out-Null
+    Assert-True ($LASTEXITCODE -eq 0) 'Evaluate-Workstation.ps1 failed on PowerShell 7.'
+    $global:LASTEXITCODE = 0
+    $launcherHash = (Get-FileHash -LiteralPath (Join-Path $evaluationDirectory 'evaluation.json')).Hash
+    $pwshHash = (Get-FileHash -LiteralPath (Join-Path $pwshDirectory 'evaluation.json')).Hash
+    Assert-True ($launcherHash -eq $pwshHash) 'Policy evaluation output differs between Windows PowerShell 5.1 and PowerShell 7.'
+
+    $usage = cmd.exe /d /c "`"$(Join-Path $root 'Run-Evaluate.cmd')`" < NUL" 2>&1
+    $usageExitCode = $LASTEXITCODE
+    $global:LASTEXITCODE = 0
+    Assert-True ($usageExitCode -eq 2 -and ($usage -join "`n") -match 'Usage:') 'Run-Evaluate.cmd without a report must print usage and exit 2.'
+
     Push-Location $root
     try {
+        & git check-ignore --quiet --no-index 'reports/evaluation/evaluation.json'
+        Assert-True ($LASTEXITCODE -eq 0) 'Launcher output under reports\evaluation must stay ignored by Git.'
+        $global:LASTEXITCODE = 0
         & git check-ignore --quiet --no-index 'reports/comparison/comparison.json'
         Assert-True ($LASTEXITCODE -eq 0) 'Launcher output under reports\comparison must stay ignored by Git.'
         $global:LASTEXITCODE = 0
@@ -77,4 +101,4 @@ finally {
     }
 }
 
-Write-Host 'Launcher validation passed for Run-Audit.cmd and Run-Compare.cmd.'
+Write-Host 'Launcher validation passed for Run-Audit.cmd, Run-Compare.cmd and Run-Evaluate.cmd.'
