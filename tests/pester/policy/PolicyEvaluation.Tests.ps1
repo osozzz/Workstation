@@ -403,6 +403,13 @@ Describe 'Update plan' {
         $node.message | Should -Not -Match 'ARP'
     }
 
+    It 'scopes Microsoft Store upgrades to the msstore source' {
+        $store = [pscustomobject]@{ name = 'PowerToys (Preview) x64'; packageId = 'XP89DCGQ3K6VLD'; identityReliable = $true; installedVersion = '0.100.2'; availableVersion = '0.101.2362.0'; source = 'msstore' }
+        $actions = @((Invoke-TestPlan (New-TestReport -ExtraProviders @(New-TestWinGetProvider -Upgrades @($store)))).actions)
+        $actions[0].command | Should -Be 'winget upgrade --id XP89DCGQ3K6VLD --exact --source msstore'
+        $actions[0].title | Should -Match 'Microsoft Store'
+    }
+
     It 'plans unpinned Chocolatey upgrades and leaves pinned packages alone' {
         $upgrades = @(
             [pscustomobject]@{ packageId = 'python314'; installedVersion = '3.14.2'; availableVersion = '3.14.8'; pinned = $false }

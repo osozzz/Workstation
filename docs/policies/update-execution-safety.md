@@ -20,7 +20,7 @@ Only these command shapes run. The executor parses each one from the plan's `com
 
 | Shape | Validation |
 |---|---|
-| `winget upgrade --id <packageId> --exact` | `<packageId>` matches the action's `subjectId` (`winget:<packageId>`) and the WinGet ID character set. |
+| `winget upgrade --id <packageId> --exact` (optionally `--source msstore`) | `<packageId>` matches the action's `subjectId` (`winget:<packageId>`) and the WinGet ID character set; `--source msstore` only for Microsoft Store packages. |
 | `winget install --id pnpm.pnpm --exact` | Exact text. |
 | `winget install --id Python.PythonInstallManager --exact` | Exact text. |
 | `flutter upgrade` | Exact text. |
