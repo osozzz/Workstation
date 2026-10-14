@@ -720,6 +720,25 @@ function ConvertTo-WorkstationPolicyEvaluationText {
     return (($lines -join [string][char]10) + [string][char]10)
 }
 
+function ConvertTo-WorkstationOutputJson {
+    <#
+    .SYNOPSIS
+    Compact LF-terminated JSON with the same bytes on Windows PowerShell 5.1 and PowerShell 7.
+    5.1 escapes < > & ' as < and friends; 7 writes them literally.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][ValidateNotNull()][psobject]$InputObject)
+
+    $lf = [string][char]10
+    $json = ($InputObject | ConvertTo-Json -Depth 100 -Compress).Replace(([string][char]13) + $lf, $lf).TrimEnd()
+    # Only unescape when the backslash itself is not escaped (an even run of backslashes precedes it).
+    $json = [regex]::Replace($json, '(?<!\\)((?:\\\\)*)\\u00(3c|3e|26|27)', {
+            param($m)
+            $m.Groups[1].Value + [string][char][Convert]::ToInt32($m.Groups[2].Value, 16)
+        })
+    return $json + $lf
+}
+
 function Write-WorkstationPolicyEvaluationOutputs {
     [CmdletBinding()]
     param(
@@ -732,8 +751,7 @@ function Write-WorkstationPolicyEvaluationOutputs {
     $structuredPath = Join-Path $directory 'evaluation.json'
     $humanReadablePath = Join-Path $directory 'evaluation.txt'
 
-    $lf = [string][char]10
-    $json = ($Evaluation | ConvertTo-Json -Depth 100 -Compress).Replace(([string][char]13) + $lf, $lf).TrimEnd() + $lf
+    $json = ConvertTo-WorkstationOutputJson -InputObject $Evaluation
     $utf8NoBom = [Text.UTF8Encoding]::new($false)
     [IO.File]::WriteAllText($structuredPath, $json, $utf8NoBom)
     [IO.File]::WriteAllText($humanReadablePath, (ConvertTo-WorkstationPolicyEvaluationText -Evaluation $Evaluation), $utf8NoBom)
@@ -750,5 +768,6 @@ Export-ModuleMember -Function @(
     'Get-PolicyEvaluationRuleKeys',
     'New-WorkstationPolicyEvaluation',
     'ConvertTo-WorkstationPolicyEvaluationText',
+    'ConvertTo-WorkstationOutputJson',
     'Write-WorkstationPolicyEvaluationOutputs'
 )

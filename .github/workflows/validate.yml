@@ -135,6 +135,13 @@ jobs:
           ./scripts/Evaluate-Workstation.ps1 -Report ./tests/fixtures/reports/mixed-provider-report.json -OutputDirectory $out | Out-Null
           python ./tests/policy/validate_policy_evaluation_contract.py (Join-Path $out 'evaluation.json')
 
+      - name: Validate generated update plan
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'update-plan'
+          ./scripts/Plan-WorkstationUpdate.ps1 -Report ./tests/fixtures/reports/mixed-provider-report.json -OutputDirectory $out | Out-Null
+          python ./tests/policy/validate_update_plan_contract.py (Join-Path $out 'update-plan.json')
+
       - name: Validate schema hardening fixture matrix
         shell: pwsh
         run: |

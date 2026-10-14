@@ -53,7 +53,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\Audit-Workstatio
 
 This compares one report with the declared standard in `config\workstation.policy.json` and writes `reports\evaluation\evaluation.json` and `evaluation.txt`. Each policy setting becomes `compliant`, `deviation`, `unknown` (evidence missing, for example in an offline audit), or `not-evaluable` (the audit never collects evidence for it). Like comparison output, evaluation output is shareable. It does not change the machine; deviations are the input for the update plan that comes next (#159). The rules are described in `../architecture/policy-evaluation-contract.md`.
 
-## 5. Optional: compare with another PC
+## 5. Plan the updates
+
+```powershell
+.\Run-Plan.cmd reports\<COMPUTER>-<timestamp>.json
+```
+
+This lists everything on the PC that can be updated, in order from low to high risk, and writes `reports\update-plan\update-plan.json` and `update-plan.txt`. Each action shows the command that would run (or says that it is manual), its risk, and whether it can be undone. **Nothing is run.** Review the plan and apply the actions you choose; WinGet upgrades can be applied with the listed `winget upgrade` commands. The plan format is described in `../architecture/update-plan-contract.md`.
+
+## 6. Optional: compare with another PC
 
 Run the **same release** on the other PC, then copy its JSON report to this PC over a private channel you control. Comparing the two needs only the JSON reports.
 
