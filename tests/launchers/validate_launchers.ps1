@@ -22,7 +22,7 @@ function Assert-True {
     }
 }
 
-foreach ($launcher in @('Run-Audit.cmd', 'Run-Compare.cmd', 'Run-Evaluate.cmd', 'Run-Plan.cmd')) {
+foreach ($launcher in @('Run-Audit.cmd', 'Run-Compare.cmd', 'Run-Evaluate.cmd', 'Run-Plan.cmd', 'Run-Update.cmd')) {
     $text = [IO.File]::ReadAllText((Join-Path $root $launcher))
     $scripts = @([regex]::Matches($text, '%~dp0(scripts\\[A-Za-z-]+\.ps1)') | ForEach-Object { $_.Groups[1].Value })
     Assert-True ($scripts.Count -ge 1) "$launcher must launch a repository script."
@@ -103,6 +103,12 @@ try {
         Assert-True ($usageExitCode -eq 2 -and ($usage -join "`n") -match 'Usage:') "$($spec.Launcher) without a report must print usage and exit 2."
     }
 
+    # Run-Update.cmd is never run with a plan here: it is the only launcher that can change the PC.
+    $usage = cmd.exe /d /c "`"$(Join-Path $root 'Run-Update.cmd')`" < NUL" 2>&1
+    $usageExitCode = $LASTEXITCODE
+    $global:LASTEXITCODE = 0
+    Assert-True ($usageExitCode -eq 2 -and ($usage -join "`n") -match 'Without -Apply nothing is changed') 'Run-Update.cmd without a plan must print usage and exit 2.'
+
     Push-Location $root
     try {
         foreach ($output in @('reports/comparison/comparison.json', 'reports/evaluation/evaluation.json', 'reports/update-plan/update-plan.json')) {
@@ -137,4 +143,4 @@ finally {
     }
 }
 
-Write-Host 'Launcher validation passed for Run-Audit.cmd, Run-Compare.cmd, Run-Evaluate.cmd and Run-Plan.cmd.'
+Write-Host 'Launcher validation passed for Run-Audit.cmd, Run-Compare.cmd, Run-Evaluate.cmd, Run-Plan.cmd and Run-Update.cmd.'
