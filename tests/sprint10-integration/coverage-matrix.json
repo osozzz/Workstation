@@ -1,0 +1,64 @@
+{
+  "issue": 159,
+  "milestone": "v1.2.0 — Update Plan",
+  "criteria": [
+    {
+      "id": "plan-contract",
+      "acceptance": "The update plan has a schema, fixtures and a validator in CI.",
+      "checks": [
+        "contracts"
+      ],
+      "evidence": [
+        "schemas/update-plan.schema.json",
+        "tests/policy/validate_update_plan_contract.py",
+        "docs/architecture/update-plan-contract.md"
+      ]
+    },
+    {
+      "id": "every-update-planned",
+      "acceptance": "Every policy deviation and every reliable WinGet upgrade becomes an action with its command or a manual marker, risk and reversibility.",
+      "checks": [
+        "pester"
+      ],
+      "evidence": [
+        "scripts/Core/UpdatePlan.Core.psm1",
+        "tests/pester/policy/PolicyEvaluation.Tests.ps1"
+      ]
+    },
+    {
+      "id": "plan-deterministic-private",
+      "acceptance": "Plan output is deterministic, local, privacy-safe, and identical on Windows PowerShell 5.1 and PowerShell 7.",
+      "checks": [
+        "contracts",
+        "comparison"
+      ],
+      "evidence": [
+        "tests/launchers/validate_launchers.ps1",
+        "tests/policy/validate_update_plan_contract.py"
+      ]
+    },
+    {
+      "id": "plan-without-mutation",
+      "acceptance": "No planning path runs a command or mutates the workstation (Sprint 7 gate still applies).",
+      "checks": [
+        "static-analysis"
+      ],
+      "evidence": [
+        "tests/sprint7-integration/validate_sprint7_hardening.ps1",
+        "scripts/Plan-WorkstationUpdate.ps1"
+      ]
+    },
+    {
+      "id": "real-report-rehearsal",
+      "acceptance": "The plan is generated from a real PC #1 report on Windows PowerShell 5.1 and PowerShell 7.",
+      "checks": [
+        "comparison"
+      ],
+      "evidence": [
+        "Run-Plan.cmd",
+        "docs/audit/running-the-audit.md"
+      ],
+      "manual": "Run Run-Plan.cmd on the latest PC #1 report and record the summary in #176."
+    }
+  ]
+}
