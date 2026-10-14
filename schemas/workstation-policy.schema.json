@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "workstation-policy.schema.json",
+  "title": "Workstation Policy",
+  "description": "The declared developer-workstation standard that audit reports are evaluated against. Read-only: the policy never authorizes the audit to change a machine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "windows",
+    "node",
+    "javascript",
+    "angular",
+    "typescript",
+    "prisma",
+    "flutter",
+    "path",
+    "versioning",
+    "java",
+    "android",
+    "python",
+    "dotnet",
+    "rust",
+    "go",
+    "developerClis"
+  ],
+  "$defs": {
+    "track": {
+      "description": "Which release line a tool should follow.",
+      "type": "string",
+      "enum": ["latest-stable", "lts", "release-candidate-allowed"]
+    },
+    "legacyManagerPolicy": {
+      "type": "string",
+      "enum": ["detect-and-migrate", "detect-without-execution", "ignore"]
+    },
+    "readOnlyFlag": {
+      "description": "Audit-safety switch; true only for read-only inspection, never for installation or account access.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "windows": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicationManager", "updatePolicy"],
+      "properties": {
+        "applicationManager": { "type": "string", "enum": ["winget"] },
+        "updatePolicy": { "type": "string", "enum": ["review-then-upgrade", "report-only"] }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manager", "defaultTrack", "alsoInstallCurrent", "projectVersionsMustBePinned", "managerTrack", "legacyManagerPolicy"],
+      "properties": {
+        "manager": { "type": "string", "enum": ["nvm-windows"] },
+        "defaultTrack": { "type": "string", "enum": ["lts", "current"] },
+        "alsoInstallCurrent": { "type": "boolean" },
+        "projectVersionsMustBePinned": { "type": "boolean" },
+        "managerTrack": { "$ref": "#/$defs/track" },
+        "legacyManagerPolicy": { "$ref": "#/$defs/legacyManagerPolicy" }
+      }
+    },
+    "javascript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primaryPackageManager", "globalPackageManager", "npmRole", "projectDependencies"],
+      "properties": {
+        "primaryPackageManager": { "type": "string", "enum": ["pnpm", "npm"] },
+        "globalPackageManager": { "type": "string", "enum": ["pnpm", "npm"] },
+        "npmRole": { "type": "string", "enum": ["bundled-fallback", "primary"] },
+        "projectDependencies": { "type": "string", "enum": ["local-and-pinned"] }
+      }
+    },
+    "angular": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["globalCliTrack", "projectMajorUpgradesRequireExplicitMigration"],
+      "properties": {
+        "globalCliTrack": { "$ref": "#/$defs/track" },
+        "projectMajorUpgradesRequireExplicitMigration": { "type": "boolean" }
+      }
+    },
+    "typescript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["globalTrack", "projectsMustUseLocalCompatibleVersion"],
+      "properties": {
+        "globalTrack": { "$ref": "#/$defs/track" },
+        "projectsMustUseLocalCompatibleVersion": { "type": "boolean" }
+      }
+    },
+    "prisma": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["globalTrack", "projectsMustUseLocalPinnedVersion"],
+      "properties": {
+        "globalTrack": { "$ref": "#/$defs/track" },
+        "projectsMustUseLocalPinnedVersion": { "type": "boolean" }
+      }
+    },
+    "flutter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["channel", "sdkTrack", "dartSource"],
+      "properties": {
+        "channel": { "type": "string", "enum": ["stable", "beta", "main"] },
+        "sdkTrack": { "$ref": "#/$defs/track" },
+        "dartSource": { "type": "string", "enum": ["flutter-sdk-preferred", "standalone-allowed"] }
+      }
+    },
+    "path": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowMissingEntries", "allowDuplicateEntries", "auditCommandCollisions"],
+      "properties": {
+        "allowMissingEntries": { "type": "boolean" },
+        "allowDuplicateEntries": { "type": "boolean" },
+        "auditCommandCollisions": { "type": "boolean" }
+      }
+    },
+    "versioning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["globalDefaultTrack", "prereleasePolicy", "projectCompatibilityOverridesGlobal"],
+      "properties": {
+        "globalDefaultTrack": { "$ref": "#/$defs/track" },
+        "prereleasePolicy": { "type": "string", "enum": ["explicit-opt-in-only", "allowed"] },
+        "projectCompatibilityOverridesGlobal": { "type": "boolean" }
+      }
+    },
+    "java": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultTrack", "projectsMustUseLocalCompatibleVersion"],
+      "properties": {
+        "defaultTrack": { "$ref": "#/$defs/track" },
+        "projectsMustUseLocalCompatibleVersion": { "type": "boolean" }
+      }
+    },
+    "android": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sdkToolsTrack", "platformToolsTrack", "preferAndroidHome", "acceptLicensesDuringAudit"],
+      "properties": {
+        "sdkToolsTrack": { "$ref": "#/$defs/track" },
+        "platformToolsTrack": { "$ref": "#/$defs/track" },
+        "preferAndroidHome": { "type": "boolean" },
+        "acceptLicensesDuringAudit": { "type": "boolean", "const": false }
+      }
+    },
+    "python": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultTrack", "windowsManager", "projectsMustUseLocalCompatibleVersion", "virtualEnvironments", "packageToolsTrack"],
+      "properties": {
+        "defaultTrack": { "$ref": "#/$defs/track" },
+        "windowsManager": { "type": "string", "enum": ["python-install-manager", "python-launcher", "pyenv-win"] },
+        "projectsMustUseLocalCompatibleVersion": { "type": "boolean" },
+        "virtualEnvironments": { "type": "string", "enum": ["per-project"] },
+        "packageToolsTrack": { "$ref": "#/$defs/track" }
+      }
+    },
+    "dotnet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultTrack", "projectsMustUseLocalCompatibleVersion", "workloadsTrack", "inspectWorkloadsReadOnly"],
+      "properties": {
+        "defaultTrack": { "$ref": "#/$defs/track" },
+        "projectsMustUseLocalCompatibleVersion": { "type": "boolean" },
+        "workloadsTrack": { "$ref": "#/$defs/track" },
+        "inspectWorkloadsReadOnly": { "type": "boolean", "const": true }
+      }
+    },
+    "rust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manager", "defaultChannel", "defaultTrack", "managerTrack", "projectsMayPinToolchain", "autoInstallDuringAudit", "minimumSafeInspectionVersion", "legacyManagerPolicy"],
+      "properties": {
+        "manager": { "type": "string", "enum": ["rustup"] },
+        "defaultChannel": { "type": "string", "enum": ["stable", "beta", "nightly"] },
+        "defaultTrack": { "$ref": "#/$defs/track" },
+        "managerTrack": { "$ref": "#/$defs/track" },
+        "projectsMayPinToolchain": { "type": "boolean" },
+        "autoInstallDuringAudit": { "type": "boolean", "const": false },
+        "minimumSafeInspectionVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "legacyManagerPolicy": { "$ref": "#/$defs/legacyManagerPolicy" }
+      }
+    },
+    "go": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultTrack", "projectsMustUseLocalCompatibleVersion", "inspectEnvironmentReadOnly"],
+      "properties": {
+        "defaultTrack": { "$ref": "#/$defs/track" },
+        "projectsMustUseLocalCompatibleVersion": { "type": "boolean" },
+        "inspectEnvironmentReadOnly": { "type": "boolean", "const": true }
+      }
+    },
+    "developerClis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultTrack", "inspectAuthenticationState", "inspectAccountState", "inspectGitConfiguration", "inspectDockerDaemon", "inspectDockerContexts"],
+      "properties": {
+        "defaultTrack": { "$ref": "#/$defs/track" },
+        "inspectAuthenticationState": { "type": "boolean", "const": false },
+        "inspectAccountState": { "type": "boolean", "const": false },
+        "inspectGitConfiguration": { "type": "boolean", "const": false },
+        "inspectDockerDaemon": { "type": "boolean", "const": false },
+        "inspectDockerContexts": { "type": "boolean", "const": false }
+      }
+    }
+  }
+}
