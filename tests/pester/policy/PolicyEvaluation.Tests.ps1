@@ -212,7 +212,7 @@ Describe 'PATH rules' {
 
 Describe 'Project rules' {
     BeforeAll {
-        $projectPath = 'C:\Users\someone\secret-client\app'
+        $projectPath = Join-Path $TestDrive 'someone\secret-client\app'
         $discovery = [pscustomobject]@{ candidates = @([pscustomobject]@{ path = $projectPath; relativePath = 'secret-client\app' }) }
         $project = [pscustomobject]@{ project = [pscustomobject]@{ projectIndex = 0; path = $projectPath; nodePins = @(); lockfiles = @('pnpm-lock.yaml') } }
         $script:projectEvaluation = Invoke-TestEvaluation (New-TestReport -Evidence @{
