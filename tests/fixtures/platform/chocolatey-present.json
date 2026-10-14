@@ -1,0 +1,149 @@
+{
+  "providerId": "chocolatey.baseline",
+  "category": "package-manager",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "chocolatey",
+      "name": "Chocolatey",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "2.6.0",
+        "normalized": "2.6.0",
+        "channel": ""
+      },
+      "discoveredVersions": [
+        {
+          "raw": "2.6.0",
+          "normalized": "2.6.0",
+          "channel": ""
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\ProgramData\\chocolatey\\bin\\choco.exe",
+          "version": {
+            "raw": "2.6.0",
+            "normalized": "2.6.0",
+            "channel": ""
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "choco",
+          "path": "C:\\ProgramData\\chocolatey\\bin\\choco.exe",
+          "commandType": "Application",
+          "version": {
+            "raw": "0.0.0.0",
+            "normalized": "0.0.0.0",
+            "channel": ""
+          },
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "chocolatey.version",
+      "type": "command",
+      "source": "choco --version",
+      "exitCode": 0,
+      "captured": "2.6.0",
+      "redacted": false,
+      "attributes": {
+        "timedOut": false,
+        "truncated": false,
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "chocolatey.inventory",
+      "type": "command",
+      "source": "choco list --limit-output",
+      "exitCode": 0,
+      "captured": "chocolatey|2.6.0\r\npython314|3.14.2",
+      "redacted": false,
+      "attributes": {
+        "timedOut": false,
+        "truncated": false,
+        "status": "success"
+      }
+    },
+    {
+      "evidenceId": "chocolatey.inventory.normalized",
+      "type": "derived",
+      "source": "normalized choco list output",
+      "exitCode": null,
+      "captured": "",
+      "redacted": false,
+      "attributes": {
+        "packages": [
+          {
+            "packageId": "chocolatey",
+            "installedVersion": "2.6.0"
+          },
+          {
+            "packageId": "python314",
+            "installedVersion": "3.14.2"
+          }
+        ],
+        "packageCount": 2,
+        "checkedAt": "2026-09-21T00:00:00Z",
+        "status": "known"
+      }
+    },
+    {
+      "evidenceId": "chocolatey.outdated",
+      "type": "command",
+      "source": "choco outdated --limit-output",
+      "exitCode": 2,
+      "captured": "python314|3.14.2|3.14.8|false",
+      "redacted": false,
+      "attributes": {
+        "timedOut": false,
+        "truncated": false,
+        "status": "non-zero"
+      }
+    },
+    {
+      "evidenceId": "chocolatey.outdated.normalized",
+      "type": "derived",
+      "source": "normalized choco outdated output",
+      "exitCode": null,
+      "captured": "",
+      "redacted": false,
+      "attributes": {
+        "reviewOnly": true,
+        "upgrades": [
+          {
+            "packageId": "python314",
+            "installedVersion": "3.14.2",
+            "availableVersion": "3.14.8",
+            "pinned": false
+          }
+        ],
+        "checkedAt": "2026-09-21T00:00:00Z",
+        "upgradeCount": 1,
+        "status": "known"
+      }
+    }
+  ]
+}

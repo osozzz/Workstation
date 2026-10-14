@@ -403,6 +403,23 @@ Describe 'Update plan' {
         $node.message | Should -Not -Match 'ARP'
     }
 
+    It 'plans unpinned Chocolatey upgrades and leaves pinned packages alone' {
+        $upgrades = @(
+            [pscustomobject]@{ packageId = 'python314'; installedVersion = '3.14.2'; availableVersion = '3.14.8'; pinned = $false }
+            [pscustomobject]@{ packageId = 'git'; installedVersion = '2.51.0'; availableVersion = '3.0.0'; pinned = $true }
+        )
+        $provider = [pscustomobject]@{
+            providerId = 'chocolatey.baseline'; status = 'success'; components = @(); warnings = @()
+            evidence   = @([pscustomobject]@{ evidenceId = 'chocolatey.outdated.normalized'; attributes = [pscustomobject]@{ upgrades = $upgrades } })
+        }
+        $actions = @((Invoke-TestPlan (New-TestReport -ExtraProviders @($provider))).actions)
+        $python = @($actions | Where-Object actionId -eq 'choco-upgrade:python314')[0]
+        $python.command | Should -Be 'choco upgrade python314 -y'
+        $python.source.type | Should -Be 'chocolatey'
+        $python.subjectId | Should -Be 'choco:python314'
+        @($actions | Where-Object actionId -eq 'choco-upgrade:git') | Should -HaveCount 0
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "auditSchemaMajor": 1,
   "policy": {
     "schemaVersion": "1.0",
@@ -19,8 +19,8 @@
     }
   },
   "summary": {
-    "actionCount": 5,
-    "lowRiskCount": 3,
+    "actionCount": 6,
+    "lowRiskCount": 4,
     "mediumRiskCount": 1,
     "highRiskCount": 1,
     "reversibleCount": 2,
@@ -29,9 +29,37 @@
   "actions": [
     {
       "order": 1,
+      "actionId": "choco-upgrade:python314",
+      "kind": "upgrade",
+      "source": {
+        "type": "chocolatey",
+        "policyKey": null
+      },
+      "componentId": null,
+      "subjectId": "choco:python314",
+      "title": "Upgrade python314 (Chocolatey)",
+      "currentVersion": "3.14.2",
+      "targetVersion": "3.14.8",
+      "command": "choco upgrade python314 -y",
+      "risk": "low",
+      "reversible": false,
+      "message": "Chocolatey reports a newer version. Chocolatey upgrades need an elevated (administrator) shell.",
+      "evidence": [
+        {
+          "providerId": "chocolatey.baseline",
+          "componentId": "chocolatey",
+          "evidenceId": "chocolatey.outdated.normalized"
+        }
+      ]
+    },
+    {
+      "order": 2,
       "actionId": "policy:android.preferAndroidHome",
       "kind": "configure",
-      "source": { "type": "policy", "policyKey": "android.preferAndroidHome" },
+      "source": {
+        "type": "policy",
+        "policyKey": "android.preferAndroidHome"
+      },
       "componentId": "android-sdk",
       "subjectId": null,
       "title": "Set ANDROID_HOME to the Android SDK folder",
@@ -42,14 +70,21 @@
       "reversible": true,
       "message": "Set the user variable ANDROID_HOME to the installed Android SDK folder.",
       "evidence": [
-        { "providerId": "environment.baseline", "componentId": null, "evidenceId": "environment.android_home" }
+        {
+          "providerId": "environment.baseline",
+          "componentId": null,
+          "evidenceId": "environment.android_home"
+        }
       ]
     },
     {
-      "order": 2,
+      "order": 3,
       "actionId": "policy:path.allowMissingEntries",
       "kind": "cleanup",
-      "source": { "type": "policy", "policyKey": "path.allowMissingEntries" },
+      "source": {
+        "type": "policy",
+        "policyKey": "path.allowMissingEntries"
+      },
       "componentId": null,
       "subjectId": null,
       "title": "Remove 3 missing PATH entries",
@@ -60,14 +95,21 @@
       "reversible": true,
       "message": "The audit report lists which PATH entries no longer exist; remove them from the persistent PATH.",
       "evidence": [
-        { "providerId": "environment.baseline", "componentId": null, "evidenceId": "path.user.health" }
+        {
+          "providerId": "environment.baseline",
+          "componentId": null,
+          "evidenceId": "path.user.health"
+        }
       ]
     },
     {
-      "order": 3,
+      "order": 4,
       "actionId": "winget-upgrade:Git.Git",
       "kind": "upgrade",
-      "source": { "type": "winget", "policyKey": null },
+      "source": {
+        "type": "winget",
+        "policyKey": null
+      },
       "componentId": null,
       "subjectId": "winget:Git.Git",
       "title": "Upgrade Git",
@@ -78,14 +120,21 @@
       "reversible": false,
       "message": "WinGet reports a newer version.",
       "evidence": [
-        { "providerId": "winget.baseline", "componentId": "winget", "evidenceId": "winget.upgrades.normalized" }
+        {
+          "providerId": "winget.baseline",
+          "componentId": "winget",
+          "evidenceId": "winget.upgrades.normalized"
+        }
       ]
     },
     {
-      "order": 4,
+      "order": 5,
       "actionId": "policy:node.defaultTrack",
       "kind": "upgrade",
-      "source": { "type": "policy", "policyKey": "node.defaultTrack" },
+      "source": {
+        "type": "policy",
+        "policyKey": "node.defaultTrack"
+      },
       "componentId": "node",
       "subjectId": null,
       "title": "Upgrade Node.js to the latest LTS",
@@ -96,14 +145,21 @@
       "reversible": false,
       "message": "Node is behind the latest LTS release; projects should be retested after the upgrade.",
       "evidence": [
-        { "providerId": "javascript.toolchain", "componentId": "node", "evidenceId": null }
+        {
+          "providerId": "javascript.toolchain",
+          "componentId": "node",
+          "evidenceId": null
+        }
       ]
     },
     {
-      "order": 5,
+      "order": 6,
       "actionId": "policy:node.manager",
       "kind": "install",
-      "source": { "type": "policy", "policyKey": "node.manager" },
+      "source": {
+        "type": "policy",
+        "policyKey": "node.manager"
+      },
       "componentId": "nvm-windows",
       "subjectId": null,
       "title": "Migrate Node.js to nvm-windows",
@@ -114,7 +170,11 @@
       "reversible": false,
       "message": "Requires removing the standalone Node installation first; follow the nvm-windows migration steps.",
       "evidence": [
-        { "providerId": "javascript.toolchain", "componentId": "node", "evidenceId": null }
+        {
+          "providerId": "javascript.toolchain",
+          "componentId": "node",
+          "evidenceId": null
+        }
       ]
     }
   ]

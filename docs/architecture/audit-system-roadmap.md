@@ -8,6 +8,7 @@ This is the authoritative statement of what the read-only audit covers at v1.0.0
 |---|---|---|---|
 | Windows and PowerShell | `host.system` | `windows`, `powershell.windows`, `powershell.core` | not applicable |
 | Installed applications and updates | `winget.baseline` | `winget`; optional full inventory (`-IncludeWingetInventory`); available upgrades | review-only upgrade availability per package |
+| Chocolatey packages and updates | `chocolatey.baseline` | `choco`; installed packages (`choco list`); outdated packages (`choco outdated`) | review-only upgrade availability per package; pinned packages are reported and left alone |
 | JavaScript runtimes and package managers | `javascript.toolchain` | `node`, `npm`, `pnpm`, `corepack`, `nvm-windows` | Node (LTS and Current), npm, pnpm |
 | Global JavaScript CLIs | `javascript.toolchain` | `angular-cli`, `typescript`, `prisma`, `nodemon`, `rimraf`, `zoho-extension-toolkit`, `zoho-catalyst-cli`, `redis-commander` | Angular CLI, TypeScript (stable/prerelease), Prisma (stable/release candidate) |
 | Java and build tools | `java.jvm` | `java`, `javac`, `maven`, `gradle` | Java, matched to installed major, vendor, and package type |

@@ -1,6 +1,6 @@
 # Update plan contract
 
-An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json`.
+An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json` (schema version 1.1.0; 1.1.0 added the `chocolatey` source).
 
 Planning is read-only. A plan describes commands; it never runs them. Applying a plan is a later, separate phase with its own safety rules (#159).
 
@@ -8,6 +8,7 @@ Planning is read-only. A plan describes commands; it never runs them. Applying a
 
 - **`policy`**: a `deviation` from the policy evaluation (`policy-evaluation-contract.md`), for example Node behind its LTS track or missing PATH entries. `source.policyKey` names the setting.
 - **`winget`**: an upgrade that WinGet reports for an installed package. `subjectId` is `winget:<packageId>`.
+- **`chocolatey`**: an outdated Chocolatey package that is not pinned. `subjectId` is `choco:<packageId>`, and the command is `choco upgrade <packageId> -y`, which needs an elevated shell. Pinned packages are left alone.
 
 ## Actions
 
@@ -38,7 +39,7 @@ Plans are shareable, like evaluation output. They must not contain absolute path
 `scripts/Plan-WorkstationUpdate.ps1` (launcher: `Run-Plan.cmd`) builds the plan with `scripts/Core/UpdatePlan.Core.psm1` and writes `update-plan.json` and `update-plan.txt`. It runs the policy evaluation first, then:
 
 - Turns each policy `deviation` into one action from a per-key catalog. Per-project deviations (pins, lockfiles) are grouped into one action per key. A deviation without a catalog entry still becomes a manual action, so none is dropped.
-- Turns each WinGet upgrade with a reliable identity into `winget upgrade --id <packageId> --exact`.
+- Turns each WinGet upgrade with a reliable identity into `winget upgrade --id <packageId> --exact`, and each unpinned outdated Chocolatey package into `choco upgrade <packageId> -y`.
 - Emits commands only when they are unambiguous: WinGet upgrades, `flutter upgrade`, `flutter channel <channel>`, `pnpm add -g <cli>@<version>` for global JavaScript CLIs (the policy's global package manager), installing pnpm, and installing the Python Install Manager. Everything else is manual; a manual runtime upgrade says whether WinGet manages the installation, from the WinGet inventory.
 - Sets an upgrade's risk to `medium` when the major version changes, and to `low` otherwise. Catalog entries set the risk of other actions.
 
