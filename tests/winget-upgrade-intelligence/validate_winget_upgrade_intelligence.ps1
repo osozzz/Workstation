@@ -38,7 +38,7 @@ $inventoryText = @(
     $separator,
     (New-WinGetLine -Name 'Git' -Id 'Git.Git' -Version '2.53.0' -Available '2.54.0' -Source 'winget'),
     (New-WinGetLine -Name 'PowerShell' -Id 'Microsoft.PowerShell' -Version '7.5.2' -Available '' -Source 'winget'),
-    (New-WinGetLine -Name 'Long App' -Id 'Vendor.ReallyLongPackage…' -Version '1.0.0' -Available '1.1.0' -Source 'winget')
+    (New-WinGetLine -Name 'Long App' -Id ('Vendor.ReallyLongPackage' + [char]0x2026) -Version '1.0.0' -Available '1.1.0' -Source 'winget')
 ) -join [Environment]::NewLine
 
 $inventoryTable = ConvertFrom-WinGetTable -Text $inventoryText
@@ -57,7 +57,7 @@ $upgradeText = @(
     $header,
     $separator,
     (New-WinGetLine -Name 'Git' -Id 'Git.Git' -Version '2.53.0' -Available '2.54.0' -Source 'winget'),
-    (New-WinGetLine -Name 'Long App' -Id 'Vendor.ReallyLongPackage…' -Version '1.0.0' -Available '1.1.0' -Source 'winget'),
+    (New-WinGetLine -Name 'Long App' -Id ('Vendor.ReallyLongPackage' + [char]0x2026) -Version '1.0.0' -Available '1.1.0' -Source 'winget'),
     '',
     '2 upgrades available.'
 ) -join [Environment]::NewLine
@@ -97,7 +97,7 @@ $failureState = Get-WinGetUpgradeLookupState -CommandStatus failed -Output $fail
 
 Assert-True ($failureState -eq 'command-failed') 'Generic command failures must remain distinct from source failures.'
 
-$spanishHeader = ('{0,-28}{1,-28}{2,-14}{3,-14}{4}' -f 'Nombre', 'Id', 'Versión', 'Disponible', 'Origen').TrimEnd()
+$spanishHeader = ('{0,-28}{1,-28}{2,-14}{3,-14}{4}' -f 'Nombre', 'Id', ('Versi' + [char]0x00F3 + 'n'), 'Disponible', 'Origen').TrimEnd()
 $spanishText = @(
     $spanishHeader,
     ('-' * $spanishHeader.Length),

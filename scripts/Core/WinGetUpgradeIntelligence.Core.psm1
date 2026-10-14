@@ -19,7 +19,7 @@ function Get-WinGetHeaderColumns {
     $definitions = @(
         [pscustomobject]@{ key = 'name';      pattern = '(?i)(?:^|\s)(Name|Nombre)(?=\s|$)' },
         [pscustomobject]@{ key = 'id';        pattern = '(?i)(?:^|\s)Id(?=\s|$)' },
-        [pscustomobject]@{ key = 'version';   pattern = '(?i)(?:^|\s)(Version|Versi[oó]n)(?=\s|$)' },
+        [pscustomobject]@{ key = 'version';   pattern = '(?i)(?:^|\s)(Version|Versi[o\u00F3]n)(?=\s|$)' },
         [pscustomobject]@{ key = 'available'; pattern = '(?i)(?:^|\s)(Available|Disponible)(?=\s|$)' },
         [pscustomobject]@{ key = 'source';    pattern = '(?i)(?:^|\s)(Source|Origen|Fuente)(?=\s|$)' }
     )
@@ -31,7 +31,7 @@ function Get-WinGetHeaderColumns {
             continue
         }
 
-        $valueMatch = [regex]::Match($match.Value, '(?i)(Name|Nombre|Id|Version|Versi[oó]n|Available|Disponible|Source|Origen|Fuente)')
+        $valueMatch = [regex]::Match($match.Value, '(?i)(Name|Nombre|Id|Version|Versi[o\u00F3]n|Available|Disponible|Source|Origen|Fuente)')
         if (-not $valueMatch.Success) {
             continue
         }
@@ -140,7 +140,7 @@ function ConvertFrom-WinGetTable {
 
         $trimmed = $line.Trim()
         if (
-            $trimmed -match '(?i)^(No applicable upgrade found|No se encontr[oó] ninguna actualizaci[oó]n aplicable)' -or
+            $trimmed -match '(?i)^(No applicable upgrade found|No se encontr[o\u00F3] ninguna actualizaci[o\u00F3]n aplicable)' -or
             $trimmed -match '(?i)^\d+\s+(upgrades?|actualizaciones?)\s+(available|disponibles?)' -or
             $trimmed -match '(?i)^(The following packages have|Los siguientes paquetes)'
         ) {
@@ -176,7 +176,7 @@ function Test-WinGetIdentityReliable {
         return $false
     }
 
-    if ($PackageId -match '…|\.\.\.') {
+    if ($PackageId -match '\u2026|\.\.\.') {
         return $false
     }
 
@@ -266,7 +266,7 @@ function Get-WinGetUpgradeLookupState {
     }
 
     if (
-        $clean -match '(?i)(failed when (opening|searching) source|source .* unavailable|source.*not available|data required by the source is missing|0x8a15000f|0x8a15000c|origen .* no est[aá] disponible|error.*origen)'
+        $clean -match '(?i)(failed when (opening|searching) source|source .* unavailable|source.*not available|data required by the source is missing|0x8a15000f|0x8a15000c|origen .* no est[a\u00E1] disponible|error.*origen)'
     ) {
         return 'source-unavailable'
     }
@@ -280,7 +280,7 @@ function Get-WinGetUpgradeLookupState {
     }
 
     if (
-        $clean -match '(?i)(No applicable upgrade found|No se encontr[oó] ninguna actualizaci[oó]n aplicable)'
+        $clean -match '(?i)(No applicable upgrade found|No se encontr[o\u00F3] ninguna actualizaci[o\u00F3]n aplicable)'
     ) {
         return 'current'
     }

@@ -1138,6 +1138,7 @@ jobs:
         run: |
           ./tests/version-intelligence-runtime/validate_version_intelligence_runtime.ps1
           ./tests/javascript-version-intelligence/validate_javascript_version_intelligence.ps1
+          ./tests/winget-upgrade-intelligence/validate_winget_upgrade_intelligence.ps1
 
   # Stable required check for the main ruleset: passes only when every area passes.
   validate:

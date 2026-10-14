@@ -128,6 +128,24 @@ try {
         throw 'The encoding check must flag exactly the read without -Encoding in its controlled sample.'
     }
 
+    # Windows PowerShell 5.1 reads BOM-less scripts as ANSI, so a literal 'ó' in a regex never
+    # matches. Production source stays ASCII; use \uXXXX escapes or [char] values instead.
+    $nonAsciiFindings = foreach ($file in Get-ChildItem -LiteralPath $scriptsPath -Recurse -File -Include '*.ps1', '*.psm1') {
+        $bytes = [IO.File]::ReadAllBytes($file.FullName)
+        $line = 1
+        foreach ($byte in $bytes) {
+            if ($byte -eq 10) { $line++ }
+            if ($byte -gt 127) {
+                '{0}:{1}' -f $file.Name, $line
+                break
+            }
+        }
+    }
+
+    if (@($nonAsciiFindings).Count -gt 0) {
+        throw "Production scripts must be ASCII for Windows PowerShell 5.1: $(@($nonAsciiFindings) -join ', ')"
+    }
+
     # Controlled negative fixture: every construct that has broken Windows PowerShell 5.1
     # in this repository, written the way production code writes them (short type names).
     $fixtureSource = Join-Path $scratchRoot 'fixture-source'

@@ -234,6 +234,9 @@ function Invoke-AuditCommand {
             $job = Start-Job -ScriptBlock {
                 param($Invocation)
 
+                # Jobs inherit the OEM console code page (850 on Spanish Windows); tools such as
+                # WinGet write UTF-8, so decode native output as UTF-8.
+                try { [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false) } catch { }
                 $global:LASTEXITCODE = 0
 
                 try {
@@ -316,6 +319,10 @@ function Invoke-AuditCommand {
         $hadExitCode = Test-Path -LiteralPath Variable:global:LASTEXITCODE
         $previousExitCode = if ($hadExitCode) { $global:LASTEXITCODE } else { $null }
 
+        # Decode native output as UTF-8 for the duration of the call, as in the job path.
+        $previousOutputEncoding = $null
+        try { $previousOutputEncoding = [Console]::OutputEncoding; [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false) } catch { }
+
         try {
             $global:LASTEXITCODE = 0
             $text = (& $target @Arguments 2>&1 | Out-String).Trim()
@@ -340,6 +347,10 @@ function Invoke-AuditCommand {
             }
         }
         finally {
+            if ($null -ne $previousOutputEncoding) {
+                try { [Console]::OutputEncoding = $previousOutputEncoding } catch { }
+            }
+
             if ($hadExitCode) {
                 $global:LASTEXITCODE = $previousExitCode
             }

@@ -542,7 +542,8 @@ function New-CommandComponent {
         [object[]]$AdditionalInstallations = @()
     )
 
-    $result = Invoke-AuditCommand -Command $Command -Arguments $Arguments -TimeoutSeconds 20
+    # Node-based CLIs such as Zoho Catalyst need several seconds just to start; see developer.clis.
+    $result = Invoke-AuditCommand -Command $Command -Arguments $Arguments -TimeoutSeconds 60
 
     if (-not $result.Found) {
         $installations = New-Object System.Collections.Generic.List[object]
