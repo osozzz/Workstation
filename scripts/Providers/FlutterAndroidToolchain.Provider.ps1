@@ -1107,7 +1107,7 @@ if ($installedAndroidTools.Count -gt 0) {
             }
         }
 
-        $component = @($components | Where-Object { $_.componentId -eq $tool.ComponentId } | Select-Object -First 1)[0]
+        $component = $components | Where-Object { $_.componentId -eq $tool.ComponentId } | Select-Object -First 1
         $sourceForIntelligence = if ($null -eq $repository -and $repositoryResult.status -eq 'success') { [pscustomobject]@{ source = 'android-sdk-repository'; checkedAt = $repositoryResult.checkedAt; status = 'malformed' } } else { $repositoryResult }
         $component.versionIntelligence = New-AuditLatestVersionIntelligence -SourceResult $sourceForIntelligence -LatestStable $latest -Message "Latest stable $($tool.Package) in the Android SDK repository."
     }
