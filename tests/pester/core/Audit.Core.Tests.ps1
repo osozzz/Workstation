@@ -82,6 +82,23 @@ Describe 'Audit core command exit-code isolation' {
     }
 }
 
+Describe 'Audit core native output decoding' {
+    # Tools such as WinGet write UTF-8 even when the console uses an OEM code page
+    # (850 on Spanish Windows); 'Versi' + U+00F3 + 'n' must survive both execution paths.
+    It 'decodes UTF-8 output through the <Path> path' -ForEach @(
+        @{ Path = 'direct'; TimeoutSeconds = 0 }
+        @{ Path = 'timeout job'; TimeoutSeconds = 60 }
+    ) {
+        $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $writeUtf8 = '[Console]::OpenStandardOutput().Write([byte[]](0x56,0x65,0x72,0x73,0x69,0xC3,0xB3,0x6E), 0, 8)'
+
+        $result = Invoke-AuditCommand -Command $windowsPowerShell -Arguments @('-NoProfile', '-NonInteractive', '-Command', $writeUtf8) -TimeoutSeconds $TimeoutSeconds
+
+        $result.status | Should -Be 'success'
+        $result.captured | Should -BeExactly ('Versi' + [char]0x00F3 + 'n')
+    }
+}
+
 Describe 'Audit core provider result validation' {
     BeforeAll {
         function New-ValidProviderResult {

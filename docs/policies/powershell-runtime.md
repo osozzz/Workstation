@@ -34,6 +34,7 @@ The Pester suites and the Python validators are test tooling, not production cod
 | .NET Core-only APIs such as `[IO.Path]::GetRelativePath` and `[Convert]::ToHexString` | Replaced with .NET Framework equivalents. The static gate rejects new uses. |
 | `.Count` on a single item fails under StrictMode on 5.1; `@($null)` on an `[object[]]` parameter has one element on 7 and none on 5.1 | Collection-safe idioms (`docs/audit/collection-safety.md`) and null filtering. |
 | `Get-Content` decodes as ANSI on 5.1 and as UTF-8 on 7 | Every text read under `scripts/` passes `-Encoding UTF8`, which reads UTF-8 with or without a BOM on both runtimes; the compatibility gate rejects reads without `-Encoding`. |
+| Native output is decoded with the console code page (OEM 850 on Spanish Windows, also inside timeout jobs); 5.1 reads BOM-less scripts as ANSI | `Invoke-AuditCommand` decodes native output as UTF-8 in both execution paths. Production scripts are ASCII-only (non-ASCII text uses `\uXXXX` regex escapes or `[char]` values), and the compatibility gate enforces this. |
 | Native stderr redirected with `2>&1` becomes a terminating error under `$ErrorActionPreference = 'Stop'` on 5.1 | Production commands run through `Invoke-AuditCommand`, whose module scope keeps the default preference. Test helpers that call `git` directly lower the preference locally and check `$LASTEXITCODE`. |
 
 ## Known limitations

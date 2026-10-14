@@ -155,7 +155,7 @@ else {
         $inventory = Invoke-AuditCommand -Command 'winget' -Arguments @(
             'list',
             '--disable-interactivity'
-        ) -TimeoutSeconds 90
+        ) -TimeoutSeconds 90 -MaximumCaptureLength 1048576
 
         $inventoryEvidenceId = 'winget.inventory'
         $evidence.Add((New-AuditEvidence -EvidenceId $inventoryEvidenceId -Type command -Source 'winget list --disable-interactivity' -ExitCode $inventory.ExitCode -Captured $inventory.Captured -Redacted:$inventory.Redacted -Attributes @{
