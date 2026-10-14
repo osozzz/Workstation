@@ -4,6 +4,15 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 1.1.0 — 2026-10-14
+
+### Added
+
+- A read-only policy evaluation compares an audit report with `config/workstation.policy.json`. It runs through `Run-Evaluate.cmd` or `scripts/Evaluate-Workstation.ps1` and writes `evaluation.json` and `evaluation.txt`. Each policy setting is reported as `compliant`, `deviation`, `unknown`, or `not-evaluable`, with references to the evidence behind it. Output is deterministic and privacy-safe, and it is byte-identical on Windows PowerShell 5.1 and PowerShell 7.
+- The workstation policy has a JSON schema (`schemas/workstation-policy.schema.json`), validated in CI. Audit-safety switches are pinned to their safe values.
+- The evaluation output has a normalized contract (`schemas/policy-evaluation.schema.json`), with fixtures and invariant checks.
+- A Sprint 9 release gate maps the phase-1 criteria of #159 to evidence. The rule catalog is checked against the policy in both directions.
+
 ## 1.0.1 — 2026-10-13
 
 ### Fixed
