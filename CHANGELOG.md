@@ -4,6 +4,25 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 1.3.0 — 2026-10-14
+
+### Added
+
+- Chocolatey is audited (`chocolatey.baseline`): installed and outdated packages. The plan upgrades each unpinned package with `choco upgrade <id> -y`.
+- WSL is audited (`wsl.baseline`): version, distributions (never started), and the latest release from GitHub. The plan runs `wsl --update` when WSL is behind.
+- Microsoft Store apps known to WinGet are planned with `winget upgrade --id <id> --exact --source msstore`.
+- pnpm and every global JavaScript CLI get their latest version from the npm registry. The plan uses `pnpm self-update`, or the manager that installed the CLI (`pnpm add -g` / `npm install -g`).
+- pip and uv (PyPI, GitHub releases) and the Android SDK platform-tools and command-line tools (Google's SDK repository manifest) get latest versions and plan actions.
+- Tools managed by more than one package manager (for example Python through Chocolatey, WinGet and the Python Install Manager) get a manual consolidation action.
+- `python.windowsManager` is evaluated from the WinGet inventory. Manual runtime upgrades say whether WinGet manages the installation.
+- The update plan schema moves to 1.1.0 with the new sources.
+
+### Fixed
+
+- ANSI color sequences are stripped from all command output. Angular CLI 21.2.24 was read as 2.24.
+- A single Chocolatey output row is parsed correctly.
+- The launcher test no longer leaves offline audit reports in the operator's `reports\` folder or overwrites launcher outputs.
+
 ## 1.2.0 — 2026-10-14
 
 ### Added
