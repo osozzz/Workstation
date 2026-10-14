@@ -4,6 +4,14 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 1.0.1 — 2026-10-13
+
+### Fixed
+
+- WinGet inventory and upgrades are parsed on Spanish (and other non-English) Windows. Native command output is decoded as UTF-8 in every execution path, Spanish table patterns now match on Windows PowerShell 5.1, and the full inventory is captured for parsing. Found by the first real baseline: 0 packages became 260 and 0 upgrades became 39.
+- Node-based JavaScript CLIs such as Zoho Catalyst get 60 seconds for version detection.
+- Production scripts are ASCII-only, enforced by the Windows PowerShell 5.1 compatibility gate.
+
 ## 1.0.0 — 2026-10-13
 
 ### Baseline Ready
