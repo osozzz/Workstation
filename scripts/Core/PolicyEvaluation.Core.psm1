@@ -591,7 +591,21 @@ $script:PolicyRules = [ordered]@{
     }
     'android.acceptLicensesDuringAudit' = 'Audit-safety setting enforced by the audit itself; no machine evidence applies.'
     'python.defaultTrack' = 'No latest-version source exists for Python yet.'
-    'python.windowsManager' = 'The report does not identify which installer manages Python.'
+    'python.windowsManager' = {
+        param($Context, $Expected, $Policy)
+        if ($null -eq (Get-PolicyComponent -Context $Context -ComponentId 'python') -or $Expected -ne 'python-install-manager') { return }
+        if (-not $Context.evidence.ContainsKey('winget.inventory.normalized')) {
+            New-PolicyFinding -PolicyKey 'python.windowsManager' -Status unknown -Expected $Expected -ComponentId 'python' -Observed $null -Message 'The WinGet inventory was not collected, so the Python manager is unknown.'
+            return
+        }
+        $packages = @(Get-PolicyValue -InputObject $Context.evidence['winget.inventory.normalized'].evidence -Path 'attributes.packages')
+        $installed = @($packages | Where-Object { $null -ne $_ -and ([string]$_.packageId -eq 'Python.PythonInstallManager' -or [string]$_.name -eq 'Python Install Manager') }).Count -gt 0
+        $status = if ($installed) { 'compliant' } else { 'deviation' }
+        New-PolicyFinding -PolicyKey 'python.windowsManager' -Status $status -Expected $Expected -ComponentId 'python' `
+            -Observed ([pscustomobject][ordered]@{ installManagerInstalled = $installed }) `
+            -Evidence @(Get-PolicyEvidenceReference -Context $Context -EvidenceId 'winget.inventory.normalized') `
+            -Message $(if ($installed) { 'The Python Install Manager is installed.' } else { 'Python is installed without the Python Install Manager.' })
+    }
     'python.projectsMustUseLocalCompatibleVersion' = 'Project-level Python compatibility is not inspected.'
     'python.virtualEnvironments' = 'Virtual environments are not inspected.'
     'python.packageToolsTrack' = 'No latest-version source exists for Python package tools.'

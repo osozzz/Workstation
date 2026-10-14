@@ -360,7 +360,15 @@ function Invoke-AuditCommand {
         }
     }
 
-    $limited = Limit-AuditCapturedText -Text $execution.Captured -MaximumLength $MaximumCaptureLength
+    # CLIs color their output when they think a terminal is attached (Angular CLI turned
+    # "21.2.24" into ESC[36m21.2.24, parsed as 2.24). Strip ANSI CSI/OSC sequences for every caller.
+    $text = $execution.Captured
+    if ($null -ne $text) {
+        $escape = [string][char]27
+        $text = [regex]::Replace([string]$text, $escape + '(\[[0-9;?]*[ -/]*[@-~]|\][^' + [char]7 + $escape + ']*(' + [char]7 + '|' + $escape + '\\))', '')
+    }
+
+    $limited = Limit-AuditCapturedText -Text $text -MaximumLength $MaximumCaptureLength
     $captured = $limited.Text
     $redacted = $false
 
