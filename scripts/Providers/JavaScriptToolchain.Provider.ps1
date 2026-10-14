@@ -1148,9 +1148,9 @@ $javascriptCliSpecs = @(
     @{ Id = 'redis-commander'; Label = 'Redis Commander'; Command = 'redis-commander'; Args = @('--version'); Packages = @('redis-commander') }
 )
 
+# vercel is reported by developer.clis; its global package is inventoried here for version intelligence.
 $knownGlobalPackages = @(
-    $javascriptCliSpecs |
-        ForEach-Object { @($_.Packages) } |
+    @($javascriptCliSpecs | ForEach-Object { @($_.Packages) }) + @('vercel') |
         Select-Object -Unique
 )
 
@@ -1220,6 +1220,39 @@ if ($prismaComponents.Count -eq 1 -and $prismaComponents[0].state -in @('present
         stableUpdateAvailable = $prismaVersionResult.stableUpdateAvailable
         releaseCandidateRequiresExplicitOptIn = $prismaVersionResult.releaseCandidateRequiresExplicitOptIn
         projectPinsOverrideGlobal = $prismaVersionResult.projectPinsOverrideGlobal
+    }))
+}
+
+# Global CLIs without a dedicated policy track: latest version from the npm registry, recorded with the
+# package and the manager that installed it so the update plan can name the exact command.
+$cliComponentIds = @{ 'vercel' = 'vercel-cli' }
+foreach ($spec in $javascriptCliSpecs) { foreach ($package in @($spec.Packages)) { $cliComponentIds[$package] = $spec.Id } }
+$trackedByPolicy = @('@angular/cli', 'typescript', 'prisma')
+$seenGlobalPackages = @{}
+foreach ($item in @($globalPackageInventory.ToArray())) {
+    $packageName = [string](Get-OptionalPropertyValue -InputObject $item -Name 'packageName')
+    if ($packageName -in $trackedByPolicy -or $packageName -notmatch '^[a-z0-9][a-z0-9._-]*$' -or $seenGlobalPackages.ContainsKey($packageName)) { continue }
+    $seenGlobalPackages[$packageName] = $true
+
+    $installed = Get-OptionalPropertyValue -InputObject $item -Name 'version'
+    $installedText = if ($installed -is [string]) { $installed } else { [string](Get-OptionalPropertyValue -InputObject $installed -Name 'normalized') }
+    $installedRecord = if ([string]::IsNullOrWhiteSpace($installedText)) { $null } else { [pscustomobject]@{ raw = $installedText; normalized = $installedText; channel = $null } }
+
+    $evidenceKey = $packageName.Replace('.', '-')
+    $packageSource = Get-JavaScriptVersionSource -Source "npm-registry:$packageName" -Uri "https://registry.npmjs.org/$packageName/latest" -EvidenceId "javascript.version-intelligence.global.$evidenceKey-source" -MaximumResponseBytes 262144
+    $packageResult = Resolve-NpmPackageVersionIntelligence -PackageName $packageName -DecodedSource $packageSource -InstalledVersion $installedRecord
+
+    $componentId = $cliComponentIds[$packageName]
+    $component = @($components | Where-Object { $_.componentId -eq $componentId -and $_.state -in @('present', 'partial') } | Select-Object -First 1)
+    if ($component.Count -eq 1) { $component[0].versionIntelligence = $packageResult.intelligence }
+
+    $evidence.Add((New-AuditEvidence -EvidenceId "javascript.version-intelligence.global.$evidenceKey" -Type derived -Source "$packageName stable-version interpretation" -Captured $null -Attributes @{
+        packageName      = $packageName
+        manager          = [string](Get-OptionalPropertyValue -InputObject $item -Name 'manager')
+        componentId      = $componentId
+        installedVersion = $installedText
+        latestStable     = $(if ($packageResult.latestStable) { $packageResult.latestStable.normalized } else { $null })
+        updateAvailable  = $packageResult.updateAvailable
     }))
 }
 

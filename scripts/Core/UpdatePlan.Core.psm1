@@ -301,6 +301,54 @@ function Get-PlanWslActions {
         -Evidence @([pscustomobject][ordered]@{ providerId = 'wsl.baseline'; componentId = 'wsl'; evidenceId = $null })
 }
 
+function Get-PlanNpmRegistryActions {
+    <#
+    .SYNOPSIS
+    pnpm itself and global CLIs without a policy track, from the npm-registry evidence of javascript.toolchain.
+    npm is not planned: the policy treats it as the copy bundled with Node.js, updated with Node.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$Report)
+
+    $provider = @($Report.providers | Where-Object { $_.providerId -eq 'javascript.toolchain' }) | Select-Object -First 1
+    if ($null -eq $provider) { return }
+
+    foreach ($item in @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence')) {
+        if ($null -eq $item) { continue }
+        $attributes = Get-ComparisonOptionalPropertyValue -InputObject $item -Name 'attributes'
+        if ((Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'updateAvailable') -ne $true) { continue }
+        $current = [string](Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'installedVersion')
+        $target = [string](Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'latestStable')
+        $reference = [pscustomobject][ordered]@{ providerId = 'javascript.toolchain'; componentId = $null; evidenceId = [string]$item.evidenceId }
+
+        if ($item.evidenceId -eq 'javascript.version-intelligence.pnpm') {
+            $reference.componentId = 'pnpm'
+            New-PlanAction -ActionId 'pnpm-self-update:pnpm' -Kind upgrade -SourceType npm-registry -PolicyKey $null -ComponentId 'pnpm' -SubjectId 'npm:pnpm' `
+                -Title 'Upgrade pnpm' -CurrentVersion $current -TargetVersion $target -Command 'pnpm self-update' `
+                -Risk (Get-PlanUpgradeRisk -Current $current -Target $target) -Reversible $false -Message 'The npm registry reports a newer pnpm.' -Evidence @($reference)
+            continue
+        }
+
+        if ([string]$item.evidenceId -notlike 'javascript.version-intelligence.global.*') { continue }
+        $packageName = [string](Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'packageName')
+        $manager = [string](Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'manager')
+        $componentId = [string](Get-ComparisonOptionalPropertyValue -InputObject $attributes -Name 'componentId')
+        if ($packageName -notmatch '^[a-z0-9][a-z0-9._-]*$' -or [string]::IsNullOrWhiteSpace($target)) { continue }
+
+        # Upgrade with the manager that installed the package, so it is not duplicated under the other one.
+        $command = switch ($manager) {
+            'pnpm' { "pnpm add -g $packageName@$target" }
+            'npm' { "npm install -g $packageName@$target" }
+            default { $null }
+        }
+        $reference.componentId = $(if ([string]::IsNullOrEmpty($componentId)) { $null } else { $componentId })
+        New-PlanAction -ActionId "npm-global-upgrade:$packageName" -Kind upgrade -SourceType npm-registry -PolicyKey $null -ComponentId $componentId -SubjectId "npm:$packageName" `
+            -Title "Upgrade the $packageName CLI" -CurrentVersion $current -TargetVersion $target -Command $command `
+            -Risk (Get-PlanUpgradeRisk -Current $current -Target $target) -Reversible $false `
+            -Message "The npm registry reports a newer $packageName, installed globally with $(if ($manager) { $manager } else { 'an unknown package manager' })." -Evidence @($reference)
+    }
+}
+
 function New-WorkstationUpdatePlan {
     <#
     .SYNOPSIS
@@ -316,7 +364,7 @@ function New-WorkstationUpdatePlan {
     $evaluation = New-WorkstationPolicyEvaluation -Report $Report -Policy $Policy -PolicyDigest $PolicyDigest
 
     $actions = [System.Collections.Generic.List[object]]::new()
-    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report)) {
+    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report)) {
         if ($null -ne $action) { $actions.Add($action) }
     }
 
