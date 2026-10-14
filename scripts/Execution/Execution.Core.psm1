@@ -69,7 +69,9 @@ function ConvertTo-ExecutionCall {
         $tracked = $sourceType -eq 'policy' -and $package -in $script:PolicyTrackedPackages
         if (-not $tracked -and $subjectId -cne "npm:$package") { throw "The package '$package' is neither policy-tracked nor the action subject '$subjectId'." }
         if ($version -cne $target) { throw "The version '$version' is not the action's target version '$target'." }
-        $arguments = if ($match.Groups['manager'].Value -eq 'pnpm add') { @('add', '-g', "$package@$version") } else { @('install', '-g', "$package@$version") }
+        $verb = 'install'
+        if ($match.Groups['manager'].Value -eq 'pnpm add') { $verb = 'add' }
+        $arguments = @($verb, '-g', "$package@$version")
         return & $call ($match.Groups['manager'].Value.Split(' ')[0]) $arguments
     }
 
