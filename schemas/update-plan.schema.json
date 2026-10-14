@@ -147,7 +147,8 @@
                 "chocolatey",
                 "wsl",
                 "npm-registry",
-                "toolchain"
+                "toolchain",
+                "consolidation"
               ]
             },
             "policyKey": {
