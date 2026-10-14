@@ -4,6 +4,22 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 1.2.0 — 2026-10-14
+
+### Added
+
+- A read-only update plan lists everything on a PC that can be updated. It runs through `Run-Plan.cmd` or `scripts/Plan-WorkstationUpdate.ps1` and writes `update-plan.json` and `update-plan.txt`. Policy deviations and every reliable WinGet upgrade become ordered actions, from low to high risk. Each action has the exact command that would run (or is marked manual), its risk, and whether it can be undone. Nothing is executed.
+- The update plan has a normalized contract (`schemas/update-plan.schema.json`), with fixtures and invariant checks.
+- A Sprint 10 release gate maps the phase-2 criteria of #159 to evidence.
+
+### Changed
+
+- The README and the runbook now center on keeping one PC up to date: audit, evaluate, plan. Comparing two PCs is an optional extra.
+
+### Fixed
+
+- Evaluation and plan JSON are byte-identical on Windows PowerShell 5.1 and PowerShell 7. Version 5.1 used to escape `<`, `>`, `&` and `'`.
+
 ## 1.1.0 — 2026-10-14
 
 ### Added
