@@ -118,6 +118,13 @@ jobs:
         run: |
           python ./tests/policy/validate_policy_evaluation_contract.py
 
+      - name: Validate generated policy evaluation
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'policy-evaluation'
+          ./scripts/Evaluate-Workstation.ps1 -Report ./tests/fixtures/reports/mixed-provider-report.json -OutputDirectory $out | Out-Null
+          python ./tests/policy/validate_policy_evaluation_contract.py (Join-Path $out 'evaluation.json')
+
       - name: Validate schema hardening fixture matrix
         shell: pwsh
         run: |

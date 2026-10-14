@@ -38,6 +38,7 @@ The read-only audit covers Windows and PowerShell, WinGet applications and updat
 ```powershell
 .\Run-Audit.cmd                                   # audit this PC; reports go to .\reports (ignored by Git)
 .\Run-Compare.cmd <reference.json> <target.json>  # compare two audit reports
+.\Run-Evaluate.cmd <report.json>                  # evaluate a report against the workstation policy
 ```
 
 Optional project and Git discovery needs `config\workstation.local.json`; see `config/README.md`. The step-by-step procedure for auditing PC #1 and comparing PC #2 is in `docs/audit/running-the-audit.md`.

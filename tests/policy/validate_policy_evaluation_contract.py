@@ -66,7 +66,9 @@ def main() -> int:
     Draft202012Validator.check_schema(schema)
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
 
-    fixtures = sorted(FIXTURE_DIR.glob("*.json"))
+    # Explicit paths validate generated evaluations (schema and invariants only).
+    explicit = [Path(arg) for arg in sys.argv[1:]]
+    fixtures = explicit or sorted(FIXTURE_DIR.glob("*.json"))
     if not fixtures:
         fail("No policy evaluation fixtures found.")
 
@@ -82,7 +84,10 @@ def main() -> int:
             fail(f"{path.name}: " + "; ".join(problems))
         seen_statuses.update(f["status"] for f in evaluation["findings"])
         base = base or evaluation
-        print(f"Valid evaluation fixture: {path.name}")
+        print(f"Valid evaluation: {path.name}")
+
+    if explicit:
+        return 0
 
     if seen_statuses != {"compliant", "deviation", "unknown", "not-evaluable"}:
         fail(f"Fixtures must cover every finding status; found {sorted(seen_statuses)}")

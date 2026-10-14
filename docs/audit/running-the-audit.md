@@ -70,4 +70,12 @@ Comparison output is the shareable form. It excludes absolute paths, commit IDs,
 - `unavailable`/`unknown` mean one side could not determine a value. They do not mean the PCs differ.
 - The comparison never decides which PC is correct and never suggests changes. Turn the findings you want to act on into issues; workstation changes come after v1.0.0.
 
+## 7. Evaluate a report against the policy
+
+```powershell
+.\Run-Evaluate.cmd reports\PC1-<timestamp>.json
+```
+
+This compares one report with the declared standard in `config\workstation.policy.json` and writes `reports\evaluation\evaluation.json` and `evaluation.txt`. Each policy setting becomes `compliant`, `deviation`, `unknown` (evidence missing, for example in an offline audit), or `not-evaluable` (the audit never collects evidence for it). Like comparison output, evaluation output is shareable. It does not change the machine; deviations are input for issues. The rules are described in `../architecture/policy-evaluation-contract.md`.
+
 Coverage by category and the known limitations are listed in `../architecture/audit-system-roadmap.md`.

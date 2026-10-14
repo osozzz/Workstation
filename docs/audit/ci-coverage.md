@@ -13,10 +13,10 @@ Pinned PowerShell modules are installed through `.github/scripts/Install-PinnedM
 | Check | What it runs | Documented in |
 |---|---|---|
 | `static-analysis` | PSScriptAnalyzer gate, Windows PowerShell 5.1 compatibility gate, PowerShell syntax, the Sprint 7 hardening gate (acceptance coverage, check integrity, documentation index, no workstation mutation), the Sprint 8 Baseline Ready gate, JSON configuration | `powershell-static-analysis.md`, `../policies/powershell-runtime.md`, `tests/sprint7-integration/README.md`, `tests/sprint8-integration/README.md` |
-| `pester` | Pester core, orchestrator contract, failure paths, collection safety (both hosts), provider tests, and privacy (both hosts) | `pester-testing.md`, `failure-path-testing.md`, `collection-safety.md`, `privacy-testing.md` |
-| `contracts` | Normalized schemas, workstation policy schema, policy evaluation contract, hardening fixture matrix, per-provider fixtures, Sprint 2 fixtures | `schema-fixture-hardening.md`, `../architecture/audit-provider-contract.md` |
+| `pester` | Pester core, orchestrator contract, failure paths, collection safety (both hosts), provider tests, policy evaluation rules, and privacy (both hosts) | `pester-testing.md`, `failure-path-testing.md`, `collection-safety.md`, `privacy-testing.md` |
+| `contracts` | Normalized schemas, workstation policy schema, policy evaluation contract and generated evaluation, hardening fixture matrix, per-provider fixtures, Sprint 2 fixtures | `schema-fixture-hardening.md`, `../architecture/audit-provider-contract.md` |
 | `providers` | PATH/environment models, precedence, project discovery, Git health and hygiene, version intelligence, and the Sprint 3, 4, and 5 gates | `../architecture/version-intelligence-runtime.md` |
-| `comparison` | Comparison contract, every comparison category, report outputs, the Sprint 6 gate | `../architecture/comparison-contract.md` |
+| `comparison` | Comparison contract, every comparison category, report outputs, the audit, comparison and evaluation launchers, the Sprint 6 gate | `../architecture/comparison-contract.md` |
 | `integration` | Real audit smoke tests on the runner, plus the controlled Sprint 4 integration audit validated by the Sprint 2, 3, and 4 suites | `../architecture/audit-provider-contract.md` |
 | `windows-powershell` | Project/Git discovery and version-intelligence validators under `shell: powershell` | `../policies/powershell-runtime.md` |
 
