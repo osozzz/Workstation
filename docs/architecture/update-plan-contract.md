@@ -7,7 +7,7 @@ Planning is read-only. A plan describes commands; it never runs them. Applying a
 ## Sources
 
 - **`policy`**: a `deviation` from the policy evaluation (`policy-evaluation-contract.md`), for example Node behind its LTS track or missing PATH entries. `source.policyKey` names the setting.
-- **`winget`**: an upgrade that WinGet reports for an installed package. `subjectId` is `winget:<packageId>`.
+- **`winget`**: an upgrade that WinGet reports for an installed package, from the `winget` or `msstore` (Microsoft Store) source. `subjectId` is `winget:<packageId>`. Store upgrades add `--source msstore` to the command, because Store IDs are only unambiguous within that source. Store apps that are not in the WinGet msstore catalog are not visible to WinGet and are updated by the Store itself.
 - **`wsl`**: WSL is behind its latest stable release. The command is `wsl --update`. Running distributions are shut down while WSL updates.
 - **`chocolatey`**: an outdated Chocolatey package that is not pinned. `subjectId` is `choco:<packageId>`, and the command is `choco upgrade <packageId> -y`, which needs an elevated shell. Pinned packages are left alone.
 

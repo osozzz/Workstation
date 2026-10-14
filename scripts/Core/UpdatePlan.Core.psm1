@@ -238,10 +238,19 @@ function Get-PlanWinGetActions {
         $name = [string](Get-ComparisonOptionalPropertyValue -InputObject $upgrade -Name 'name')
         if ([string]::IsNullOrWhiteSpace($name)) { $name = $packageId }
 
+        # Microsoft Store IDs (for example XP89DCGQ3K6VLD) are only unambiguous within the msstore source.
+        $command = "winget upgrade --id $packageId --exact"
+        $message = 'WinGet reports a newer version.'
+        if ([string](Get-ComparisonOptionalPropertyValue -InputObject $upgrade -Name 'source') -eq 'msstore') {
+            $command += ' --source msstore'
+            $name += ' (Microsoft Store)'
+            $message = 'The Microsoft Store reports a newer version through WinGet.'
+        }
+
         New-PlanAction -ActionId $actionId -Kind upgrade -SourceType winget -PolicyKey $null -ComponentId $null `
             -SubjectId "winget:$packageId" -Title "Upgrade $name" -CurrentVersion $current -TargetVersion $target `
-            -Command "winget upgrade --id $packageId --exact" -Risk (Get-PlanUpgradeRisk -Current $current -Target $target) `
-            -Reversible $false -Message 'WinGet reports a newer version.' -Evidence @($reference)
+            -Command $command -Risk (Get-PlanUpgradeRisk -Current $current -Target $target) `
+            -Reversible $false -Message $message -Evidence @($reference)
     }
 }
 
