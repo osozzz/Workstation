@@ -4,9 +4,9 @@ A Windows developer-workstation toolkit that keeps a PC up to date with a declar
 
 ## Current phase
 
-**v1.1.0 — Policy Evaluation**
+**v2.0.0 — Controlled Updates**
 
-`v1.1.0 — Policy Evaluation` is published. The read-only audit is validated on real hardware, and each audit report can be evaluated against `config/workstation.policy.json`. Next comes an update plan that lists everything on the PC that can be updated, then controlled execution of the updates you approve (#159).
+The toolkit audits a PC, evaluates it against `config/workstation.policy.json`, plans every available update (WinGet, Microsoft Store, Chocolatey, WSL, npm-registry CLIs, Python and Android tools, policy deviations), and applies the updates you select with `Run-Update.cmd`, confirming each one (`docs/policies/update-execution-safety.md`).
 
 ## Repository model
 
@@ -60,7 +60,7 @@ Optional project and Git discovery needs `config\workstation.local.json`; see `c
 - `v1.1.0` — Policy Evaluation
 - `v1.2.0` — Update Plan
 - `v1.3.0` — Update Coverage
-- Next — Controlled update execution (#159)
+- `v2.0.0` — Controlled Updates
 
 ## Clone
 

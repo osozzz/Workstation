@@ -4,6 +4,22 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 2.0.0 — 2026-10-14
+
+The toolkit can now apply updates. Auditing, evaluating, planning and comparing are still read-only. Only the new update executor changes a PC, under `docs/policies/update-execution-safety.md`.
+
+### Added
+
+- `Run-Update.cmd` / `scripts/Update-Workstation.ps1` applies selected update-plan actions. It previews by default. With `-Apply` it asks before every action, stops at the first failure, and writes a log to `reports/update-log/`.
+- Only allow-listed commands run. Each one is rebuilt from validated plan fields (package equals the action subject, version equals the target) and never passed to a shell.
+- Plans older than 24 hours, or built from a different policy, are refused.
+- Manual and high-risk actions never run. Chocolatey actions run only from an elevated shell; the executor never elevates itself.
+- A Sprint 11 release gate. The Sprint 7 no-mutation gate exempts only `scripts/Execution` and fails if anything other than `Update-Workstation.ps1` loads it.
+
+### Changed
+
+- **Breaking:** the toolkit is no longer read-only as a whole. Every workstation change goes through `Run-Update.cmd` with an explicit `-Apply` and a confirmation per action.
+
 ## 1.3.0 — 2026-10-14
 
 ### Added

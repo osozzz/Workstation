@@ -27,6 +27,6 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 
 ## Current phase
 
-`v1.1.0 — Policy Evaluation` is complete and published. Next is the update plan: everything on a PC that can be updated, as a reviewable list (#159).
+`v2.0.0 — Controlled Updates` is the current release: audit, evaluate, plan, and apply selected updates with confirmation (`policies/update-execution-safety.md`).
 
 Real workstation baselines are authoritative from v1.0.1 onward; changing a workstation remains outside the read-only audit.
