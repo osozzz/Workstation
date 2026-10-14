@@ -35,6 +35,23 @@ foreach ($launcher in @('Run-Audit.cmd', 'Run-Compare.cmd', 'Run-Evaluate.cmd', 
 $reportsRoot = Join-Path $root 'reports'
 $existed = Test-Path -LiteralPath $reportsRoot
 
+# The validation writes into the operator's reports folder (default paths are what it tests), so
+# it moves existing launcher outputs aside and restores them afterwards, and it deletes the offline
+# audit reports it creates so they are never mistaken for real audits.
+$launcherFolders = @('comparison', 'evaluation', 'update-plan')
+$backupRoot = Join-Path ([IO.Path]::GetTempPath()) ('workstation-launchers-' + [guid]::NewGuid().ToString('N'))
+$filesBefore = @()
+if ($existed) {
+    $filesBefore = @(Get-ChildItem -LiteralPath $reportsRoot -File | ForEach-Object Name)
+    New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
+    foreach ($folder in $launcherFolders) {
+        $path = Join-Path $reportsRoot $folder
+        if (Test-Path -LiteralPath $path) {
+            Move-Item -LiteralPath $path -Destination (Join-Path $backupRoot $folder)
+        }
+    }
+}
+
 try {
     # Run-Audit.cmd passes no paths, so the audit must work with its default paths on the
     # launcher host. (Run-Audit.cmd itself is not run: it queries live sources online.)
@@ -99,10 +116,24 @@ try {
     }
 }
 finally {
-    # Remove the reports folder only when this validation created it; an operator's existing
-    # reports are never touched.
-    if (-not $existed -and (Test-Path -LiteralPath $reportsRoot)) {
-        Remove-Item -LiteralPath $reportsRoot -Recurse -Force
+    if (-not $existed) {
+        if (Test-Path -LiteralPath $reportsRoot) {
+            Remove-Item -LiteralPath $reportsRoot -Recurse -Force
+        }
+    }
+    else {
+        Get-ChildItem -LiteralPath $reportsRoot -File | Where-Object { $_.Name -notin $filesBefore } | Remove-Item -Force
+        foreach ($folder in $launcherFolders) {
+            $path = Join-Path $reportsRoot $folder
+            if (Test-Path -LiteralPath $path) {
+                Remove-Item -LiteralPath $path -Recurse -Force
+            }
+            $backup = Join-Path $backupRoot $folder
+            if (Test-Path -LiteralPath $backup) {
+                Move-Item -LiteralPath $backup -Destination $path
+            }
+        }
+        Remove-Item -LiteralPath $backupRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 

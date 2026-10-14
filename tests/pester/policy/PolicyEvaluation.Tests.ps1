@@ -178,6 +178,20 @@ Describe 'Component rules' {
         (Get-TestFinding (Invoke-TestEvaluation $report) 'flutter.channel').status | Should -Be 'deviation'
     }
 
+    It 'checks the Python Install Manager in the WinGet inventory (<Name>)' -ForEach @(
+        @{ Name = 'installed'; Packages = @(@{ name = 'Python Install Manager'; packageId = 'Python.PythonInstallManager' }); Status = 'compliant' }
+        @{ Name = 'missing'; Packages = @(@{ name = 'Git'; packageId = 'Git.Git' }); Status = 'deviation' }
+    ) {
+        $inventory = [pscustomobject]@{ packages = @($Packages | ForEach-Object { [pscustomobject]$_ }) }
+        $report = New-TestReport -Components @(New-TestComponent -Id python -Version '3.14.2') -Evidence @{ 'winget.inventory.normalized' = $inventory }
+        (Get-TestFinding (Invoke-TestEvaluation $report) 'python.windowsManager').status | Should -Be $Status
+    }
+
+    It 'leaves the Python manager unknown without a WinGet inventory' {
+        $report = New-TestReport -Components @(New-TestComponent -Id python -Version '3.14.2')
+        (Get-TestFinding (Invoke-TestEvaluation $report) 'python.windowsManager').status | Should -Be 'unknown'
+    }
+
     It 'prefers ANDROID_HOME when an Android SDK is installed' {
         $scope = { param($Configured) [pscustomobject]@{ scopes = @([pscustomobject]@{ scope = 'user'; isConfigured = $Configured }) } }
         $report = New-TestReport -Components @(New-TestComponent -Id android-sdk -Version '1') -Evidence @{
@@ -369,6 +383,24 @@ Describe 'Update plan' {
         $text = Get-Content -LiteralPath $paths.structuredPath -Encoding UTF8 -Raw
         $text | Should -Not -Match 'someone'
         Get-Content -LiteralPath $paths.humanReadablePath -Encoding UTF8 -Raw | Should -Match 'Nothing has been run'
+    }
+
+    It 'says which installer owns a runtime with a manual upgrade (<Source>)' -ForEach @(
+        @{ Source = 'winget'; PackageId = 'OpenJS.NodeJS.LTS'; Expected = 'WinGet package OpenJS.NodeJS.LTS manages' }
+        @{ Source = $null; PackageId = 'ARP\Machine\X64\{node}'; Expected = 'not made with WinGet' }
+    ) {
+        $inventory = [pscustomobject]@{ packages = @([pscustomobject]@{ name = 'Node.js'; packageId = $PackageId; installedVersion = '24.13.0'; source = $Source }) }
+        $provider = [pscustomobject]@{
+            providerId = 'winget.baseline'; status = 'success'; components = @(); warnings = @()
+            evidence   = @([pscustomobject]@{ evidenceId = 'winget.inventory.normalized'; attributes = $inventory })
+        }
+        $report = New-TestReport -ExtraProviders @($provider) -Components @(
+            New-TestComponent -Id node -Version '24.13.0' -Intelligence $script:nodeLts
+            New-TestComponent -Id nvm-windows -Version '1.2.2'
+        )
+        $node = @((Invoke-TestPlan $report).actions | Where-Object actionId -eq 'policy:node.defaultTrack')[0]
+        $node.message | Should -Match ([regex]::Escape($Expected))
+        $node.message | Should -Not -Match 'ARP'
     }
 
     It 'is empty for a compliant report' {

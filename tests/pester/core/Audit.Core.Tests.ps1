@@ -97,6 +97,20 @@ Describe 'Audit core native output decoding' {
         $result.status | Should -Be 'success'
         $result.captured | Should -BeExactly ('Versi' + [char]0x00F3 + 'n')
     }
+
+    # Angular CLI colored its version line (ESC[36m21.2.24) and the parser read 2.24.
+    It 'strips ANSI color sequences through the <Path> path' -ForEach @(
+        @{ Path = 'direct'; TimeoutSeconds = 0 }
+        @{ Path = 'timeout job'; TimeoutSeconds = 60 }
+    ) {
+        $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $writeColored = '$e = [char]27; Write-Output ("$e[1mAngular CLI$e[22m: $e[36m21.2.24$e[39m")'
+
+        $result = Invoke-AuditCommand -Command $windowsPowerShell -Arguments @('-NoProfile', '-NonInteractive', '-Command', $writeColored) -TimeoutSeconds $TimeoutSeconds
+
+        $result.status | Should -Be 'success'
+        $result.captured | Should -BeExactly 'Angular CLI: 21.2.24'
+    }
 }
 
 Describe 'Audit core provider result validation' {

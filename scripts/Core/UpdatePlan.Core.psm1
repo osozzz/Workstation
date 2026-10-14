@@ -29,6 +29,7 @@ $script:PolicyActions = @{
     'versioning.prereleasePolicy'      = @{ kind = 'upgrade'; risk = 'medium'; reversible = $false; title = 'Move a prerelease to a stable release' }
     'java.defaultTrack'                = @{ kind = 'upgrade'; risk = 'medium'; reversible = $false; title = 'Upgrade the Java runtime' }
     'android.preferAndroidHome'        = @{ kind = 'configure'; risk = 'low'; reversible = $true; title = 'Set ANDROID_HOME to the Android SDK folder' }
+    'python.windowsManager'            = @{ kind = 'install'; risk = 'low'; reversible = $true; title = 'Install the Python Install Manager'; command = { 'winget install --id Python.PythonInstallManager --exact' } }
     'rust.manager'                     = @{ kind = 'install'; risk = 'high'; reversible = $false; title = 'Migrate Rust to rustup' }
 }
 
@@ -109,9 +110,50 @@ function Get-PlanFindingVersions {
     return [pscustomobject]@{ current = $(if ($current -is [string]) { $current } else { $null }); target = $target }
 }
 
+# WinGet inventory display names of runtimes whose upgrades are manual; used to tell the operator
+# which installer owns the installation.
+$script:InstallerDisplayNames = @{
+    'node'   = 'Node.js'
+    'java'   = 'Java(TM) SE Development Kit'
+    'python' = 'Python '
+}
+
+function Get-PlanInstallerNote {
+    <#
+    .SYNOPSIS
+    Says whether WinGet manages a runtime, from the WinGet inventory; $null when that cannot be told.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$Report,
+        [AllowNull()][string]$ComponentId,
+        [AllowNull()][string]$Version
+    )
+
+    if ([string]::IsNullOrEmpty($ComponentId) -or [string]::IsNullOrEmpty($Version) -or -not $script:InstallerDisplayNames.ContainsKey($ComponentId)) { return $null }
+    $provider = @($Report.providers | Where-Object { $_.providerId -eq 'winget.baseline' }) | Select-Object -First 1
+    if ($null -eq $provider) { return $null }
+    $inventory = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq 'winget.inventory.normalized' } | Select-Object -First 1
+    if ($null -eq $inventory) { return $null }
+
+    $prefix = $script:InstallerDisplayNames[$ComponentId]
+    $package = @(Get-ComparisonOptionalPropertyValue -InputObject $inventory.attributes -Name 'packages') | Where-Object {
+        $null -ne $_ -and ([string]$_.name).StartsWith($prefix, [StringComparison]::Ordinal) -and ([string]$_.installedVersion).StartsWith($Version, [StringComparison]::Ordinal)
+    } | Sort-Object { if ([string]$_.source -eq 'winget') { 0 } else { 1 } } | Select-Object -First 1
+
+    if ($null -eq $package) { return $null }
+    if ([string]$package.source -eq 'winget') {
+        return "WinGet package $($package.packageId) manages this installation; apply its WinGet upgrade when one is listed."
+    }
+    return 'This installation was not made with WinGet (vendor installer), so WinGet cannot upgrade it; use the vendor installer or the version manager the policy names.'
+}
+
 function Get-PlanPolicyActions {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][psobject]$Evaluation)
+    param(
+        [Parameter(Mandatory)][psobject]$Evaluation,
+        [Parameter(Mandatory)][psobject]$Report
+    )
 
     $deviations = @($Evaluation.findings | Where-Object status -eq 'deviation')
     foreach ($group in @($deviations | Group-Object policyKey)) {
@@ -159,6 +201,11 @@ function Get-PlanPolicyActions {
             }
             elseif (@($group.Group).Count -gt 1 -and -not [string]::IsNullOrEmpty($componentId)) {
                 $actionId = "policy:$policyKey.$componentId"
+            }
+
+            if ($null -eq $command -and $spec.kind -eq 'upgrade') {
+                $note = Get-PlanInstallerNote -Report $Report -ComponentId $componentId -Version $versions.current
+                if ($null -ne $note) { $message = "$message $note" }
             }
 
             New-PlanAction -ActionId $actionId -Kind $spec.kind -SourceType policy -PolicyKey $policyKey `
@@ -213,7 +260,7 @@ function New-WorkstationUpdatePlan {
     $evaluation = New-WorkstationPolicyEvaluation -Report $Report -Policy $Policy -PolicyDigest $PolicyDigest
 
     $actions = [System.Collections.Generic.List[object]]::new()
-    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation) + @(Get-PlanWinGetActions -Report $Report)) {
+    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report)) {
         if ($null -ne $action) { $actions.Add($action) }
     }
 
