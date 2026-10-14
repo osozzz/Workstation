@@ -24,6 +24,6 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 
 ## Current phase
 
-The repository is in **v1.0.0 — Baseline Ready**. `v0.9.0 — Audit Hardening` is complete and published.
+The repository is in **v1.1.0 — Policy Evaluation**. `v1.0.1 — Baseline Ready` is complete and published.
 
-No real workstation baseline is considered authoritative until the complete read-only audit system reaches **v1.0.0 — Baseline Ready**.
+Real workstation baselines are authoritative from v1.0.1 onward; changing a workstation remains outside the read-only audit.
