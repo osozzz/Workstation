@@ -144,7 +144,8 @@
               "enum": [
                 "policy",
                 "winget",
-                "chocolatey"
+                "chocolatey",
+                "wsl"
               ]
             },
             "policyKey": {

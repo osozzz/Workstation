@@ -1,0 +1,122 @@
+{
+  "providerId": "wsl.baseline",
+  "category": "host",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "wsl",
+      "name": "Windows Subsystem for Linux",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "WSL version: 2.5.7.0",
+        "normalized": "2.5.7.0",
+        "channel": ""
+      },
+      "discoveredVersions": [
+        {
+          "raw": "WSL version: 2.5.7.0",
+          "normalized": "2.5.7.0",
+          "channel": ""
+        }
+      ],
+      "installations": [],
+      "commandResolutions": [
+        {
+          "command": "wsl",
+          "path": "C:\\Windows\\System32\\wsl.exe",
+          "commandType": "Application",
+          "version": {
+            "raw": "0.0.0.0",
+            "normalized": "0.0.0.0",
+            "channel": ""
+          },
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "known",
+        "latestStable": {
+          "raw": "3.0.3",
+          "normalized": "3.0.3",
+          "channel": "stable"
+        },
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": "github-releases:microsoft/WSL",
+        "checkedAt": "2026-09-21T00:00:00.0000000+00:00",
+        "message": "Latest stable WSL release; wsl --update installs it."
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "wsl.version",
+      "type": "command",
+      "source": "wsl --version",
+      "exitCode": 0,
+      "captured": "WSL version: 2.5.7.0",
+      "redacted": false,
+      "attributes": {
+        "truncated": false,
+        "status": "success",
+        "timedOut": false
+      }
+    },
+    {
+      "evidenceId": "wsl.distributions",
+      "type": "command",
+      "source": "wsl --list --verbose",
+      "exitCode": 0,
+      "captured": "NAME      STATE      VERSION\r\n* Ubuntu    Stopped    2",
+      "redacted": false,
+      "attributes": {
+        "truncated": false,
+        "status": "success",
+        "timedOut": false
+      }
+    },
+    {
+      "evidenceId": "wsl.distributions.normalized",
+      "type": "derived",
+      "source": "normalized wsl --list --verbose output",
+      "exitCode": null,
+      "captured": "",
+      "redacted": false,
+      "attributes": {
+        "distributionCount": 1,
+        "status": "known",
+        "distributions": [
+          {
+            "name": "Ubuntu",
+            "default": true,
+            "state": "Stopped",
+            "wslVersion": 2
+          }
+        ]
+      }
+    },
+    {
+      "evidenceId": "wsl.version-intelligence.source",
+      "type": "api",
+      "source": "github-releases:microsoft/WSL",
+      "exitCode": null,
+      "captured": "",
+      "redacted": false,
+      "attributes": {
+        "sourceStatus": "success",
+        "checkedAt": "2026-09-21T00:00:00.0000000+00:00",
+        "networkAttempted": true,
+        "statusCode": 200,
+        "contentType": "application/json",
+        "responseBytes": 20,
+        "truncated": false,
+        "failureKind": ""
+      }
+    }
+  ]
+}

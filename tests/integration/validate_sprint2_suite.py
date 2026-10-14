@@ -41,6 +41,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "environment.baseline",
     "winget.baseline",
     "chocolatey.baseline",
+    "wsl.baseline",
     "projects.local",
     "projects.javascript-web",
     "projects.non-javascript",

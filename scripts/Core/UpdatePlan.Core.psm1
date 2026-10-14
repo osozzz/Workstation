@@ -271,6 +271,27 @@ function Get-PlanChocolateyActions {
     }
 }
 
+function Get-PlanWslActions {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$Report)
+
+    $provider = @($Report.providers | Where-Object { $_.providerId -eq 'wsl.baseline' }) | Select-Object -First 1
+    if ($null -eq $provider) { return }
+    $wsl = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'components') | Where-Object { $null -ne $_ -and $_.componentId -eq 'wsl' -and $_.state -in @('present', 'partial') } | Select-Object -First 1
+    if ($null -eq $wsl) { return }
+
+    $current = [string](Get-ComparisonOptionalPropertyValue -InputObject (Get-ComparisonOptionalPropertyValue -InputObject $wsl -Name 'activeVersion') -Name 'normalized')
+    $intelligence = Get-ComparisonOptionalPropertyValue -InputObject $wsl -Name 'versionIntelligence'
+    $target = [string](Get-ComparisonOptionalPropertyValue -InputObject (Get-ComparisonOptionalPropertyValue -InputObject $intelligence -Name 'latestStable') -Name 'normalized')
+    if ([string]::IsNullOrWhiteSpace($current) -or [string]::IsNullOrWhiteSpace($target) -or (Compare-PolicyVersion -Left $current -Right $target) -ge 0) { return }
+
+    New-PlanAction -ActionId 'wsl-update:wsl' -Kind upgrade -SourceType wsl -PolicyKey $null -ComponentId 'wsl' -SubjectId $null `
+        -Title 'Update the Windows Subsystem for Linux' -CurrentVersion $current -TargetVersion $target -Command 'wsl --update' `
+        -Risk (Get-PlanUpgradeRisk -Current $current -Target $target) -Reversible $false `
+        -Message 'A newer WSL release is available. Running distributions are shut down while WSL updates.' `
+        -Evidence @([pscustomobject][ordered]@{ providerId = 'wsl.baseline'; componentId = 'wsl'; evidenceId = $null })
+}
+
 function New-WorkstationUpdatePlan {
     <#
     .SYNOPSIS
@@ -286,7 +307,7 @@ function New-WorkstationUpdatePlan {
     $evaluation = New-WorkstationPolicyEvaluation -Report $Report -Policy $Policy -PolicyDigest $PolicyDigest
 
     $actions = [System.Collections.Generic.List[object]]::new()
-    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report)) {
+    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report)) {
         if ($null -ne $action) { $actions.Add($action) }
     }
 
