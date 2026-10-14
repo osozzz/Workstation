@@ -1067,6 +1067,52 @@ $components.Add((New-CommandComponent -ComponentId 'sdkmanager' -Name 'Android S
     Get-VersionRecordFromText -Text $text -Channel $null
 } -AdditionalInstallations $sdkManagerAdditionalInstallations.ToArray() -CommandResult $sdkManagerResult))
 
+# Latest stable platform-tools (adb) and cmdline-tools (sdkmanager) from Google's SDK repository
+# manifest, read over HTTPS; sdkmanager itself is never run for this.
+$androidTools = @(
+    @{ ComponentId = 'adb'; Package = 'platform-tools' }
+    @{ ComponentId = 'sdkmanager'; Package = 'cmdline-tools;latest' }
+)
+$installedAndroidTools = @($androidTools | Where-Object { $id = $_.ComponentId; @($components | Where-Object { $_.componentId -eq $id -and $_.state -in @('present', 'partial') }).Count -gt 0 })
+if ($installedAndroidTools.Count -gt 0) {
+    $repositoryResult = Invoke-AuditContextVersionSource -Context $Context -Source 'android-sdk-repository' -Uri 'https://dl.google.com/android/repository/repository2-3.xml' -MaximumResponseBytes 1048576
+    $evidence.Add((New-AuditEvidence -EvidenceId 'mobile.version-intelligence.android-sdk-source' -Type api -Source 'android-sdk-repository' -Captured $null -Attributes (Get-AuditVersionSourceEvidenceAttributes -SourceResult $repositoryResult)))
+
+    $repository = $null
+    if ($repositoryResult.status -eq 'success' -and -not $repositoryResult.truncated -and -not [string]::IsNullOrWhiteSpace([string]$repositoryResult.body)) {
+        try {
+            $settings = New-Object System.Xml.XmlReaderSettings
+            $settings.DtdProcessing = [System.Xml.DtdProcessing]::Prohibit
+            $reader = [System.Xml.XmlReader]::Create((New-Object System.IO.StringReader([string]$repositoryResult.body)), $settings)
+            $repository = New-Object System.Xml.XmlDocument
+            $repository.Load($reader)
+        }
+        catch {
+            $repository = $null
+        }
+    }
+
+    foreach ($tool in $installedAndroidTools) {
+        $latest = $null
+        if ($null -ne $repository) {
+            # channel-0 is the stable channel; preview revisions carry a <preview> element.
+            foreach ($package in @($repository.SelectNodes("//*[local-name()='remotePackage'][@path='$($tool.Package)']"))) {
+                $channel = $package.SelectSingleNode("*[local-name()='channelRef']")
+                $revision = $package.SelectSingleNode("*[local-name()='revision']")
+                if ($null -eq $revision -or ($null -ne $channel -and $channel.GetAttribute('ref') -ne 'channel-0') -or $null -ne $revision.SelectSingleNode("*[local-name()='preview']")) { continue }
+                $parts = @('major', 'minor', 'micro') | ForEach-Object { $node = $revision.SelectSingleNode("*[local-name()='$_']"); if ($null -ne $node) { $node.InnerText } }
+                $candidate = @($parts) -join '.'
+                if ($candidate -match '^\d+(?:\.\d+){0,2}$' -and $candidate -notmatch '^\d+$') { $latest = $candidate; break }
+                if ($candidate -match '^\d+$') { $latest = "$candidate.0"; break }
+            }
+        }
+
+        $component = @($components | Where-Object { $_.componentId -eq $tool.ComponentId } | Select-Object -First 1)[0]
+        $sourceForIntelligence = if ($null -eq $repository -and $repositoryResult.status -eq 'success') { [pscustomobject]@{ source = 'android-sdk-repository'; checkedAt = $repositoryResult.checkedAt; status = 'malformed' } } else { $repositoryResult }
+        $component.versionIntelligence = New-AuditLatestVersionIntelligence -SourceResult $sourceForIntelligence -LatestStable $latest -Message "Latest stable $($tool.Package) in the Android SDK repository."
+    }
+}
+
 $anyPresent = @(
     $components |
         Where-Object { $_.state -in @('present', 'partial') }

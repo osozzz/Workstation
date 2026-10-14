@@ -27,6 +27,10 @@ Only these command shapes run. The executor parses each one from the plan's `com
 | `flutter channel <channel>` | `<channel>` is `stable`, `beta`, or `master`. |
 | `pnpm add -g <package>@<version>` or `npm install -g <package>@<version>` | `<package>` is `@angular/cli`, `typescript` or `prisma` (policy tracks), or equals the action's `subjectId` (`npm:<package>`) for a global CLI; the manager matches the one that installed the package; `<version>` is a semantic version equal to the action's `targetVersion`. |
 | `pnpm self-update` | Exact text. |
+| `python -m pip install --upgrade pip` | Exact text; runs the active `python`. |
+| `uv self update` | Exact text; only when uv was installed with its standalone installer. |
+| `sdkmanager platform-tools` | Exact text. |
+| `sdkmanager cmdline-tools;latest` | Exact text; passed as one argument. |
 
 Anything else, including every action whose `command` is `null` (manual), is never executed. It is reported as skipped.
 
