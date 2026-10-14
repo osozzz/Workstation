@@ -1,0 +1,30 @@
+{
+  "providerId": "wsl.baseline",
+  "category": "host",
+  "status": "unavailable",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "wsl",
+      "name": "Windows Subsystem for Linux",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": ""
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": []
+}

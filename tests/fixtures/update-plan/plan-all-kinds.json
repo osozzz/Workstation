@@ -19,9 +19,9 @@
     }
   },
   "summary": {
-    "actionCount": 6,
+    "actionCount": 7,
     "lowRiskCount": 4,
-    "mediumRiskCount": 1,
+    "mediumRiskCount": 2,
     "highRiskCount": 1,
     "reversibleCount": 2,
     "manualCount": 3
@@ -154,6 +154,31 @@
     },
     {
       "order": 6,
+      "actionId": "wsl-update:wsl",
+      "kind": "upgrade",
+      "source": {
+        "type": "wsl",
+        "policyKey": null
+      },
+      "componentId": "wsl",
+      "subjectId": null,
+      "title": "Update the Windows Subsystem for Linux",
+      "currentVersion": "2.5.7.0",
+      "targetVersion": "3.0.3",
+      "command": "wsl --update",
+      "risk": "medium",
+      "reversible": false,
+      "message": "A newer WSL release is available. Running distributions are shut down while WSL updates.",
+      "evidence": [
+        {
+          "providerId": "wsl.baseline",
+          "componentId": "wsl",
+          "evidenceId": null
+        }
+      ]
+    },
+    {
+      "order": 7,
       "actionId": "policy:node.manager",
       "kind": "install",
       "source": {

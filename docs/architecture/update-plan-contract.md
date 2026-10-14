@@ -1,6 +1,6 @@
 # Update plan contract
 
-An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json` (schema version 1.1.0; 1.1.0 added the `chocolatey` source).
+An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json` (schema version 1.1.0; 1.1.0 added the `chocolatey` and `wsl` sources).
 
 Planning is read-only. A plan describes commands; it never runs them. Applying a plan is a later, separate phase with its own safety rules (#159).
 
@@ -8,6 +8,7 @@ Planning is read-only. A plan describes commands; it never runs them. Applying a
 
 - **`policy`**: a `deviation` from the policy evaluation (`policy-evaluation-contract.md`), for example Node behind its LTS track or missing PATH entries. `source.policyKey` names the setting.
 - **`winget`**: an upgrade that WinGet reports for an installed package. `subjectId` is `winget:<packageId>`.
+- **`wsl`**: WSL is behind its latest stable release. The command is `wsl --update`. Running distributions are shut down while WSL updates.
 - **`chocolatey`**: an outdated Chocolatey package that is not pinned. `subjectId` is `choco:<packageId>`, and the command is `choco upgrade <packageId> -y`, which needs an elevated shell. Pinned packages are left alone.
 
 ## Actions

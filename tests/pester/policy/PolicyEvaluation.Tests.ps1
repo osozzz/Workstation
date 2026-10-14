@@ -420,6 +420,20 @@ Describe 'Update plan' {
         @($actions | Where-Object actionId -eq 'choco-upgrade:git') | Should -HaveCount 0
     }
 
+    It 'plans wsl --update only when WSL is behind (<Current>)' -ForEach @(
+        @{ Current = '2.5.7.0'; Expected = 1 }
+        @{ Current = '3.0.3'; Expected = 0 }
+    ) {
+        $wsl = New-TestComponent -Id wsl -Version $Current -Intelligence (New-TestIntelligence -Stable '3.0.3')
+        $provider = [pscustomobject]@{ providerId = 'wsl.baseline'; status = 'success'; components = @($wsl); warnings = @(); evidence = @() }
+        $actions = @((Invoke-TestPlan (New-TestReport -ExtraProviders @($provider))).actions | Where-Object actionId -eq 'wsl-update:wsl')
+        $actions | Should -HaveCount $Expected
+        if ($Expected) {
+            $actions[0].command | Should -Be 'wsl --update'
+            $actions[0].risk | Should -Be 'medium'
+        }
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0
