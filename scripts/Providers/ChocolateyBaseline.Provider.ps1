@@ -44,13 +44,15 @@ function ConvertFrom-ChocolateyLimitOutput {
     #>
     param([AllowNull()][string]$Text)
 
-    if ([string]::IsNullOrWhiteSpace($Text)) { return @() }
-    $rows = foreach ($line in ($Text -split '\r?\n')) {
+    # A List keeps each row an array; pipeline output would unroll a single row into its fields.
+    $rows = New-Object System.Collections.Generic.List[object]
+    if ([string]::IsNullOrWhiteSpace($Text)) { return , $rows }
+    foreach ($line in ($Text -split '\r?\n')) {
         $parts = $line.Trim().Split('|')
         if ($parts.Count -lt 2 -or $parts[0] -notmatch '^[0-9A-Za-z][0-9A-Za-z._-]*$' -or [string]::IsNullOrWhiteSpace($parts[1])) { continue }
-        , $parts
+        $rows.Add($parts)
     }
-    return @($rows)
+    return , $rows
 }
 
 $versionResult = Invoke-AuditCommand -Command 'choco' -Arguments @('--version') -TimeoutSeconds 30
@@ -103,7 +105,8 @@ else {
 
     $packages = @(
         if ($list.Status -eq 'success') {
-            foreach ($row in ConvertFrom-ChocolateyLimitOutput -Text $list.Captured) {
+            $parsedRows = ConvertFrom-ChocolateyLimitOutput -Text $list.Captured
+            foreach ($row in $parsedRows) {
                 [pscustomobject][ordered]@{ packageId = $row[0]; installedVersion = $row[1] }
             }
         }
@@ -132,7 +135,8 @@ else {
     $outdatedOk = $outdated.Status -eq 'success' -or ($outdated.Status -eq 'non-zero' -and $outdated.ExitCode -eq 2)
     $upgrades = @(
         if ($outdatedOk) {
-            foreach ($row in ConvertFrom-ChocolateyLimitOutput -Text $outdated.Captured) {
+            $parsedRows = ConvertFrom-ChocolateyLimitOutput -Text $outdated.Captured
+            foreach ($row in $parsedRows) {
                 if ($row.Count -lt 3) { continue }
                 [pscustomobject][ordered]@{
                     packageId        = $row[0]
@@ -171,7 +175,7 @@ else {
     })
 }
 
-$status = Get-AuditProviderStatus -Warnings $warnings.ToArray() -Errors $errors.ToArray() -Partial:$hasPartial
+$status = if (-not $versionResult.Found) { 'unavailable' } else { Get-AuditProviderStatus -Warnings $warnings.ToArray() -Errors $errors.ToArray() -Partial:$hasPartial }
 
 return [pscustomobject][ordered]@{
     providerId = 'chocolatey.baseline'

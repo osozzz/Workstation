@@ -64,9 +64,25 @@ Describe 'Chocolatey provider' {
             Should -Be @('choco --version', 'choco list --limit-output', 'choco outdated --limit-output')
     }
 
+    It 'parses a single installed and a single outdated package' {
+        $single = Invoke-ChocolateyProvider -ChocoScript @(
+            '@echo off'
+            'if "%1"=="--version" echo 2.6.0& exit /b 0'
+            'if "%1"=="list" echo chocolatey^|2.6.0& exit /b 0'
+            'if "%1"=="outdated" echo chocolatey^|2.6.0^|2.7.4^|false& exit /b 2'
+            'exit /b 1'
+        )
+        $single.status | Should -Be 'success'
+        (($single.evidence | Where-Object evidenceId -eq 'chocolatey.inventory.normalized').attributes).packageCount | Should -Be 1
+        $outdated = ($single.evidence | Where-Object evidenceId -eq 'chocolatey.outdated.normalized').attributes
+        $outdated.upgradeCount | Should -Be 1
+        @($outdated.upgrades)[0].availableVersion | Should -Be '2.7.4'
+    }
+
     It 'reports Chocolatey as missing when it is not installed' {
         $missing = Invoke-ChocolateyProvider -ChocoScript $null
         $missing.components[0].state | Should -Be 'missing'
+        $missing.status | Should -Be 'unavailable'
         @($missing.evidence) | Should -HaveCount 0
     }
 

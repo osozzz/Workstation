@@ -22,6 +22,8 @@ EXPECTED_FIXTURES = {
     "winget-present.json",
     "winget-unavailable.json",
     "winget-partial.json",
+    "chocolatey-present.json",
+    "chocolatey-missing.json",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (
