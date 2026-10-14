@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0.0",
+  "auditSchemaMajor": 1,
+  "policy": {
+    "schemaVersion": "1.0",
+    "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "report": {
+    "schemaVersion": "1.0.0",
+    "generatedAt": "2026-10-14T12:00:00+00:00",
+    "audit": {
+      "mode": "read-only",
+      "toolVersion": "1.1.0"
+    },
+    "host": {
+      "name": "SYNTHETIC-WORKSTATION",
+      "platform": "windows",
+      "architecture": "x64"
+    }
+  },
+  "summary": {
+    "status": "deviations",
+    "findingCount": 5,
+    "compliantCount": 1,
+    "deviationCount": 2,
+    "unknownCount": 1,
+    "notEvaluableCount": 1
+  },
+  "findings": [
+    {
+      "ruleId": "android-licenses-not-accepted",
+      "policyKey": "android.acceptLicensesDuringAudit",
+      "status": "not-evaluable",
+      "componentId": null,
+      "subjectId": null,
+      "expected": false,
+      "observed": null,
+      "message": "Audit-safety setting enforced by the audit itself; no machine evidence applies.",
+      "evidence": []
+    },
+    {
+      "ruleId": "flutter-sdk-track",
+      "policyKey": "flutter.sdkTrack",
+      "status": "unknown",
+      "componentId": "flutter",
+      "subjectId": null,
+      "expected": "latest-stable",
+      "observed": null,
+      "message": "Latest-version information was unavailable (offline audit).",
+      "evidence": []
+    },
+    {
+      "ruleId": "node-default-track",
+      "policyKey": "node.defaultTrack",
+      "status": "deviation",
+      "componentId": "node",
+      "subjectId": null,
+      "expected": "lts",
+      "observed": {
+        "installed": "24.13.0",
+        "latestLts": "24.21.0"
+      },
+      "message": "Node is on the LTS line but behind the latest LTS release.",
+      "evidence": [
+        {
+          "providerId": "javascript.toolchain",
+          "componentId": "node",
+          "evidenceId": null
+        }
+      ]
+    },
+    {
+      "ruleId": "node-project-pinned",
+      "policyKey": "node.projectVersionsMustBePinned",
+      "status": "deviation",
+      "componentId": null,
+      "subjectId": "project:5d41402abc4b2a76",
+      "expected": true,
+      "observed": {
+        "nodePin": null
+      },
+      "message": "Project declares no Node version pin.",
+      "evidence": [
+        {
+          "providerId": "projects.javascript-web",
+          "componentId": null,
+          "evidenceId": "projects.javascript-web.project.0"
+        }
+      ]
+    },
+    {
+      "ruleId": "path-no-duplicates",
+      "policyKey": "path.allowDuplicateEntries",
+      "status": "compliant",
+      "componentId": null,
+      "subjectId": null,
+      "expected": false,
+      "observed": {
+        "duplicateEntryCount": 0
+      },
+      "message": "No duplicate PATH entries.",
+      "evidence": [
+        {
+          "providerId": "path.precedence",
+          "componentId": null,
+          "evidenceId": null
+        }
+      ]
+    }
+  ]
+}

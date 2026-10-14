@@ -113,6 +113,11 @@ jobs:
         run: |
           python ./tests/policy/validate_policy_schema.py
 
+      - name: Validate policy evaluation contract
+        shell: pwsh
+        run: |
+          python ./tests/policy/validate_policy_evaluation_contract.py
+
       - name: Validate schema hardening fixture matrix
         shell: pwsh
         run: |
