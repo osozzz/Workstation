@@ -390,6 +390,72 @@ function Get-PlanToolActions {
     }
 }
 
+# Tools that more than one package manager can own. Each manager's package IDs are matched by
+# anchored patterns so unrelated packages never count.
+$script:SharedTools = @(
+    @{ Id = 'python'; Name = 'Python'; Chocolatey = '^python3?\d*$'; WinGet = '^Python\.Python\.\d'; Arp = 'pymanager-pythoncore' }
+    @{ Id = 'visual-studio-build-tools-2019'; Name = 'Visual Studio Build Tools 2019'; Chocolatey = '^visualstudio2019buildtools$'; WinGet = '^Microsoft\.VisualStudio\.2019\.BuildTools$' }
+    @{ Id = 'visual-studio-build-tools-2022'; Name = 'Visual Studio Build Tools 2022'; Chocolatey = '^visualstudio2022buildtools$'; WinGet = '^Microsoft\.VisualStudio\.2022\.BuildTools$' }
+    @{ Id = 'vcredist-2015-plus'; Name = 'Visual C++ Redistributable 2015+'; Chocolatey = '^vcredist(140|2015)$'; WinGet = '^Microsoft\.VCRedist\.2015\+\.' }
+    @{ Id = 'git'; Name = 'Git'; Chocolatey = '^git(\.install)?$'; WinGet = '^Git\.Git$' }
+    @{ Id = 'nodejs'; Name = 'Node.js'; Chocolatey = '^nodejs(-lts|\.install)?$'; WinGet = '^OpenJS\.NodeJS' }
+    @{ Id = 'vscode'; Name = 'Visual Studio Code'; Chocolatey = '^vscode(\.install)?$'; WinGet = '^Microsoft\.VisualStudioCode$' }
+    @{ Id = 'jdk'; Name = 'Java Development Kit'; Chocolatey = '^(openjdk|temurin|oraclejdk|jdk)\d*$'; WinGet = '^(Oracle\.JDK|EclipseAdoptium\.Temurin|Microsoft\.OpenJDK)\.' }
+)
+
+function Get-PlanInventoryPackages {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$Report,
+        [Parameter(Mandatory)][string]$ProviderId,
+        [Parameter(Mandatory)][string]$EvidenceId
+    )
+
+    $provider = @($Report.providers | Where-Object { $_.providerId -eq $ProviderId }) | Select-Object -First 1
+    if ($null -eq $provider) { return @() }
+    $inventory = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq $EvidenceId } | Select-Object -First 1
+    if ($null -eq $inventory) { return @() }
+    return @(Get-ComparisonOptionalPropertyValue -InputObject $inventory.attributes -Name 'packages' | Where-Object { $null -ne $_ })
+}
+
+function Get-PlanConsolidationActions {
+    <#
+    .SYNOPSIS
+    One manual action per tool that several package managers own; upgrading it through each of them conflicts.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$Report)
+
+    $chocolatey = Get-PlanInventoryPackages -Report $Report -ProviderId 'chocolatey.baseline' -EvidenceId 'chocolatey.inventory.normalized'
+    $winget = Get-PlanInventoryPackages -Report $Report -ProviderId 'winget.baseline' -EvidenceId 'winget.inventory.normalized'
+
+    foreach ($tool in $script:SharedTools) {
+        $owners = [System.Collections.Generic.List[string]]::new()
+        $evidence = [System.Collections.Generic.List[object]]::new()
+
+        $chocoIds = @($chocolatey | ForEach-Object { [string]$_.packageId } | Where-Object { $_ -match $tool.Chocolatey } | Sort-Object -Unique)
+        if ($chocoIds.Count -gt 0) {
+            $owners.Add("Chocolatey ($($chocoIds -join ', '))")
+            $evidence.Add([pscustomobject][ordered]@{ providerId = 'chocolatey.baseline'; componentId = 'chocolatey'; evidenceId = 'chocolatey.inventory.normalized' })
+        }
+
+        $wingetIds = @($winget | Where-Object { [string]$_.source -eq 'winget' } | ForEach-Object { [string]$_.packageId } | Where-Object { $_ -match $tool.WinGet } | Sort-Object -Unique)
+        $managedByInstallManager = $tool.ContainsKey('Arp') -and @($winget | Where-Object { ([string]$_.packageId).Contains($tool.Arp) }).Count -gt 0
+        if ($wingetIds.Count -gt 0) { $owners.Add("WinGet ($($wingetIds -join ', '))") }
+        if ($managedByInstallManager) { $owners.Add('Python Install Manager') }
+        if ($wingetIds.Count -gt 0 -or $managedByInstallManager) {
+            $evidence.Add([pscustomobject][ordered]@{ providerId = 'winget.baseline'; componentId = 'winget'; evidenceId = 'winget.inventory.normalized' })
+        }
+
+        if ($owners.Count -lt 2) { continue }
+        New-PlanAction -ActionId "consolidate-managers:$($tool.Id)" -Kind cleanup -SourceType consolidation -PolicyKey $null -ComponentId $null -SubjectId $null `
+            -Title "Manage $($tool.Name) with a single package manager" -CurrentVersion $null -TargetVersion $null -Command $null `
+            -Risk medium -Reversible $false `
+            -Message "$($tool.Name) is managed by $($owners -join ' and '). Upgrading it through more than one of them can install side-by-side copies; apply only one manager's upgrade and remove the package from the others." `
+            -Evidence $evidence.ToArray()
+    }
+}
+
 function New-WorkstationUpdatePlan {
     <#
     .SYNOPSIS
@@ -405,7 +471,7 @@ function New-WorkstationUpdatePlan {
     $evaluation = New-WorkstationPolicyEvaluation -Report $Report -Policy $Policy -PolicyDigest $PolicyDigest
 
     $actions = [System.Collections.Generic.List[object]]::new()
-    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report)) {
+    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report) + @(Get-PlanConsolidationActions -Report $Report)) {
         if ($null -ne $action) { $actions.Add($action) }
     }
 

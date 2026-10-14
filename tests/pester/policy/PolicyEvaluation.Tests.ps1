@@ -490,6 +490,33 @@ Describe 'Update plan' {
         $byId.ContainsKey('tool-upgrade:adb') | Should -BeFalse
     }
 
+    It 'flags tools owned by more than one package manager' {
+        $chocolatey = [pscustomobject]@{
+            providerId = 'chocolatey.baseline'; status = 'success'; components = @(); warnings = @()
+            evidence   = @([pscustomobject]@{ evidenceId = 'chocolatey.inventory.normalized'; attributes = [pscustomobject]@{ packages = @(
+                            [pscustomobject]@{ packageId = 'python314'; installedVersion = '3.14.2' }
+                            [pscustomobject]@{ packageId = 'python3'; installedVersion = '3.14.2' }
+                            [pscustomobject]@{ packageId = 'python-docs'; installedVersion = '1.0' }
+                        ) } })
+        }
+        $winget = [pscustomobject]@{
+            providerId = 'winget.baseline'; status = 'success'; components = @(); warnings = @()
+            evidence   = @([pscustomobject]@{ evidenceId = 'winget.inventory.normalized'; attributes = [pscustomobject]@{ packages = @(
+                            [pscustomobject]@{ name = 'Python 3.14.2 (64-bit)'; packageId = 'Python.Python.3.14'; source = 'winget' }
+                            [pscustomobject]@{ name = 'Python 3.14.2'; packageId = 'ARP\User\X64\pymanager-pythoncore-3.14-64'; source = $null }
+                            [pscustomobject]@{ name = 'Git'; packageId = 'Git.Git'; source = 'winget' }
+                        ) } })
+        }
+        $actions = @((Invoke-TestPlan (New-TestReport -ExtraProviders @($chocolatey, $winget))).actions | Where-Object { $_.source.type -eq 'consolidation' })
+
+        $actions | Should -HaveCount 1
+        $actions[0].actionId | Should -Be 'consolidate-managers:python'
+        $actions[0].command | Should -BeNullOrEmpty
+        $actions[0].message | Should -Match 'Chocolatey \(python3, python314\) and WinGet \(Python\.Python\.3\.14\) and Python Install Manager'
+        $actions[0].message | Should -Not -Match 'python-docs'
+        $actions[0].evidence | Should -HaveCount 2
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0

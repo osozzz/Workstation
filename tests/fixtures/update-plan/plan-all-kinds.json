@@ -19,12 +19,12 @@
     }
   },
   "summary": {
-    "actionCount": 9,
+    "actionCount": 10,
     "lowRiskCount": 6,
-    "mediumRiskCount": 2,
+    "mediumRiskCount": 3,
     "highRiskCount": 1,
     "reversibleCount": 2,
-    "manualCount": 3
+    "manualCount": 4
   },
   "actions": [
     {
@@ -179,6 +179,36 @@
     },
     {
       "order": 7,
+      "actionId": "consolidate-managers:python",
+      "kind": "cleanup",
+      "source": {
+        "type": "consolidation",
+        "policyKey": null
+      },
+      "componentId": null,
+      "subjectId": null,
+      "title": "Manage Python with a single package manager",
+      "currentVersion": null,
+      "targetVersion": null,
+      "command": null,
+      "risk": "medium",
+      "reversible": false,
+      "message": "Python is managed by Chocolatey (python314) and WinGet (Python.Python.3.14). Upgrading it through more than one of them can install side-by-side copies; apply only one manager's upgrade and remove the package from the others.",
+      "evidence": [
+        {
+          "providerId": "chocolatey.baseline",
+          "componentId": "chocolatey",
+          "evidenceId": "chocolatey.inventory.normalized"
+        },
+        {
+          "providerId": "winget.baseline",
+          "componentId": "winget",
+          "evidenceId": "winget.inventory.normalized"
+        }
+      ]
+    },
+    {
+      "order": 8,
       "actionId": "policy:node.defaultTrack",
       "kind": "upgrade",
       "source": {
@@ -203,7 +233,7 @@
       ]
     },
     {
-      "order": 8,
+      "order": 9,
       "actionId": "wsl-update:wsl",
       "kind": "upgrade",
       "source": {
@@ -228,7 +258,7 @@
       ]
     },
     {
-      "order": 9,
+      "order": 10,
       "actionId": "policy:node.manager",
       "kind": "install",
       "source": {

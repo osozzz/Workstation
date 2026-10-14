@@ -1,6 +1,6 @@
 # Update plan contract
 
-An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json` (schema version 1.1.0; 1.1.0 added the `chocolatey`, `wsl`, `npm-registry` and `toolchain` sources).
+An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json` (schema version 1.1.0; 1.1.0 added the `chocolatey`, `wsl`, `npm-registry`, `toolchain` and `consolidation` sources).
 
 Planning is read-only. A plan describes commands; it never runs them. Applying a plan is a later, separate phase with its own safety rules (#159).
 
@@ -11,6 +11,7 @@ Planning is read-only. A plan describes commands; it never runs them. Applying a
 - **`wsl`**: WSL is behind its latest stable release. The command is `wsl --update`. Running distributions are shut down while WSL updates.
 - **`npm-registry`**: pnpm itself (`pnpm self-update`) and global JavaScript CLIs without a policy track (for example nodemon, rimraf, Zoho CLIs, redis-commander) when the npm registry reports a newer version. `subjectId` is `npm:<package>`, and the command uses the manager that installed the package (`pnpm add -g` or `npm install -g`), so it is not duplicated under the other one. npm itself is not planned: the policy treats it as the copy bundled with Node.js.
 - **`toolchain`**: developer tools updated by their own command when their latest-version source reports a newer release: pip (`python -m pip install --upgrade pip`, PyPI), uv (`uv self update`, GitHub releases; manual unless uv was installed with its standalone installer), Android SDK platform-tools and command-line tools (`sdkmanager ...`, Google's SDK repository manifest). A numeric suffix such as adb's `37.0.0-14910828` is a build number and is ignored when comparing.
+- **`consolidation`**: a tool owned by more than one package manager, for example Python installed through Chocolatey, WinGet and the Python Install Manager, or Visual Studio Build Tools seen by both Chocolatey and WinGet. The action is manual (`cleanup`, medium risk) and names each manager and its package IDs, because upgrading the same tool through several managers can install side-by-side copies. Matching uses anchored package-ID patterns per tool.
 - **`chocolatey`**: an outdated Chocolatey package that is not pinned. `subjectId` is `choco:<packageId>`, and the command is `choco upgrade <packageId> -y`, which needs an elevated shell. Pinned packages are left alone.
 
 ## Actions
