@@ -1,6 +1,6 @@
 # Audit Safety Policy
 
-The audit system is read-only by default.
+The audit system is read-only by default. The audit, the policy evaluation, the update plan, and the comparison never change the machine. Only the update executor may apply updates, under `update-execution-safety.md`.
 
 It may:
 

@@ -20,6 +20,7 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 - `governance/` — repository workflow, issue/PR conventions, branch hygiene, and project management.
 - `policies/` — workstation standards and version/update policies.
   - `policies/workstation-policy.md` — the declared workstation standard, its schema, and the meaning of every key.
+  - `policies/update-execution-safety.md` — when and how the update executor may change a workstation (v2.0.0 onward).
   - `policies/powershell-runtime.md` — supported PowerShell runtimes, how they are enforced, and handled runtime differences.
 - `releases/` — versioning, milestones, release readiness, and changelog rules.
 - `security/` — planned home for security-specific implementation guidance that complements `SECURITY.md`; not created yet, so `SECURITY.md` and `policies/audit-safety.md` are authoritative today.
