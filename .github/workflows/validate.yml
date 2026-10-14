@@ -57,6 +57,11 @@ jobs:
         run: |
           ./tests/sprint8-integration/validate_sprint8_baseline_ready.ps1
 
+      - name: Validate Sprint 9 Policy Evaluation integration gate
+        shell: pwsh
+        run: |
+          ./tests/sprint9-integration/validate_sprint9_policy_evaluation.ps1
+
       - name: Validate JSON configuration
         shell: pwsh
         run: |

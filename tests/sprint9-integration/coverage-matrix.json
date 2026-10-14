@@ -1,0 +1,52 @@
+{
+  "issue": 159,
+  "milestone": "v1.1.0 — Policy Evaluation",
+  "criteria": [
+    {
+      "id": "policy-schema-validated",
+      "acceptance": "The policy file has a schema and is validated in CI.",
+      "checks": ["contracts"],
+      "evidence": [
+        "schemas/workstation-policy.schema.json",
+        "tests/policy/validate_policy_schema.py",
+        "docs/policies/workstation-policy.md"
+      ]
+    },
+    {
+      "id": "every-key-mapped",
+      "acceptance": "Every policy rule maps to audit evidence or is explicitly reported as not evaluable.",
+      "checks": ["pester", "static-analysis"],
+      "evidence": [
+        "scripts/Core/PolicyEvaluation.Core.psm1",
+        "tests/pester/policy/PolicyEvaluation.Tests.ps1"
+      ]
+    },
+    {
+      "id": "evaluation-deterministic-private",
+      "acceptance": "Evaluation output is deterministic, local, and privacy-safe, like comparison output.",
+      "checks": ["contracts", "comparison"],
+      "evidence": [
+        "schemas/policy-evaluation.schema.json",
+        "tests/policy/validate_policy_evaluation_contract.py",
+        "tests/launchers/validate_launchers.ps1",
+        "docs/architecture/policy-evaluation-contract.md"
+      ]
+    },
+    {
+      "id": "evaluation-without-mutation",
+      "acceptance": "No evaluation path mutates the workstation (Sprint 7 gate still applies).",
+      "checks": ["static-analysis"],
+      "evidence": [
+        "tests/sprint7-integration/validate_sprint7_hardening.ps1",
+        "scripts/Evaluate-Workstation.ps1"
+      ]
+    },
+    {
+      "id": "real-report-rehearsal",
+      "acceptance": "The evaluation runs on a real PC #1 report on Windows PowerShell 5.1 and PowerShell 7.",
+      "checks": ["comparison"],
+      "evidence": ["Run-Evaluate.cmd", "docs/audit/running-the-audit.md"],
+      "manual": "Run Run-Evaluate.cmd on the latest PC #1 report and record the summary in #166."
+    }
+  ]
+}
