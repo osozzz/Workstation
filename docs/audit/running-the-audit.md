@@ -61,7 +61,17 @@ This compares one report with the declared standard in `config\workstation.polic
 
 This lists everything on the PC that can be updated, in order from low to high risk, and writes `reports\update-plan\update-plan.json` and `update-plan.txt`. Each action shows the command that would run (or says that it is manual), its risk, and whether it can be undone. **Nothing is run.** Review the plan and apply the actions you choose; WinGet upgrades can be applied with the listed `winget upgrade` commands. The plan format is described in `../architecture/update-plan-contract.md`.
 
-## 6. Optional: compare with another PC
+## 6. Apply updates
+
+```powershell
+.\Run-Update.cmd reports\update-plan\update-plan.json -Risk low          # preview every low-risk action
+.\Run-Update.cmd reports\update-plan\update-plan.json -Risk low -Apply   # run them, asking before each one
+.\Run-Update.cmd reports\update-plan\update-plan.json -Action 3,7 -Apply # run actions 3 and 7
+```
+
+This is the only step that changes the PC, and it follows `../policies/update-execution-safety.md`. Without `-Apply` it only previews. With `-Apply` it asks before every action and stops at the first failure. Manual and high-risk actions never run. Chocolatey actions run only from an elevated (administrator) shell. Plans older than 24 hours, or built from a different policy, are refused. Each run writes a log to `reports\update-log\`. Afterwards, audit and plan again; the new plan shows what remains.
+
+## 7. Optional: compare with another PC
 
 Run the **same release** on the other PC, then copy its JSON report to this PC over a private channel you control. Comparing the two needs only the JSON reports.
 

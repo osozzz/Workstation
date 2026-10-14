@@ -251,8 +251,19 @@ foreach ($link in [regex]::Matches($coverageDoc, '`((?:\.\./)?[a-z-]+(?:/[a-z-]+
     Assert-True (Test-Path -LiteralPath $target -PathType Leaf) "docs/audit/ci-coverage.md references missing document '$($link.Groups[1].Value)'."
 }
 
-# 4. No validation or production path mutates the workstation.
+# 4. No validation or production path mutates the workstation. The update executor
+# (docs/policies/update-execution-safety.md) is the only exemption: its code lives in
+# scripts\Execution and only scripts\Update-Workstation.ps1 may load it.
+$executionRoot = Join-Path $root 'scripts\Execution'
+$executionEntryPoint = Join-Path $root 'scripts\Update-Workstation.ps1'
+$executionImports = foreach ($file in Get-ChildItem -Path (Join-Path $root 'scripts') -Recurse -File -Include '*.ps1', '*.psm1') {
+    if ($file.FullName.StartsWith($executionRoot + '\', [StringComparison]::OrdinalIgnoreCase) -or $file.FullName -eq $executionEntryPoint) { continue }
+    if ([IO.File]::ReadAllText($file.FullName) -match 'Execution\.Core|[\\/]Execution[\\/]') { $file.FullName.Substring($root.Length + 1) }
+}
+Assert-True (@($executionImports).Count -eq 0) ("Only scripts\Update-Workstation.ps1 may load the update executor:`n" + (@($executionImports) -join "`n"))
+
 $mutationFindings = foreach ($file in Get-ChildItem -Path (Join-Path $root 'scripts'), (Join-Path $root 'tests') -Recurse -File -Include '*.ps1', '*.psm1') {
+    if ($file.FullName.StartsWith($executionRoot + '\', [StringComparison]::OrdinalIgnoreCase)) { continue }
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$null, [ref]$null)
     foreach ($finding in Find-WorkstationMutation -Ast $ast) {
         '{0} {1}' -f $file.FullName.Substring($root.Length + 1), $finding

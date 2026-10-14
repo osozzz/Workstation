@@ -26,6 +26,8 @@ Only these command shapes run. The executor parses each one from the plan's `com
 | `flutter upgrade` | Exact text. |
 | `flutter channel <channel>` | `<channel>` is `stable`, `beta`, or `master`. |
 | `pnpm add -g <package>@<version>` or `npm install -g <package>@<version>` | `<package>` is `@angular/cli`, `typescript` or `prisma` (policy tracks), or equals the action's `subjectId` (`npm:<package>`) for a global CLI; the manager matches the one that installed the package; `<version>` is a semantic version equal to the action's `targetVersion`. |
+| `choco upgrade <packageId> -y` | `<packageId>` matches the action's `subjectId` (`choco:<packageId>`). Runs only from an elevated shell; otherwise the action is skipped. |
+| `wsl --update` | Exact text. |
 | `pnpm self-update` | Exact text. |
 | `python -m pip install --upgrade pip` | Exact text; runs the active `python`. |
 | `uv self update` | Exact text; only when uv was installed with its standalone installer. |
@@ -51,7 +53,7 @@ WinGet calls add `--accept-package-agreements --accept-source-agreements --disab
 
 ## Execution log
 
-- Each run writes `reports/update-log/<timestamp>.json` before the first action and updates it after every action. The log records the plan digest, the selected actions, the exact command, start and end times, exit code, a bounded output tail, and the result (`succeeded`, `failed`, `skipped`, or `not-run`).
+- Each run, including a dry run, writes `reports/update-log/<timestamp>.json` before the first action and updates it after every action. The log records the plan digest, the selected actions, the exact command, start and end times, exit code, a bounded output tail, and the result (`succeeded`, `failed`, `skipped`, or `not-run`).
 - The log is local and ignored by Git, like audit reports. It may contain machine-specific output.
 - After a run, re-audit and re-plan. The new plan is the source of truth for what remains.
 

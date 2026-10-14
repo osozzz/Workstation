@@ -39,6 +39,7 @@ The read-only audit covers Windows and PowerShell, WinGet applications and updat
 .\Run-Audit.cmd                                   # audit this PC; reports go to .\reports (ignored by Git)
 .\Run-Evaluate.cmd <report.json>                  # evaluate the report against the workstation policy
 .\Run-Plan.cmd <report.json>                      # list everything that can be updated (runs nothing)
+.\Run-Update.cmd <update-plan.json> -Risk low     # preview updates; add -Apply to run them, confirming each
 .\Run-Compare.cmd <reference.json> <target.json>  # optional: compare two audit reports
 ```
 
