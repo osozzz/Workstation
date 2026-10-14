@@ -123,6 +123,11 @@ jobs:
         run: |
           python ./tests/policy/validate_policy_evaluation_contract.py
 
+      - name: Validate update plan contract
+        shell: pwsh
+        run: |
+          python ./tests/policy/validate_update_plan_contract.py
+
       - name: Validate generated policy evaluation
         shell: pwsh
         run: |
