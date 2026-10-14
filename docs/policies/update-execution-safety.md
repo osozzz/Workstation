@@ -22,6 +22,7 @@ Only these command shapes run. The executor parses each one from the plan's `com
 |---|---|
 | `winget upgrade --id <packageId> --exact` | `<packageId>` matches the action's `subjectId` (`winget:<packageId>`) and the WinGet ID character set. |
 | `winget install --id pnpm.pnpm --exact` | Exact text. |
+| `winget install --id Python.PythonInstallManager --exact` | Exact text. |
 | `flutter upgrade` | Exact text. |
 | `flutter channel <channel>` | `<channel>` is `stable`, `beta`, or `master`. |
 | `pnpm add -g <package>@<version>` | `<package>` is `@angular/cli`, `typescript`, or `prisma`; `<version>` is a semantic version equal to the action's `targetVersion`. |
