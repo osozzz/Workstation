@@ -4,11 +4,9 @@ A Windows developer-workstation toolkit for auditing, comparing, and standardizi
 
 ## Current phase
 
-**v1.0.0 — Baseline Ready**
+**v1.1.0 — Policy Evaluation**
 
-`v0.9.0 — Audit Hardening` is complete and published. The repository is now validating the complete read-only audit against real workstations so the first baseline can be treated as authoritative.
-
-The first real workstation baseline will not be treated as authoritative until **v1.0.0 — Baseline Ready**.
+`v1.0.1 — Baseline Ready` is complete and published: the read-only audit is validated on real hardware (PC #1), and the cross-PC comparison on a second PC is deferred. The repository is now adding read-only evaluation of audit reports against the declared standard in `config/workstation.policy.json` (#159).
 
 ## Repository model
 
