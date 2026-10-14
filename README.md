@@ -38,6 +38,7 @@ The read-only audit covers Windows and PowerShell, WinGet applications and updat
 ```powershell
 .\Run-Audit.cmd                                   # audit this PC; reports go to .\reports (ignored by Git)
 .\Run-Evaluate.cmd <report.json>                  # evaluate the report against the workstation policy
+.\Run-Plan.cmd <report.json>                      # list everything that can be updated (runs nothing)
 .\Run-Compare.cmd <reference.json> <target.json>  # optional: compare two audit reports
 ```
 
@@ -56,7 +57,8 @@ Optional project and Git discovery needs `config\workstation.local.json`; see `c
 - `v0.9.0` — Audit Hardening
 - `v1.0.0` — Baseline Ready
 - `v1.1.0` — Policy Evaluation
-- Next — Update plan (read-only), then controlled update execution (#159)
+- `v1.2.0` — Update Plan (in progress)
+- Next — Controlled update execution (#159)
 
 ## Clone
 

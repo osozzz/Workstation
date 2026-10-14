@@ -33,6 +33,17 @@ Actions are ordered by risk (`low`, `medium`, `high`), then by `actionId` in ord
 
 Plans are shareable, like evaluation output. They must not contain absolute paths, user-profile paths, commit IDs, remote URLs, credentials, or secrets. A command that would need a user path is not emitted; the action becomes manual and its message points to the audit report.
 
+## Producer
+
+`scripts/Plan-WorkstationUpdate.ps1` (launcher: `Run-Plan.cmd`) builds the plan with `scripts/Core/UpdatePlan.Core.psm1` and writes `update-plan.json` and `update-plan.txt`. It runs the policy evaluation first, then:
+
+- Turns each policy `deviation` into one action from a per-key catalog. Per-project deviations (pins, lockfiles) are grouped into one action per key. A deviation without a catalog entry still becomes a manual action, so none is dropped.
+- Turns each WinGet upgrade with a reliable identity into `winget upgrade --id <packageId> --exact`.
+- Emits commands only when they are unambiguous: WinGet upgrades, `flutter upgrade`, `flutter channel <channel>`, `pnpm add -g <cli>@<version>` for global JavaScript CLIs (the policy's global package manager), and installing pnpm. Everything else is manual.
+- Sets an upgrade's risk to `medium` when the major version changes, and to `low` otherwise. Catalog entries set the risk of other actions.
+
+Output is byte-identical on Windows PowerShell 5.1 and PowerShell 7.
+
 ## Validation
 
-`tests/policy/validate_update_plan_contract.py` runs in the `contracts` CI check. It validates committed fixtures, which cover every kind, risk and source. It checks the summary, ordering, uniqueness, and privacy invariants, and it rejects 15 controlled invalid variants. Given file paths, it validates generated plans instead.
+`tests/policy/validate_update_plan_contract.py` runs in the `contracts` CI check. It validates committed fixtures, which cover every kind, risk and source. It checks the summary, ordering, uniqueness, and privacy invariants, and it rejects 15 controlled invalid variants. Given file paths, it validates generated plans instead; CI plans `tests/fixtures/reports/mixed-provider-report.json` this way. `tests/pester/policy/PolicyEvaluation.Tests.ps1` covers each action source, and `tests/launchers/validate_launchers.ps1` checks that `Run-Plan.cmd` (Windows PowerShell 5.1) and PowerShell 7 write identical bytes.

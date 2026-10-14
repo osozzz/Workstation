@@ -2,6 +2,7 @@ BeforeAll {
     $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
     Import-Module (Join-Path $repositoryRoot 'scripts\Core\Comparison.Core.psm1') -Force
     Import-Module (Join-Path $repositoryRoot 'scripts\Core\PolicyEvaluation.Core.psm1') -Force
+    Import-Module (Join-Path $repositoryRoot 'scripts\Core\UpdatePlan.Core.psm1') -Force
 
     $policyPath = Join-Path $repositoryRoot 'config\workstation.policy.json'
     $script:policyJson = Get-Content -LiteralPath $policyPath -Encoding UTF8 -Raw
@@ -270,5 +271,109 @@ Describe 'Evaluation output' {
             }
         }
         Get-Content -LiteralPath $paths.humanReadablePath -Encoding UTF8 -Raw | Should -Match 'Workstation policy evaluation: deviations'
+    }
+}
+
+Describe 'Output JSON' {
+    It 'writes HTML-sensitive characters literally but keeps an escaped backslash sequence intact' {
+        $json = ConvertTo-WorkstationOutputJson -InputObject ([pscustomobject]@{ a = '< 1 & >'; b = 'x\u003cy' })
+        $json | Should -BeExactly ('{"a":"< 1 & >","b":"x\\u003cy"}' + [char]10)
+    }
+}
+
+Describe 'Update plan' {
+    BeforeAll {
+        function New-TestWinGetProvider {
+            param([object[]]$Upgrades)
+            [pscustomobject]@{
+                providerId = 'winget.baseline'; status = 'success'; components = @(); warnings = @()
+                evidence   = @([pscustomobject]@{ evidenceId = 'winget.upgrades.normalized'; attributes = [pscustomobject]@{ upgrades = @($Upgrades) } })
+            }
+        }
+        function New-TestUpgrade {
+            param([string]$Id, [string]$From, [string]$To, [bool]$Reliable = $true)
+            [pscustomobject]@{ name = $Id; packageId = $Id; identityReliable = $Reliable; installedVersion = $From; availableVersion = $To }
+        }
+        function Invoke-TestPlan {
+            param([psobject]$Report)
+            New-WorkstationUpdatePlan -Report $Report -Policy (New-TestPolicy) -PolicyDigest $script:digest
+        }
+
+        $projectPath = Join-Path $TestDrive 'someone\app'
+        $discovery = [pscustomobject]@{ candidates = @(
+                [pscustomobject]@{ path = "$projectPath-a"; relativePath = 'app-a' }
+                [pscustomobject]@{ path = "$projectPath-b"; relativePath = 'app-b' }
+            ) }
+        $project = { param($Index) [pscustomobject]@{ project = [pscustomobject]@{ projectIndex = $Index; nodePins = @(); lockfiles = @('pnpm-lock.yaml') } } }
+
+        $winget = New-TestWinGetProvider -Upgrades @(
+            New-TestUpgrade -Id 'Git.Git' -From '2.51.0' -To '2.52.0'
+            New-TestUpgrade -Id 'Docker.DockerDesktop' -From '4.9.0' -To '5.0.0'
+            New-TestUpgrade -Id 'Unreliable.Package' -From '1.0' -To '2.0' -Reliable $false
+        )
+        $report = New-TestReport -ExtraProviders @($winget) -Components @(
+            New-TestComponent -Id node -Version '24.13.0' -Intelligence $script:nodeLts
+            New-TestComponent -Id nvm-windows -Version '1.2.2'
+            New-TestComponent -Id angular-cli -Version '21.2.24' -Intelligence (New-TestIntelligence -Stable '22.2.2')
+        ) -Evidence @{
+            'projects.local.discovery'          = $discovery
+            'projects.javascript-web.project-0' = & $project 0
+            'projects.javascript-web.project-1' = & $project 1
+        }
+        $script:plan = Invoke-TestPlan $report
+        $script:byId = @{}
+        foreach ($action in $script:plan.actions) { $script:byId[$action.actionId] = $action }
+    }
+
+    It 'plans every reliable WinGet upgrade with its command' {
+        $git = $script:byId['winget-upgrade:Git.Git']
+        $git.command | Should -Be 'winget upgrade --id Git.Git --exact'
+        $git.subjectId | Should -Be 'winget:Git.Git'
+        $git.risk | Should -Be 'low'
+        $script:byId['winget-upgrade:Docker.DockerDesktop'].risk | Should -Be 'medium'
+        $script:byId.ContainsKey('winget-upgrade:Unreliable.Package') | Should -BeFalse
+    }
+
+    It 'turns policy deviations into actions with versions' {
+        $node = $script:byId['policy:node.defaultTrack']
+        $node.kind | Should -Be 'upgrade'
+        $node.currentVersion | Should -Be '24.13.0'
+        $node.targetVersion | Should -Be '24.21.0'
+        $node.command | Should -BeNullOrEmpty
+
+        $angular = $script:byId['policy:angular.globalCliTrack']
+        $angular.command | Should -Be 'pnpm add -g @angular/cli@22.2.2'
+        $angular.risk | Should -Be 'medium'
+    }
+
+    It 'groups per-project deviations into one action' {
+        $pins = $script:byId['policy:node.projectVersionsMustBePinned']
+        $pins.title | Should -Match '\(2\)$'
+        $pins.evidence.Count | Should -Be 2
+        $script:byId.ContainsKey('policy:javascript.projectDependencies') | Should -BeFalse
+    }
+
+    It 'orders by risk then action id, numbers from 1 and summarizes' {
+        $rank = @{ low = 0; medium = 1; high = 2 }
+        $keys = @($script:plan.actions | ForEach-Object { '{0}|{1}' -f $rank[$_.risk], $_.actionId })
+        $sorted = [string[]]$keys.Clone()
+        [Array]::Sort($sorted, [StringComparer]::Ordinal)
+        $keys -join ';' | Should -Be ($sorted -join ';')
+        @($script:plan.actions | ForEach-Object order) -join ',' | Should -Be ((1..$script:plan.actions.Count) -join ',')
+        $script:plan.summary.actionCount | Should -Be $script:plan.actions.Count
+        $script:plan.summary.manualCount | Should -Be @($script:plan.actions | Where-Object { $null -eq $_.command }).Count
+    }
+
+    It 'writes a shareable plan without project paths' {
+        $paths = Write-WorkstationUpdatePlanOutputs -Plan $script:plan -OutputDirectory (Join-Path $TestDrive 'plan')
+        $text = Get-Content -LiteralPath $paths.structuredPath -Encoding UTF8 -Raw
+        $text | Should -Not -Match 'someone'
+        Get-Content -LiteralPath $paths.humanReadablePath -Encoding UTF8 -Raw | Should -Match 'Nothing has been run'
+    }
+
+    It 'is empty for a compliant report' {
+        $plan = Invoke-TestPlan (New-TestReport)
+        $plan.summary.actionCount | Should -Be 0
+        , $plan.actions | Should -BeOfType [object[]]
     }
 }
