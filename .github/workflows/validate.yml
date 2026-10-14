@@ -67,6 +67,11 @@ jobs:
         run: |
           ./tests/sprint10-integration/validate_sprint10_update_plan.ps1
 
+      - name: Validate Sprint 11 Controlled Updates integration gate
+        shell: pwsh
+        run: |
+          ./tests/sprint11-integration/validate_sprint11_controlled_updates.ps1
+
       - name: Validate JSON configuration
         shell: pwsh
         run: |
