@@ -25,7 +25,8 @@ Only these command shapes run. The executor parses each one from the plan's `com
 | `winget install --id Python.PythonInstallManager --exact` | Exact text. |
 | `flutter upgrade` | Exact text. |
 | `flutter channel <channel>` | `<channel>` is `stable`, `beta`, or `master`. |
-| `pnpm add -g <package>@<version>` | `<package>` is `@angular/cli`, `typescript`, or `prisma`; `<version>` is a semantic version equal to the action's `targetVersion`. |
+| `pnpm add -g <package>@<version>` or `npm install -g <package>@<version>` | `<package>` is `@angular/cli`, `typescript` or `prisma` (policy tracks), or equals the action's `subjectId` (`npm:<package>`) for a global CLI; the manager matches the one that installed the package; `<version>` is a semantic version equal to the action's `targetVersion`. |
+| `pnpm self-update` | Exact text. |
 
 Anything else, including every action whose `command` is `null` (manual), is never executed. It is reported as skipped.
 

@@ -441,6 +441,27 @@ Describe 'Update plan' {
         }
     }
 
+    It 'plans pnpm and global CLI upgrades with the manager that installed them' {
+        $evidence = @(
+            [pscustomobject]@{ evidenceId = 'javascript.version-intelligence.pnpm'; attributes = [pscustomobject]@{ installedVersion = '12.4.2'; latestStable = '12.5.0'; updateAvailable = $true } }
+            [pscustomobject]@{ evidenceId = 'javascript.version-intelligence.npm'; attributes = [pscustomobject]@{ installedVersion = '11.19.1'; latestStable = '11.20.0'; updateAvailable = $true } }
+            [pscustomobject]@{ evidenceId = 'javascript.version-intelligence.global.zcatalyst-cli'; attributes = [pscustomobject]@{ packageName = 'zcatalyst-cli'; manager = 'pnpm'; componentId = 'zoho-catalyst-cli'; installedVersion = '1.27.2'; latestStable = '1.28.0'; updateAvailable = $true } }
+            [pscustomobject]@{ evidenceId = 'javascript.version-intelligence.global.nodemon'; attributes = [pscustomobject]@{ packageName = 'nodemon'; manager = 'npm'; componentId = 'nodemon'; installedVersion = '3.1.14'; latestStable = '4.0.0'; updateAvailable = $true } }
+            [pscustomobject]@{ evidenceId = 'javascript.version-intelligence.global.rimraf'; attributes = [pscustomobject]@{ packageName = 'rimraf'; manager = 'pnpm'; componentId = 'rimraf'; installedVersion = '6.1.3'; latestStable = '6.1.3'; updateAvailable = $false } }
+        )
+        $provider = [pscustomobject]@{ providerId = 'javascript.toolchain'; status = 'success'; components = @(); warnings = @(); evidence = $evidence }
+        $byId = @{}
+        foreach ($action in @((Invoke-TestPlan (New-TestReport -ExtraProviders @($provider))).actions)) { $byId[$action.actionId] = $action }
+
+        $byId['pnpm-self-update:pnpm'].command | Should -Be 'pnpm self-update'
+        $byId['npm-global-upgrade:zcatalyst-cli'].command | Should -Be 'pnpm add -g zcatalyst-cli@1.28.0'
+        $byId['npm-global-upgrade:nodemon'].command | Should -Be 'npm install -g nodemon@4.0.0'
+        $byId['npm-global-upgrade:nodemon'].risk | Should -Be 'medium'
+        $byId.ContainsKey('npm-global-upgrade:rimraf') | Should -BeFalse
+        # npm is the copy bundled with Node.js and is updated with Node.
+        @($byId.Keys | Where-Object { $_ -like '*:npm' }) | Should -HaveCount 0
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0

@@ -145,7 +145,8 @@
                 "policy",
                 "winget",
                 "chocolatey",
-                "wsl"
+                "wsl",
+                "npm-registry"
               ]
             },
             "policyKey": {

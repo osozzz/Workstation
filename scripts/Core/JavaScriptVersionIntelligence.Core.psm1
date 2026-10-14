@@ -193,7 +193,7 @@ function Resolve-NodeVersionIntelligence {
 function Resolve-NpmPackageVersionIntelligence {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][ValidateSet('npm', 'pnpm')][string]$PackageName,
+        [Parameter(Mandatory)][ValidatePattern('^[a-z0-9][a-z0-9._-]*$')][string]$PackageName,
         [Parameter(Mandatory)][psobject]$DecodedSource,
         [AllowNull()][object]$InstalledVersion
     )

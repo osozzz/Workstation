@@ -19,8 +19,8 @@
     }
   },
   "summary": {
-    "actionCount": 7,
-    "lowRiskCount": 4,
+    "actionCount": 8,
+    "lowRiskCount": 5,
     "mediumRiskCount": 2,
     "highRiskCount": 1,
     "reversibleCount": 2,
@@ -54,6 +54,31 @@
     },
     {
       "order": 2,
+      "actionId": "npm-global-upgrade:zcatalyst-cli",
+      "kind": "upgrade",
+      "source": {
+        "type": "npm-registry",
+        "policyKey": null
+      },
+      "componentId": "zoho-catalyst-cli",
+      "subjectId": "npm:zcatalyst-cli",
+      "title": "Upgrade the zcatalyst-cli CLI",
+      "currentVersion": "1.27.2",
+      "targetVersion": "1.28.0",
+      "command": "pnpm add -g zcatalyst-cli@1.28.0",
+      "risk": "low",
+      "reversible": false,
+      "message": "The npm registry reports a newer zcatalyst-cli, installed globally with pnpm.",
+      "evidence": [
+        {
+          "providerId": "javascript.toolchain",
+          "componentId": "zoho-catalyst-cli",
+          "evidenceId": "javascript.version-intelligence.global.zcatalyst-cli"
+        }
+      ]
+    },
+    {
+      "order": 3,
       "actionId": "policy:android.preferAndroidHome",
       "kind": "configure",
       "source": {
@@ -78,7 +103,7 @@
       ]
     },
     {
-      "order": 3,
+      "order": 4,
       "actionId": "policy:path.allowMissingEntries",
       "kind": "cleanup",
       "source": {
@@ -103,7 +128,7 @@
       ]
     },
     {
-      "order": 4,
+      "order": 5,
       "actionId": "winget-upgrade:Git.Git",
       "kind": "upgrade",
       "source": {
@@ -128,7 +153,7 @@
       ]
     },
     {
-      "order": 5,
+      "order": 6,
       "actionId": "policy:node.defaultTrack",
       "kind": "upgrade",
       "source": {
@@ -153,7 +178,7 @@
       ]
     },
     {
-      "order": 6,
+      "order": 7,
       "actionId": "wsl-update:wsl",
       "kind": "upgrade",
       "source": {
@@ -178,7 +203,7 @@
       ]
     },
     {
-      "order": 7,
+      "order": 8,
       "actionId": "policy:node.manager",
       "kind": "install",
       "source": {

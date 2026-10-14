@@ -1,6 +1,6 @@
 # Update plan contract
 
-An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json` (schema version 1.1.0; 1.1.0 added the `chocolatey` and `wsl` sources).
+An update plan lists, in order, everything on one PC that can be updated. It is built from one normalized audit report and `config/workstation.policy.json`. The result follows `schemas/update-plan.schema.json` (schema version 1.1.0; 1.1.0 added the `chocolatey`, `wsl` and `npm-registry` sources).
 
 Planning is read-only. A plan describes commands; it never runs them. Applying a plan is a later, separate phase with its own safety rules (#159).
 
@@ -9,6 +9,7 @@ Planning is read-only. A plan describes commands; it never runs them. Applying a
 - **`policy`**: a `deviation` from the policy evaluation (`policy-evaluation-contract.md`), for example Node behind its LTS track or missing PATH entries. `source.policyKey` names the setting.
 - **`winget`**: an upgrade that WinGet reports for an installed package, from the `winget` or `msstore` (Microsoft Store) source. `subjectId` is `winget:<packageId>`. Store upgrades add `--source msstore` to the command, because Store IDs are only unambiguous within that source. Store apps that are not in the WinGet msstore catalog are not visible to WinGet and are updated by the Store itself.
 - **`wsl`**: WSL is behind its latest stable release. The command is `wsl --update`. Running distributions are shut down while WSL updates.
+- **`npm-registry`**: pnpm itself (`pnpm self-update`) and global JavaScript CLIs without a policy track (for example nodemon, rimraf, Zoho CLIs, redis-commander) when the npm registry reports a newer version. `subjectId` is `npm:<package>`, and the command uses the manager that installed the package (`pnpm add -g` or `npm install -g`), so it is not duplicated under the other one. npm itself is not planned: the policy treats it as the copy bundled with Node.js.
 - **`chocolatey`**: an outdated Chocolatey package that is not pinned. `subjectId` is `choco:<packageId>`, and the command is `choco upgrade <packageId> -y`, which needs an elevated shell. Pinned packages are left alone.
 
 ## Actions
