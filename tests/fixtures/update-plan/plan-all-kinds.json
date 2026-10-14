@@ -1,0 +1,121 @@
+{
+  "schemaVersion": "1.0.0",
+  "auditSchemaMajor": 1,
+  "policy": {
+    "schemaVersion": "1.0",
+    "digest": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "report": {
+    "schemaVersion": "1.0.0",
+    "generatedAt": "2026-10-14T12:00:00+00:00",
+    "audit": {
+      "mode": "read-only",
+      "toolVersion": "1.2.0"
+    },
+    "host": {
+      "name": "SYNTHETIC-WORKSTATION",
+      "platform": "windows",
+      "architecture": "x64"
+    }
+  },
+  "summary": {
+    "actionCount": 5,
+    "lowRiskCount": 3,
+    "mediumRiskCount": 1,
+    "highRiskCount": 1,
+    "reversibleCount": 2,
+    "manualCount": 3
+  },
+  "actions": [
+    {
+      "order": 1,
+      "actionId": "policy:android.preferAndroidHome",
+      "kind": "configure",
+      "source": { "type": "policy", "policyKey": "android.preferAndroidHome" },
+      "componentId": "android-sdk",
+      "subjectId": null,
+      "title": "Set ANDROID_HOME to the Android SDK folder",
+      "currentVersion": null,
+      "targetVersion": null,
+      "command": null,
+      "risk": "low",
+      "reversible": true,
+      "message": "Set the user variable ANDROID_HOME to the installed Android SDK folder.",
+      "evidence": [
+        { "providerId": "environment.baseline", "componentId": null, "evidenceId": "environment.android_home" }
+      ]
+    },
+    {
+      "order": 2,
+      "actionId": "policy:path.allowMissingEntries",
+      "kind": "cleanup",
+      "source": { "type": "policy", "policyKey": "path.allowMissingEntries" },
+      "componentId": null,
+      "subjectId": null,
+      "title": "Remove 3 missing PATH entries",
+      "currentVersion": null,
+      "targetVersion": null,
+      "command": null,
+      "risk": "low",
+      "reversible": true,
+      "message": "The audit report lists which PATH entries no longer exist; remove them from the persistent PATH.",
+      "evidence": [
+        { "providerId": "environment.baseline", "componentId": null, "evidenceId": "path.user.health" }
+      ]
+    },
+    {
+      "order": 3,
+      "actionId": "winget-upgrade:Git.Git",
+      "kind": "upgrade",
+      "source": { "type": "winget", "policyKey": null },
+      "componentId": null,
+      "subjectId": "winget:Git.Git",
+      "title": "Upgrade Git",
+      "currentVersion": "2.51.0",
+      "targetVersion": "2.52.0",
+      "command": "winget upgrade --id Git.Git --exact",
+      "risk": "low",
+      "reversible": false,
+      "message": "WinGet reports a newer version.",
+      "evidence": [
+        { "providerId": "winget.baseline", "componentId": "winget", "evidenceId": "winget.upgrades.normalized" }
+      ]
+    },
+    {
+      "order": 4,
+      "actionId": "policy:node.defaultTrack",
+      "kind": "upgrade",
+      "source": { "type": "policy", "policyKey": "node.defaultTrack" },
+      "componentId": "node",
+      "subjectId": null,
+      "title": "Upgrade Node.js to the latest LTS",
+      "currentVersion": "24.13.0",
+      "targetVersion": "24.21.0",
+      "command": "winget upgrade --id OpenJS.NodeJS.LTS --exact",
+      "risk": "medium",
+      "reversible": false,
+      "message": "Node is behind the latest LTS release; projects should be retested after the upgrade.",
+      "evidence": [
+        { "providerId": "javascript.toolchain", "componentId": "node", "evidenceId": null }
+      ]
+    },
+    {
+      "order": 5,
+      "actionId": "policy:node.manager",
+      "kind": "install",
+      "source": { "type": "policy", "policyKey": "node.manager" },
+      "componentId": "nvm-windows",
+      "subjectId": null,
+      "title": "Migrate Node.js to nvm-windows",
+      "currentVersion": null,
+      "targetVersion": null,
+      "command": null,
+      "risk": "high",
+      "reversible": false,
+      "message": "Requires removing the standalone Node installation first; follow the nvm-windows migration steps.",
+      "evidence": [
+        { "providerId": "javascript.toolchain", "componentId": "node", "evidenceId": null }
+      ]
+    }
+  ]
+}

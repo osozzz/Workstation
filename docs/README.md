@@ -6,6 +6,7 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 
 - `architecture/` — system boundaries, provider model, data flow, and normalized schemas.
   - `architecture/policy-evaluation-contract.md` — normalized result of evaluating an audit report against the workstation policy.
+  - `architecture/update-plan-contract.md` — normalized, read-only list of the updates one PC needs.
   - `architecture/audit-system-roadmap.md` — authoritative v1.0.0 coverage by category, version-intelligence availability, safety guarantees, and limitations.
 - `audit/` — audit capabilities, detection coverage, comparison behavior, and safety requirements.
   - `audit/running-the-audit.md` — operator runbook: configure, audit a PC, evaluate it against the policy, and optionally compare it with another PC.

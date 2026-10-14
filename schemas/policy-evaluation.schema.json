@@ -16,7 +16,7 @@
       "properties": {
         "schemaVersion": { "type": "string", "const": "1.0" },
         "digest": {
-          "description": "SHA-256 of the policy's canonical JSON, so two evaluations can be tied to the same policy.",
+          "description": "SHA-256 of the policy file's bytes, so two evaluations can be tied to the same policy.",
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         }

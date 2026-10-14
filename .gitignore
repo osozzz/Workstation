@@ -17,3 +17,6 @@ Thumbs.db
 
 # PowerShell local state
 *.clixml
+
+# Python bytecode
+__pycache__/
