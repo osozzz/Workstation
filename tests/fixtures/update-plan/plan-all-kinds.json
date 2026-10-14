@@ -19,8 +19,8 @@
     }
   },
   "summary": {
-    "actionCount": 8,
-    "lowRiskCount": 5,
+    "actionCount": 9,
+    "lowRiskCount": 6,
     "mediumRiskCount": 2,
     "highRiskCount": 1,
     "reversibleCount": 2,
@@ -129,6 +129,31 @@
     },
     {
       "order": 5,
+      "actionId": "tool-upgrade:uv",
+      "kind": "upgrade",
+      "source": {
+        "type": "toolchain",
+        "policyKey": null
+      },
+      "componentId": "uv",
+      "subjectId": null,
+      "title": "Upgrade uv",
+      "currentVersion": "0.11.28",
+      "targetVersion": "0.13.1",
+      "command": "uv self update",
+      "risk": "low",
+      "reversible": false,
+      "message": "A newer uv release is available.",
+      "evidence": [
+        {
+          "providerId": "python.ecosystem",
+          "componentId": "uv",
+          "evidenceId": null
+        }
+      ]
+    },
+    {
+      "order": 6,
       "actionId": "winget-upgrade:Git.Git",
       "kind": "upgrade",
       "source": {
@@ -153,7 +178,7 @@
       ]
     },
     {
-      "order": 6,
+      "order": 7,
       "actionId": "policy:node.defaultTrack",
       "kind": "upgrade",
       "source": {
@@ -178,7 +203,7 @@
       ]
     },
     {
-      "order": 7,
+      "order": 8,
       "actionId": "wsl-update:wsl",
       "kind": "upgrade",
       "source": {
@@ -203,7 +228,7 @@
       ]
     },
     {
-      "order": 8,
+      "order": 9,
       "actionId": "policy:node.manager",
       "kind": "install",
       "source": {

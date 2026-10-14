@@ -920,6 +920,37 @@ $evidence.Add((New-AuditEvidence -EvidenceId 'python.installations' -Type derive
     )
 }))
 
+# Latest pip (PyPI) and uv (GitHub releases), only for installed tools.
+Import-Module (Join-Path $PSScriptRoot '..\Core\VersionIntelligence.Core.psm1') -Force
+$toolSources = @(
+    @{ Id = 'pip'; Source = 'pypi:pip'; Uri = 'https://pypi.org/pypi/pip/json'; Bytes = 1048576; Read = { param($Data) [string]$Data.info.version } }
+    @{ Id = 'uv'; Source = 'github-releases:astral-sh/uv'; Uri = 'https://api.github.com/repos/astral-sh/uv/releases/latest'; Bytes = 262144; Read = { param($Data) ([string]$Data.tag_name).TrimStart('v') } }
+)
+foreach ($tool in $toolSources) {
+    $component = @($components | Where-Object { $_.componentId -eq $tool.Id -and $_.state -in @('present', 'partial') } | Select-Object -First 1)
+    if ($component.Count -eq 0) { continue }
+
+    $sourceResult = Invoke-AuditContextVersionSource -Context $Context -Source $tool.Source -Uri $tool.Uri -MaximumResponseBytes $tool.Bytes
+    $evidence.Add((New-AuditEvidence -EvidenceId "python.version-intelligence.$($tool.Id)-source" -Type api -Source $tool.Source -Captured $null -Attributes (Get-AuditVersionSourceEvidenceAttributes -SourceResult $sourceResult)))
+    $parsed = ConvertFrom-AuditVersionSourceJson -SourceResult $sourceResult
+    $latest = $null
+    if ($parsed.status -eq 'known') {
+        try { $latest = & $tool.Read $parsed.data } catch { $latest = $null }
+    }
+    $component[0].versionIntelligence = New-AuditLatestVersionIntelligence -SourceResult $sourceResult -LatestStable $latest -Message "Latest stable $($tool.Id) release."
+}
+
+# uv updates itself only when it was installed with the standalone installer (~\.local\bin);
+# a pip, pipx or WinGet installation must be updated by that manager.
+$uvComponent = @($components | Where-Object { $_.componentId -eq 'uv' -and $_.state -in @('present', 'partial') } | Select-Object -First 1)
+if ($uvComponent.Count -eq 1) {
+    $standalone = @($uvComponent[0].installations | Where-Object { [string]$_.path -match '\\\.local\\bin\\uv\.exe$' }).Count -gt 0
+    $evidence.Add((New-AuditEvidence -EvidenceId 'python.uv.install-kind' -Type derived -Source 'uv installation location' -Captured $null -Attributes @{
+        standalone          = $standalone
+        selfUpdateSupported = $standalone
+    }))
+}
+
 $anyPresent = @(
     $components |
         Where-Object { $_.state -in @('present', 'partial') }

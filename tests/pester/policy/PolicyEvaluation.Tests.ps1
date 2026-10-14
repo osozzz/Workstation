@@ -462,6 +462,34 @@ Describe 'Update plan' {
         @($byId.Keys | Where-Object { $_ -like '*:npm' }) | Should -HaveCount 0
     }
 
+    It 'plans developer tool upgrades from their latest-version sources' {
+        $python = [pscustomobject]@{
+            providerId = 'python.ecosystem'; status = 'success'; warnings = @()
+            components = @(
+                New-TestComponent -Id pip -Version '26.1.0' -Intelligence (New-TestIntelligence -Stable '26.2.1')
+                New-TestComponent -Id uv -Version '0.11.28' -Intelligence (New-TestIntelligence -Stable '0.13.1')
+            )
+            evidence   = @([pscustomobject]@{ evidenceId = 'python.uv.install-kind'; attributes = [pscustomobject]@{ selfUpdateSupported = $false } })
+        }
+        $android = [pscustomobject]@{
+            providerId = 'mobile.flutter-android'; status = 'success'; warnings = @(); evidence = @()
+            components = @(
+                New-TestComponent -Id adb -Version '37.0.1-14910828' -Intelligence (New-TestIntelligence -Stable '37.0.1')
+                New-TestComponent -Id sdkmanager -Version '20.0' -Intelligence (New-TestIntelligence -Stable '23.0')
+            )
+        }
+        $byId = @{}
+        foreach ($action in @((Invoke-TestPlan (New-TestReport -ExtraProviders @($python, $android))).actions)) { $byId[$action.actionId] = $action }
+
+        $byId['tool-upgrade:pip'].command | Should -Be 'python -m pip install --upgrade pip'
+        $byId['tool-upgrade:uv'].command | Should -BeNullOrEmpty
+        $byId['tool-upgrade:uv'].message | Should -Match 'package manager that installed it'
+        $byId['tool-upgrade:sdkmanager'].command | Should -Be 'sdkmanager cmdline-tools;latest'
+        $byId['tool-upgrade:sdkmanager'].risk | Should -Be 'medium'
+        # adb 37.0.1-14910828 is the 37.0.1 release plus a build number, not behind 37.0.1.
+        $byId.ContainsKey('tool-upgrade:adb') | Should -BeFalse
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0

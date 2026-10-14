@@ -13,8 +13,8 @@ This is the authoritative statement of what the read-only audit covers at v1.0.0
 | JavaScript runtimes and package managers | `javascript.toolchain` | `node`, `npm`, `pnpm`, `corepack`, `nvm-windows` | Node (LTS and Current), npm, pnpm |
 | Global JavaScript CLIs | `javascript.toolchain` | `angular-cli`, `typescript`, `prisma`, `nodemon`, `rimraf`, `zoho-extension-toolkit`, `zoho-catalyst-cli`, `redis-commander` | Angular CLI, TypeScript (stable/prerelease), Prisma (stable/release candidate) |
 | Java and build tools | `java.jvm` | `java`, `javac`, `maven`, `gradle` | Java, matched to installed major, vendor, and package type |
-| Flutter and Android | `mobile.flutter-android` | `flutter`, `dart`, `android-sdk`, `adb`, `sdkmanager` | Flutter stable channel |
-| Python | `python.ecosystem` | `python`, `python-launcher`, `pip`, `pipx`, `uv`, `pyenv-win` | not provided |
+| Flutter and Android | `mobile.flutter-android` | `flutter`, `dart`, `android-sdk`, `adb`, `sdkmanager` | Flutter stable channel; platform-tools and cmdline-tools from the Android SDK repository manifest |
+| Python | `python.ecosystem` | `python`, `python-launcher`, `pip`, `pipx`, `uv`, `pyenv-win` | pip (PyPI) and uv (GitHub releases); Python itself not provided |
 | .NET | `dotnet.toolchain` | `dotnet-sdk`, `dotnet-runtime`, `dotnet-workloads` | not provided |
 | Rust and Go | `rust-go.toolchains` | `rustup`, `rust-toolchains`, `rustc`, `cargo`, `go` | not provided |
 | Developer CLIs | `developer.clis` | `git`, `github-cli`, `docker`, `docker-compose`, `supabase-cli`, `vercel-cli`, `heroku-cli` | not provided |

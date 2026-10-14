@@ -349,6 +349,47 @@ function Get-PlanNpmRegistryActions {
     }
 }
 
+# Developer tools updated by their own commands; versions come from each tool's latest-version source.
+$script:ToolActions = @(
+    @{ ProviderId = 'python.ecosystem'; ComponentId = 'pip'; Title = 'Upgrade pip for the active Python'; Command = 'python -m pip install --upgrade pip' }
+    @{ ProviderId = 'python.ecosystem'; ComponentId = 'uv'; Title = 'Upgrade uv'; Command = 'uv self update'; RequiresEvidence = 'python.uv.install-kind' }
+    @{ ProviderId = 'mobile.flutter-android'; ComponentId = 'adb'; Title = 'Upgrade Android SDK platform-tools'; Command = 'sdkmanager platform-tools' }
+    @{ ProviderId = 'mobile.flutter-android'; ComponentId = 'sdkmanager'; Title = 'Upgrade Android SDK command-line tools'; Command = 'sdkmanager cmdline-tools;latest' }
+)
+
+function Get-PlanToolActions {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$Report)
+
+    foreach ($spec in $script:ToolActions) {
+        $provider = @($Report.providers | Where-Object { $_.providerId -eq $spec.ProviderId }) | Select-Object -First 1
+        if ($null -eq $provider) { continue }
+        $component = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'components') | Where-Object { $null -ne $_ -and $_.componentId -eq $spec.ComponentId -and $_.state -in @('present', 'partial') } | Select-Object -First 1
+        if ($null -eq $component) { continue }
+
+        $current = [string](Get-ComparisonOptionalPropertyValue -InputObject (Get-ComparisonOptionalPropertyValue -InputObject $component -Name 'activeVersion') -Name 'normalized')
+        $target = [string](Get-ComparisonOptionalPropertyValue -InputObject (Get-ComparisonOptionalPropertyValue -InputObject (Get-ComparisonOptionalPropertyValue -InputObject $component -Name 'versionIntelligence') -Name 'latestStable') -Name 'normalized')
+        # A numeric suffix is a build number (adb 37.0.0-14910828), not a prerelease.
+        $comparable = $current -replace '-\d+$', ''
+        if ([string]::IsNullOrWhiteSpace($comparable) -or [string]::IsNullOrWhiteSpace($target) -or (Compare-PolicyVersion -Left $comparable -Right $target) -ge 0) { continue }
+
+        $command = $spec.Command
+        $message = "A newer $($spec.ComponentId) release is available."
+        if ($spec.ContainsKey('RequiresEvidence')) {
+            $kind = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq $spec.RequiresEvidence } | Select-Object -First 1
+            if ($null -eq $kind -or (Get-ComparisonOptionalPropertyValue -InputObject $kind.attributes -Name 'selfUpdateSupported') -ne $true) {
+                $command = $null
+                $message = "$message It was not installed with its standalone installer, so update it with the package manager that installed it."
+            }
+        }
+
+        New-PlanAction -ActionId "tool-upgrade:$($spec.ComponentId)" -Kind upgrade -SourceType toolchain -PolicyKey $null -ComponentId $spec.ComponentId -SubjectId $null `
+            -Title $spec.Title -CurrentVersion $current -TargetVersion $target -Command $command `
+            -Risk (Get-PlanUpgradeRisk -Current $comparable -Target $target) -Reversible $false -Message $message `
+            -Evidence @([pscustomobject][ordered]@{ providerId = $spec.ProviderId; componentId = $spec.ComponentId; evidenceId = $null })
+    }
+}
+
 function New-WorkstationUpdatePlan {
     <#
     .SYNOPSIS
@@ -364,7 +405,7 @@ function New-WorkstationUpdatePlan {
     $evaluation = New-WorkstationPolicyEvaluation -Report $Report -Policy $Policy -PolicyDigest $PolicyDigest
 
     $actions = [System.Collections.Generic.List[object]]::new()
-    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report)) {
+    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report)) {
         if ($null -ne $action) { $actions.Add($action) }
     }
 

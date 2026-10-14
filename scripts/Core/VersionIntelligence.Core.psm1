@@ -511,7 +511,63 @@ function Get-AuditVersionSourceEvidenceAttributes {
     }
 }
 
+function Invoke-AuditContextVersionSource {
+    <#
+    .SYNOPSIS
+    Invoke-AuditVersionSource with the offline flag, transport, and timestamp taken from a provider context.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$Context,
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Source,
+        [Parameter(Mandatory)][uri]$Uri,
+        [ValidateRange(256, 1048576)][int]$MaximumResponseBytes = 262144
+    )
+
+    $offline = Get-OptionalPropertyValue -InputObject $Context -Name 'VersionIntelligenceOffline'
+    $transport = Get-OptionalPropertyValue -InputObject $Context -Name 'VersionIntelligenceTransport'
+    try { $checkedAt = [DateTimeOffset]::Parse([string]$Context.ObservedAt) } catch { $checkedAt = [DateTimeOffset]::UtcNow }
+
+    $parameters = @{
+        Source               = $Source
+        Uri                  = $Uri
+        CheckedAt            = $checkedAt
+        Offline              = ($offline -eq $true)
+        MaximumResponseBytes = $MaximumResponseBytes
+    }
+    if ($transport -is [scriptblock]) { $parameters['Transport'] = $transport }
+    return Invoke-AuditVersionSource @parameters
+}
+
+function New-AuditLatestVersionIntelligence {
+    <#
+    .SYNOPSIS
+    Version intelligence from a source result and an already-extracted latest stable version string.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$SourceResult,
+        [AllowNull()][string]$LatestStable,
+        [Parameter(Mandatory)][string]$Message
+    )
+
+    $source = [string](Get-OptionalPropertyValue -InputObject $SourceResult -Name 'source')
+    $checkedAt = [string](Get-OptionalPropertyValue -InputObject $SourceResult -Name 'checkedAt')
+    $status = [string](Get-OptionalPropertyValue -InputObject $SourceResult -Name 'status')
+
+    if ($status -eq 'success' -and $LatestStable -match '^\d+(?:\.\d+){1,3}$') {
+        $record = [pscustomobject][ordered]@{ raw = $LatestStable; normalized = $LatestStable; channel = 'stable' }
+        return New-AuditVersionIntelligence -Status known -LatestStable $record -LatestLts $null -LatestCurrent $null -Source $source -CheckedAt $checkedAt -Message $Message
+    }
+
+    $failedStatus = if ($status -eq 'unavailable') { 'unavailable' } else { 'unknown' }
+    $failedMessage = if ($status -eq 'unavailable') { [string](Get-OptionalPropertyValue -InputObject $SourceResult -Name 'message') } else { 'The latest stable version could not be read from the source.' }
+    return New-AuditVersionIntelligence -Status $failedStatus -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $source -CheckedAt $checkedAt -Message $failedMessage
+}
+
 Export-ModuleMember -Function @(
+    'Invoke-AuditContextVersionSource',
+    'New-AuditLatestVersionIntelligence',
     'New-AuditVersionIntelligence',
     'Invoke-AuditVersionSource',
     'ConvertFrom-AuditVersionSourceJson',
