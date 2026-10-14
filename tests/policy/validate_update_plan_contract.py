@@ -55,6 +55,10 @@ def invariant_problems(plan: dict[str, Any]) -> list[str]:
     return problems
 
 
+def first(plan: dict[str, Any], source_type: str) -> dict[str, Any]:
+    return next(a for a in plan["actions"] if a["source"]["type"] == source_type)
+
+
 def main() -> int:
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
@@ -83,7 +87,7 @@ def main() -> int:
 
     assert base is not None
     covered = {(a["kind"], a["risk"], a["source"]["type"]) for a in base["actions"]}
-    for field, values in (("kind", {"upgrade", "install", "configure", "cleanup"}), ("risk", set(RISK_RANK)), ("source", {"policy", "winget"})):
+    for field, values in (("kind", {"upgrade", "install", "configure", "cleanup"}), ("risk", set(RISK_RANK)), ("source", set(schema["$defs"]["action"]["properties"]["source"]["properties"]["type"]["enum"]))):
         index = ("kind", "risk", "source").index(field)
         if {c[index] for c in covered} != values:
             fail(f"Fixtures must cover every {field}.")
@@ -92,8 +96,8 @@ def main() -> int:
         ("unknown kind", lambda p: p["actions"][0].__setitem__("kind", "remove")),
         ("unknown risk", lambda p: p["actions"][0].__setitem__("risk", "critical")),
         ("action without evidence", lambda p: p["actions"][0].__setitem__("evidence", [])),
-        ("policy source without key", lambda p: p["actions"][0]["source"].__setitem__("policyKey", None)),
-        ("winget source with a policy key", lambda p: p["actions"][2]["source"].__setitem__("policyKey", "node.manager")),
+        ("policy source without key", lambda p: first(p, "policy")["source"].__setitem__("policyKey", None)),
+        ("winget source with a policy key", lambda p: first(p, "winget")["source"].__setitem__("policyKey", "node.manager")),
         ("empty command string", lambda p: p["actions"][2].__setitem__("command", "")),
         ("malformed actionId", lambda p: p["actions"][0].__setitem__("actionId", "Policy android")),
         ("extra action property", lambda p: p["actions"][0].__setitem__("executed", True)),

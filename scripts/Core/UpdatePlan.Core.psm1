@@ -3,7 +3,7 @@ Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot 'Comparison.Core.psm1')
 Import-Module (Join-Path $PSScriptRoot 'PolicyEvaluation.Core.psm1')
 
-$script:PlanSchemaVersion = '1.0.0'
+$script:PlanSchemaVersion = '1.1.0'
 $script:RiskRank = @{ low = 0; medium = 1; high = 2 }
 $script:ActionIdPattern = '^[a-z]+(?:-[a-z]+)*:[0-9A-Za-z][0-9A-Za-z._+-]*$'
 
@@ -245,6 +245,32 @@ function Get-PlanWinGetActions {
     }
 }
 
+function Get-PlanChocolateyActions {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$Report)
+
+    $provider = @($Report.providers | Where-Object { $_.providerId -eq 'chocolatey.baseline' }) | Select-Object -First 1
+    if ($null -eq $provider) { return }
+    $evidence = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq 'chocolatey.outdated.normalized' } | Select-Object -First 1
+    if ($null -eq $evidence) { return }
+
+    $reference = [pscustomobject][ordered]@{ providerId = 'chocolatey.baseline'; componentId = 'chocolatey'; evidenceId = 'chocolatey.outdated.normalized' }
+    foreach ($upgrade in @(Get-ComparisonOptionalPropertyValue -InputObject $evidence.attributes -Name 'upgrades')) {
+        # A pinned package is held on purpose by the operator.
+        if ($null -eq $upgrade -or (Get-ComparisonOptionalPropertyValue -InputObject $upgrade -Name 'pinned') -eq $true) { continue }
+        $packageId = [string]$upgrade.packageId
+        $actionId = "choco-upgrade:$packageId"
+        if ($actionId -notmatch $script:ActionIdPattern) { continue }
+
+        $current = [string]$upgrade.installedVersion
+        $target = [string]$upgrade.availableVersion
+        New-PlanAction -ActionId $actionId -Kind upgrade -SourceType chocolatey -PolicyKey $null -ComponentId $null `
+            -SubjectId "choco:$packageId" -Title "Upgrade $packageId (Chocolatey)" -CurrentVersion $current -TargetVersion $target `
+            -Command "choco upgrade $packageId -y" -Risk (Get-PlanUpgradeRisk -Current $current -Target $target) `
+            -Reversible $false -Message 'Chocolatey reports a newer version. Chocolatey upgrades need an elevated (administrator) shell.' -Evidence @($reference)
+    }
+}
+
 function New-WorkstationUpdatePlan {
     <#
     .SYNOPSIS
@@ -260,7 +286,7 @@ function New-WorkstationUpdatePlan {
     $evaluation = New-WorkstationPolicyEvaluation -Report $Report -Policy $Policy -PolicyDigest $PolicyDigest
 
     $actions = [System.Collections.Generic.List[object]]::new()
-    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report)) {
+    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report)) {
         if ($null -ne $action) { $actions.Add($action) }
     }
 

@@ -40,6 +40,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "python-dotnet-rust-go.precedence",
     "environment.baseline",
     "winget.baseline",
+    "chocolatey.baseline",
     "projects.local",
     "projects.javascript-web",
     "projects.non-javascript",
