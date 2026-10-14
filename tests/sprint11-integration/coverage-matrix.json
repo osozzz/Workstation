@@ -1,0 +1,72 @@
+{
+  "issue": 159,
+  "milestone": "v2.0.0 — Controlled Updates",
+  "criteria": [
+    {
+      "id": "execution-policy",
+      "acceptance": "A written safety policy governs every workstation change.",
+      "checks": [
+        "static-analysis"
+      ],
+      "evidence": [
+        "docs/policies/update-execution-safety.md",
+        "docs/policies/audit-safety.md"
+      ]
+    },
+    {
+      "id": "allow-list-enforced",
+      "acceptance": "Only allow-listed commands run, rebuilt from validated plan fields and never passed to a shell.",
+      "checks": [
+        "pester"
+      ],
+      "evidence": [
+        "scripts/Execution/Execution.Core.psm1",
+        "tests/pester/execution/Execution.Tests.ps1"
+      ]
+    },
+    {
+      "id": "preview-and-confirmation",
+      "acceptance": "Dry run by default; every applied action needs an explicit yes; stale or foreign-policy plans are refused.",
+      "checks": [
+        "pester"
+      ],
+      "evidence": [
+        "scripts/Update-Workstation.ps1",
+        "tests/pester/execution/Execution.Tests.ps1"
+      ]
+    },
+    {
+      "id": "stop-and-log",
+      "acceptance": "The run stops at the first failure and writes a local log of every selected action.",
+      "checks": [
+        "pester"
+      ],
+      "evidence": [
+        "tests/pester/execution/Execution.Tests.ps1",
+        "docs/audit/running-the-audit.md"
+      ]
+    },
+    {
+      "id": "read-only-tools-isolated",
+      "acceptance": "Audit, evaluation, plan and comparison stay read-only; only Update-Workstation.ps1 loads the executor.",
+      "checks": [
+        "static-analysis"
+      ],
+      "evidence": [
+        "tests/sprint7-integration/validate_sprint7_hardening.ps1"
+      ]
+    },
+    {
+      "id": "real-apply-rehearsal",
+      "acceptance": "An operator applies a real low-risk action on PC #1 through Run-Update.cmd.",
+      "checks": [
+        "comparison"
+      ],
+      "evidence": [
+        "Run-Update.cmd",
+        "tests/launchers/validate_launchers.ps1"
+      ],
+      "manual": "Run Run-Update.cmd on a fresh PC #1 plan with -Action <low-risk action> -Apply and record the log result in #183."
+    }
+  ]
+}
