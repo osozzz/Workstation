@@ -57,7 +57,8 @@ Optional project and Git discovery needs `config\workstation.local.json`; see `c
 - `v0.9.0` — Audit Hardening
 - `v1.0.0` — Baseline Ready
 - `v1.1.0` — Policy Evaluation
-- `v1.2.0` — Update Plan (in progress)
+- `v1.2.0` — Update Plan
+- `v1.3.0` — Update Coverage
 - Next — Controlled update execution (#159)
 
 ## Clone
