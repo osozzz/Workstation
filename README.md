@@ -1,12 +1,12 @@
 # Developer Workstation Standard
 
-A Windows developer-workstation toolkit for auditing, comparing, and standardizing development environments across multiple PCs.
+A Windows developer-workstation toolkit that keeps a PC up to date with a declared standard. It audits what is installed, evaluates it against the workstation policy, and (in upcoming releases) plans and applies the updates. Comparing two PCs is available as an extra.
 
 ## Current phase
 
 **v1.1.0 — Policy Evaluation**
 
-`v1.0.1 — Baseline Ready` is complete and published: the read-only audit is validated on real hardware (PC #1), and the cross-PC comparison on a second PC is deferred. The repository is now adding read-only evaluation of audit reports against the declared standard in `config/workstation.policy.json` (#159).
+`v1.1.0 — Policy Evaluation` is published. The read-only audit is validated on real hardware, and each audit report can be evaluated against `config/workstation.policy.json`. Next comes an update plan that lists everything on the PC that can be updated, then controlled execution of the updates you approve (#159).
 
 ## Repository model
 
@@ -31,17 +31,17 @@ The GitHub Wiki, when used, is a navigation/help layer only and must not overrid
 
 ## Current audit system
 
-The read-only audit covers Windows and PowerShell, WinGet applications and updates, JavaScript/Java/Flutter/Android/Python/.NET/Rust/Go toolchains, developer CLIs, PATH and approved environment variables, command precedence, local projects, Git health and hygiene, latest-version intelligence, and cross-PC comparison. The full coverage statement and its limitations are in `docs/architecture/audit-system-roadmap.md`.
+The read-only audit covers Windows and PowerShell, WinGet applications and updates, JavaScript/Java/Flutter/Android/Python/.NET/Rust/Go toolchains, developer CLIs, PATH and approved environment variables, command precedence, local projects, Git health and hygiene, latest-version intelligence, policy evaluation, and an optional cross-PC comparison. The full coverage statement and its limitations are in `docs/architecture/audit-system-roadmap.md`.
 
 ## Quick start
 
 ```powershell
 .\Run-Audit.cmd                                   # audit this PC; reports go to .\reports (ignored by Git)
-.\Run-Compare.cmd <reference.json> <target.json>  # compare two audit reports
-.\Run-Evaluate.cmd <report.json>                  # evaluate a report against the workstation policy
+.\Run-Evaluate.cmd <report.json>                  # evaluate the report against the workstation policy
+.\Run-Compare.cmd <reference.json> <target.json>  # optional: compare two audit reports
 ```
 
-Optional project and Git discovery needs `config\workstation.local.json`; see `config/README.md`. The step-by-step procedure for auditing PC #1 and comparing PC #2 is in `docs/audit/running-the-audit.md`.
+Optional project and Git discovery needs `config\workstation.local.json`; see `config/README.md`. The step-by-step procedure for auditing and evaluating a PC is in `docs/audit/running-the-audit.md`.
 
 ## Roadmap
 
@@ -55,8 +55,8 @@ Optional project and Git discovery needs `config\workstation.local.json`; see `c
 - `v0.8.0` — Cross-PC Comparison
 - `v0.9.0` — Audit Hardening
 - `v1.0.0` — Baseline Ready
-
-Only after `v1.0.0` will workstation mutation/update automation become the primary focus.
+- `v1.1.0` — Policy Evaluation
+- Next — Update plan (read-only), then controlled update execution (#159)
 
 ## Clone
 

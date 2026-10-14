@@ -8,7 +8,7 @@ The `/docs` directory is the canonical documentation source for Workstation. The
   - `architecture/policy-evaluation-contract.md` — normalized result of evaluating an audit report against the workstation policy.
   - `architecture/audit-system-roadmap.md` — authoritative v1.0.0 coverage by category, version-intelligence availability, safety guarantees, and limitations.
 - `audit/` — audit capabilities, detection coverage, comparison behavior, and safety requirements.
-  - `audit/running-the-audit.md` — operator runbook: configure, audit PC #1 and PC #2 with the same release, and compare them.
+  - `audit/running-the-audit.md` — operator runbook: configure, audit a PC, evaluate it against the policy, and optionally compare it with another PC.
   - `audit/ci-coverage.md` — CI check names, what each covers, the required `validate` aggregator, and known coverage gaps.
   - `audit/powershell-static-analysis.md` — pinned PSScriptAnalyzer baseline, explicit exclusions, and CI gate behavior.
   - `audit/pester-testing.md` — direct core/provider contract testing conventions and deterministic CI behavior.
@@ -25,6 +25,6 @@ The `/docs` directory is the canonical documentation source for Workstation. The
 
 ## Current phase
 
-The repository is in **v1.1.0 — Policy Evaluation**. `v1.0.1 — Baseline Ready` is complete and published.
+`v1.1.0 — Policy Evaluation` is complete and published. Next is the update plan: everything on a PC that can be updated, as a reviewable list (#159).
 
 Real workstation baselines are authoritative from v1.0.1 onward; changing a workstation remains outside the read-only audit.
