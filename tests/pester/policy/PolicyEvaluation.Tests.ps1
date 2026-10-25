@@ -517,6 +517,49 @@ Describe 'Update plan' {
         $actions[0].evidence | Should -HaveCount 2
     }
 
+    It 'upgrades shared tools through WinGet only and keeps tools WinGet does not manage' {
+        $chocolatey = [pscustomobject]@{
+            providerId = 'chocolatey.baseline'; status = 'success'; components = @(); warnings = @()
+            evidence   = @(
+                [pscustomobject]@{ evidenceId = 'chocolatey.inventory.normalized'; attributes = [pscustomobject]@{ packages = @(
+                            [pscustomobject]@{ packageId = 'python314'; installedVersion = '3.14.2' }
+                            [pscustomobject]@{ packageId = 'python313'; installedVersion = '3.13.5' }
+                            [pscustomobject]@{ packageId = 'chocolatey'; installedVersion = '2.6.0' }
+                        ) } }
+                [pscustomobject]@{ evidenceId = 'chocolatey.outdated.normalized'; attributes = [pscustomobject]@{ upgrades = @(
+                            [pscustomobject]@{ packageId = 'python314'; installedVersion = '3.14.2'; availableVersion = '3.14.8'; pinned = $false }
+                            [pscustomobject]@{ packageId = 'python313'; installedVersion = '3.13.5'; availableVersion = '3.13.16'; pinned = $false }
+                            [pscustomobject]@{ packageId = 'chocolatey'; installedVersion = '2.6.0'; availableVersion = '2.7.4'; pinned = $false }
+                        ) } }
+            )
+        }
+        $winget = [pscustomobject]@{
+            providerId = 'winget.baseline'; status = 'success'; components = @(); warnings = @()
+            evidence   = @(
+                [pscustomobject]@{ evidenceId = 'winget.inventory.normalized'; attributes = [pscustomobject]@{ packages = @(
+                            [pscustomobject]@{ name = 'Python 3.14.2 (64-bit)'; packageId = 'Python.Python.3.14'; source = 'winget' }
+                        ) } }
+                [pscustomobject]@{ evidenceId = 'winget.upgrades.normalized'; attributes = [pscustomobject]@{ upgrades = @(
+                            New-TestUpgrade -Id 'Python.Python.3.14' -From '3.14.2' -To '3.14.7'
+                            New-TestUpgrade -Id 'Microsoft.WSL' -From '2.5.7.0' -To '2.7.13'
+                        ) } }
+            )
+        }
+        $wsl = [pscustomobject]@{ providerId = 'wsl.baseline'; status = 'success'; warnings = @(); evidence = @()
+            components = @(New-TestComponent -Id wsl -Version '2.5.7.0' -Intelligence (New-TestIntelligence -Stable '3.0.3')) }
+
+        $ids = @((Invoke-TestPlan (New-TestReport -ExtraProviders @($chocolatey, $winget, $wsl))).actions | ForEach-Object actionId)
+
+        $ids | Should -Contain 'winget-upgrade:Python.Python.3.14'
+        $ids | Should -Not -Contain 'choco-upgrade:python314'
+        # WinGet does not manage Python 3.13, so Chocolatey keeps updating it.
+        $ids | Should -Contain 'choco-upgrade:python313'
+        $ids | Should -Contain 'choco-upgrade:chocolatey'
+        # wsl --update reaches the latest release; the lagging WinGet package would conflict.
+        $ids | Should -Contain 'wsl-update:wsl'
+        $ids | Should -Not -Contain 'winget-upgrade:Microsoft.WSL'
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0

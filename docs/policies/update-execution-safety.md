@@ -41,14 +41,16 @@ WinGet calls add `--accept-package-agreements --accept-source-agreements --disab
 ## Selection, preview, and confirmation
 
 - **Dry run is the default.** Without `-Apply`, the executor only prints what it would run, in plan order, and changes nothing.
-- **Nothing is selected by default.** The operator chooses actions by `order` or `actionId`, or with `-Risk low` (every low-risk action). There is no "everything" switch that includes high risk. High-risk actions are always manual in v2.0.0.
-- **Per-action confirmation.** With `-Apply`, each action shows its title, versions, risk, reversibility, the exact command, and the agreement notice, and it runs only after the operator answers yes. `-Confirm:$false` is not supported in v2.0.0.
+- **Nothing is selected by default.** The operator chooses actions by `order` or `actionId`, or with `-Risk low` (every low-risk action). There is no "everything" switch that includes high risk. High-risk actions are always manual.
+- **Per-action confirmation (default).** With `-Apply`, each action shows its title, versions, risk, reversibility, the exact command, and the agreement notice, and it runs only after the operator answers yes. `-Confirm:$false` is not supported.
+- **Batch confirmation (`-ConfirmAll`, from v2.1.0).** Every selected action is validated first and the complete list is shown, with each exact command and agreement notice. The operator then confirms the whole batch once by typing the number of actions that will run; anything else cancels and nothing runs. The same allow-list, elevation, manual and high-risk rules apply. `-ConfirmAll` without `-Apply` is still a dry run.
 - The executor never elevates itself. If an installer asks for administrator rights, Windows shows its own prompt and the operator decides.
 
 ## Running and failure handling
 
 - Actions run one at a time, in plan order, each with a timeout (30 minutes).
-- The executor stops at the first failed action (non-zero exit code or timeout). It never retries and never rolls back automatically. Reversal, where possible, is the operator's decision.
+- With per-action confirmation, the executor stops at the first failed action (non-zero exit code or timeout). With `-ConfirmAll`, a failure is recorded and the remaining actions, which are independent package updates, still run; the summary lists every failure. The executor never retries and never rolls back automatically. Reversal, where possible, is the operator's decision.
+- Each command runs with its output written to files and an empty standard input. The executor waits only for the process it started, so a child process left running by a tool (for example the Dart processes `flutter upgrade` starts) cannot keep an action running after the update finished, and a prompt receives end-of-input instead of waiting. On timeout the process is stopped and its partial output is kept in the log.
 - Interrupting with Ctrl+C stops after the current action. Later actions are not started.
 
 ## Execution log
@@ -57,10 +59,10 @@ WinGet calls add `--accept-package-agreements --accept-source-agreements --disab
 - The log is local and ignored by Git, like audit reports. It may contain machine-specific output.
 - After a run, re-audit and re-plan. The new plan is the source of truth for what remains.
 
-## Never, in v2.0.0
+## Never
 
 - Uninstall software, or change PATH or environment variables.
 - Change Git repositories, project files, or lockfiles.
 - Run manual actions, high-risk actions, or commands outside the allow-list.
-- Run without a per-action confirmation.
+- Run without the operator's confirmation, per action or for the whole listed batch.
 - Send data anywhere. Execution output stays in the local log.

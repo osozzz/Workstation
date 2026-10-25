@@ -3,7 +3,6 @@ Set-StrictMode -Version Latest
 # The only code in the toolkit allowed to change a workstation. Every rule here comes from
 # docs/policies/update-execution-safety.md; change the policy first, then this module.
 
-Import-Module (Join-Path $PSScriptRoot '..\Core\Audit.Core.psm1')
 
 $script:SupportedPlanVersions = @('1.1.0')
 $script:MaximumPlanAgeHours = 24
@@ -164,19 +163,80 @@ function Test-ExecutionElevated {
     return ([Security.Principal.WindowsPrincipal]::new($identity)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function ConvertTo-ExecutionArgumentString {
+    <#
+    .SYNOPSIS
+    Joins validated arguments for CreateProcess; arguments with spaces or cmd separators (;) are quoted.
+    #>
+    param([string[]]$Arguments)
+
+    return (@($Arguments | ForEach-Object { if ($_ -match '[\s;,=]') { '"' + $_ + '"' } else { $_ } }) -join ' ')
+}
+
 function Invoke-ExecutionCall {
     <#
     .SYNOPSIS
     Runs one validated call; the default runner for Invoke-WorkstationUpdate.
+    .DESCRIPTION
+    Output goes to files and stdin is an empty file. The executor waits only for the process it
+    started: a child left running by the tool (flutter upgrade starts Dart processes) can no longer
+    hold a pipe open and keep the action "running" after the update finished, and a prompt reads
+    end-of-input instead of waiting forever. On timeout the process is stopped and the partial
+    output is kept.
     #>
     param([Parameter(Mandatory)][psobject]$Call)
 
-    $result = Invoke-AuditCommand -Command $Call.filePath -Arguments $Call.arguments -TimeoutSeconds $script:ActionTimeoutSeconds -MaximumCaptureLength 1048576
-    return [pscustomobject][ordered]@{
-        exitCode = $result.ExitCode
-        timedOut = [bool]$result.TimedOut
-        found    = [bool]$result.Found
-        output   = [string]$result.Captured
+    $resolved = Get-Command $Call.filePath -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $resolved) {
+        return [pscustomobject][ordered]@{ exitCode = $null; timedOut = $false; found = $false; output = '' }
+    }
+
+    $work = Join-Path ([IO.Path]::GetTempPath()) ('workstation-update-' + [guid]::NewGuid().ToString('N'))
+    [IO.Directory]::CreateDirectory($work) | Out-Null
+    $stdin = Join-Path $work 'stdin.txt'
+    $stdout = Join-Path $work 'stdout.txt'
+    $stderr = Join-Path $work 'stderr.txt'
+    [IO.File]::WriteAllText($stdin, '')
+
+    try {
+        $startParameters = @{
+            FilePath               = $resolved.Source
+            RedirectStandardInput  = $stdin
+            RedirectStandardOutput = $stdout
+            RedirectStandardError  = $stderr
+            NoNewWindow            = $true
+            PassThru               = $true
+        }
+        $argumentString = ConvertTo-ExecutionArgumentString -Arguments $Call.arguments
+        if (-not [string]::IsNullOrEmpty($argumentString)) { $startParameters['ArgumentList'] = $argumentString }
+
+        $process = Start-Process @startParameters
+        $exited = $process.WaitForExit($script:ActionTimeoutSeconds * 1000)
+        if (-not $exited) {
+            try { $process.Kill() } catch { }
+            [void]$process.WaitForExit(10000)
+        }
+
+        # A child that outlives the process may still hold the file open; read it shared.
+        $read = {
+            param($Path)
+            if (-not (Test-Path -LiteralPath $Path)) { return '' }
+            $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)
+            try { return (New-Object IO.StreamReader($stream, [Text.Encoding]::UTF8)).ReadToEnd() } finally { $stream.Dispose() }
+        }
+        $text = ((& $read $stdout) + [Environment]::NewLine + (& $read $stderr)).Trim()
+        $escape = [string][char]27
+        $text = [regex]::Replace($text, $escape + '(\[[0-9;?]*[ -/]*[@-~]|\][^' + [char]7 + $escape + ']*(' + [char]7 + '|' + $escape + '\\))', '')
+
+        return [pscustomobject][ordered]@{
+            exitCode = $(if ($exited) { $process.ExitCode } else { $null })
+            timedOut = -not $exited
+            found    = $true
+            output   = $text
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -190,9 +250,15 @@ function Write-ExecutionLog {
 function Invoke-WorkstationUpdate {
     <#
     .SYNOPSIS
-    Previews, or with -Apply runs, selected plan actions one at a time with per-action confirmation.
+    Previews, or with -Apply runs, selected plan actions one at a time.
+    .DESCRIPTION
+    By default every action needs its own yes and the run stops at the first failure. With
+    -ConfirmAll the whole list is shown first and confirmed once by typing the number of actions;
+    failures are then recorded and the remaining, independent actions still run.
     .PARAMETER Confirmer
     Asks the operator about one action and returns $true to run it. Tests replace it; production prompts.
+    .PARAMETER BatchConfirmer
+    Asks the operator to confirm the whole batch (-ConfirmAll) and returns the typed text.
     .PARAMETER Runner
     Runs one validated call. Tests replace it; production uses Invoke-ExecutionCall.
     #>
@@ -203,8 +269,10 @@ function Invoke-WorkstationUpdate {
         [AllowEmptyCollection()][string[]]$Action = @(),
         [ValidateSet('', 'low', 'medium')][string]$Risk = '',
         [switch]$Apply,
+        [switch]$ConfirmAll,
         [Parameter(Mandatory)][string]$LogDirectory,
         [scriptblock]$Confirmer,
+        [scriptblock]$BatchConfirmer,
         [scriptblock]$Runner = { param($Call) Invoke-ExecutionCall -Call $Call },
         [scriptblock]$Elevated = { Test-ExecutionElevated },
         [DateTimeOffset]$Now = [DateTimeOffset]::Now
@@ -223,13 +291,16 @@ function Invoke-WorkstationUpdate {
             return $answer -match '^(y|yes|s|si)$'
         }
     }
+    if ($null -eq $BatchConfirmer) {
+        $BatchConfirmer = { param($Count) Read-Host "Type $Count to run all $Count actions above (anything else cancels)" }
+    }
 
     $directory = [IO.Path]::GetFullPath($LogDirectory)
     [IO.Directory]::CreateDirectory($directory) | Out-Null
     $logPath = Join-Path $directory ($Now.ToString('yyyyMMdd-HHmmss') + $(if ($Apply) { '' } else { '-dry-run' }) + '.json')
     $log = [pscustomobject][ordered]@{
         startedAt  = $Now.ToString('o')
-        mode       = $(if ($Apply) { 'apply' } else { 'dry-run' })
+        mode       = $(if (-not $Apply) { 'dry-run' } elseif ($ConfirmAll) { 'apply-confirm-all' } else { 'apply' })
         planReport = $Plan.report.generatedAt
         policy     = $PolicyDigest
         actions    = @($selected | ForEach-Object {
@@ -238,12 +309,12 @@ function Invoke-WorkstationUpdate {
     }
     Write-ExecutionLog -Path $logPath -Log $log
 
+    # 1. Validate every selected action before anything runs, and show what would run.
+    $runnable = [System.Collections.Generic.List[object]]::new()
     $isElevated = $null
-    $stopped = $false
     for ($i = 0; $i -lt $selected.Count; $i++) {
         $item = $selected[$i]
         $entry = $log.actions[$i]
-        if ($stopped) { break }
 
         if ($item.risk -eq 'high') { $entry.result = 'skipped'; $entry.reason = 'High-risk actions are always manual.'; continue }
         try { $call = ConvertTo-ExecutionCall -Action $item }
@@ -254,35 +325,63 @@ function Invoke-WorkstationUpdate {
             if (-not $isElevated) { $entry.result = 'skipped'; $entry.reason = 'Needs an elevated (administrator) shell; the executor never elevates itself.'; continue }
         }
 
-        $display = "$($call.filePath) $($call.arguments -join ' ')"
         Write-Host ''
         Write-Host ("{0}. [{1}, {2}] {3}" -f $item.order, $item.risk, $(if ($item.reversible) { 'reversible' } else { 'not reversible' }), $item.title)
         if ($null -ne $item.currentVersion -or $null -ne $item.targetVersion) { Write-Host "   $($item.currentVersion) -> $($item.targetVersion)" }
-        Write-Host "   Command: $display"
+        Write-Host "   Command: $($call.filePath) $($call.arguments -join ' ')"
         if ($call.acceptsAgreements) { Write-Host '   Running it accepts the package and source agreements of this WinGet package.' }
+        if (-not $Apply) { $entry.reason = 'Dry run.' }
+        $runnable.Add([pscustomobject]@{ item = $item; call = $call; entry = $entry })
+    }
 
-        if (-not $Apply) { $entry.result = 'not-run'; $entry.reason = 'Dry run.'; continue }
-        if (-not [bool](& $Confirmer $item $call)) { $entry.result = 'skipped'; $entry.reason = 'Declined by the operator.'; Write-ExecutionLog -Path $logPath -Log $log; continue }
-
-        $entry.startedAt = [DateTimeOffset]::Now.ToString('o')
-        $outcome = & $Runner $call
-        $entry.finishedAt = [DateTimeOffset]::Now.ToString('o')
-        $entry.exitCode = $outcome.exitCode
-        $output = [string]$outcome.output
-        $entry.outputTail = if ($output.Length -gt $script:OutputTailLength) { $output.Substring($output.Length - $script:OutputTailLength) } else { $output }
-
-        if ($outcome.timedOut) { $entry.result = 'failed'; $entry.reason = "Timed out after $($script:ActionTimeoutSeconds) seconds." }
-        elseif (-not $outcome.found) { $entry.result = 'failed'; $entry.reason = "Command '$($call.filePath)' was not found." }
-        elseif ($outcome.exitCode -ne 0) { $entry.result = 'failed'; $entry.reason = "Exit code $($outcome.exitCode)." }
-        else { $entry.result = 'succeeded' }
-
-        Write-ExecutionLog -Path $logPath -Log $log
-        if ($entry.result -eq 'failed') {
-            Write-Host "   Failed: $($entry.reason) Stopping; later actions were not started."
-            $stopped = $true
+    if ($Apply -and $ConfirmAll -and $runnable.Count -gt 0) {
+        Write-Host ''
+        Write-Host "$($runnable.Count) action(s) will run without asking again. Failures are recorded and the remaining actions still run."
+        $typed = [string](& $BatchConfirmer $runnable.Count)
+        if ($typed.Trim() -ne [string]$runnable.Count) {
+            foreach ($candidate in $runnable) { $candidate.entry.result = 'skipped'; $candidate.entry.reason = 'Batch not confirmed by the operator.' }
+            $runnable.Clear()
+            Write-Host 'Batch not confirmed; nothing was run.'
         }
-        else {
-            Write-Host '   Done.'
+    }
+
+    # 2. Run.
+    if ($Apply) {
+        foreach ($candidate in $runnable) {
+            $item = $candidate.item
+            $entry = $candidate.entry
+
+            if (-not $ConfirmAll) {
+                Write-Host ''
+                Write-Host "$($item.order). $($item.title)"
+                if (-not [bool](& $Confirmer $item $candidate.call)) { $entry.result = 'skipped'; $entry.reason = 'Declined by the operator.'; Write-ExecutionLog -Path $logPath -Log $log; continue }
+            }
+            else {
+                Write-Host ''
+                Write-Host "Running $($item.order). $($item.title)"
+            }
+
+            $entry.startedAt = [DateTimeOffset]::Now.ToString('o')
+            $outcome = & $Runner $candidate.call
+            $entry.finishedAt = [DateTimeOffset]::Now.ToString('o')
+            $entry.exitCode = $outcome.exitCode
+            $output = [string]$outcome.output
+            $entry.outputTail = if ($output.Length -gt $script:OutputTailLength) { $output.Substring($output.Length - $script:OutputTailLength) } else { $output }
+
+            if ($outcome.timedOut) { $entry.result = 'failed'; $entry.reason = "Timed out after $($script:ActionTimeoutSeconds) seconds; the process was stopped." }
+            elseif (-not $outcome.found) { $entry.result = 'failed'; $entry.reason = "Command '$($candidate.call.filePath)' was not found." }
+            elseif ($outcome.exitCode -ne 0) { $entry.result = 'failed'; $entry.reason = "Exit code $($outcome.exitCode)." }
+            else { $entry.result = 'succeeded' }
+
+            Write-ExecutionLog -Path $logPath -Log $log
+            if ($entry.result -ne 'failed') { Write-Host '   Done.'; continue }
+
+            if ($ConfirmAll) {
+                Write-Host "   Failed: $($entry.reason) Continuing with the next action."
+                continue
+            }
+            Write-Host "   Failed: $($entry.reason) Stopping; later actions were not started."
+            break
         }
     }
 
@@ -292,8 +391,10 @@ function Invoke-WorkstationUpdate {
 
 Export-ModuleMember -Function @(
     'ConvertTo-ExecutionCall',
+    'ConvertTo-ExecutionArgumentString',
     'Assert-ExecutablePlan',
     'Select-ExecutionAction',
     'Get-ExecutionFileDigest',
+    'Invoke-ExecutionCall',
     'Invoke-WorkstationUpdate'
 )

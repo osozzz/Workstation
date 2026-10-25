@@ -424,7 +424,11 @@ function Get-PlanConsolidationActions {
     One manual action per tool that several package managers own; upgrading it through each of them conflicts.
     #>
     [CmdletBinding()]
-    param([Parameter(Mandatory)][psobject]$Report)
+    param(
+        [Parameter(Mandatory)][psobject]$Report,
+        [AllowNull()][string]$PreferredManager,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.HashSet[string]]$DeferredChocolateyIds
+    )
 
     $chocolatey = Get-PlanInventoryPackages -Report $Report -ProviderId 'chocolatey.baseline' -EvidenceId 'chocolatey.inventory.normalized'
     $winget = Get-PlanInventoryPackages -Report $Report -ProviderId 'winget.baseline' -EvidenceId 'winget.inventory.normalized'
@@ -448,11 +452,23 @@ function Get-PlanConsolidationActions {
         }
 
         if ($owners.Count -lt 2) { continue }
+        $message = "$($tool.Name) is managed by $($owners -join ' and '). Upgrading it through more than one of them can install side-by-side copies; apply only one manager's upgrade and remove the package from the others."
+        # The policy names WinGet as the application manager, so the plan upgrades shared tools
+        # through WinGet only and leaves the Chocolatey upgrades out.
+        $deferred = @($chocoIds)
+        if ($tool.Id -eq 'python') {
+            # Python is side-by-side per minor version: defer python3NN only when WinGet manages 3.NN;
+            # the unversioned python/python3 packages follow the newest Python and are always deferred.
+            $wingetMinors = @($wingetIds | ForEach-Object { if ($_ -match '^Python\.Python\.3\.(\d+)$') { $Matches[1] } })
+            $deferred = @($chocoIds | Where-Object { $_ -notmatch '^python3(\d+)$' -or ($_ -match '^python3(\d+)$' -and $Matches[1] -in $wingetMinors) })
+        }
+        if ($PreferredManager -eq 'winget' -and $wingetIds.Count -gt 0 -and $deferred.Count -gt 0) {
+            foreach ($id in $deferred) { [void]$DeferredChocolateyIds.Add($id) }
+            $message = "$($tool.Name) is managed by $($owners -join ' and '). WinGet is the policy's application manager, so this plan upgrades it through WinGet and leaves out the Chocolatey upgrades of $($deferred -join ', '). To finish consolidating, remove those from Chocolatey without uninstalling the program: choco uninstall $($deferred -join ' ') -n."
+        }
         New-PlanAction -ActionId "consolidate-managers:$($tool.Id)" -Kind cleanup -SourceType consolidation -PolicyKey $null -ComponentId $null -SubjectId $null `
             -Title "Manage $($tool.Name) with a single package manager" -CurrentVersion $null -TargetVersion $null -Command $null `
-            -Risk medium -Reversible $false `
-            -Message "$($tool.Name) is managed by $($owners -join ' and '). Upgrading it through more than one of them can install side-by-side copies; apply only one manager's upgrade and remove the package from the others." `
-            -Evidence $evidence.ToArray()
+            -Risk medium -Reversible $false -Message $message -Evidence $evidence.ToArray()
     }
 }
 
@@ -470,9 +486,22 @@ function New-WorkstationUpdatePlan {
 
     $evaluation = New-WorkstationPolicyEvaluation -Report $Report -Policy $Policy -PolicyDigest $PolicyDigest
 
+    $deferredChocolatey = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $preferredManager = [string](Get-ComparisonOptionalPropertyValue -InputObject (Get-ComparisonOptionalPropertyValue -InputObject $Policy -Name 'windows') -Name 'applicationManager')
+    $consolidation = @(Get-PlanConsolidationActions -Report $Report -PreferredManager $preferredManager -DeferredChocolateyIds $deferredChocolatey)
+
+    $candidates = @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) +
+        @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report) + $consolidation
+    $hasWslUpdate = @($candidates | Where-Object { $null -ne $_ -and $_.actionId -eq 'wsl-update:wsl' }).Count -gt 0
+
     $actions = [System.Collections.Generic.List[object]]::new()
-    foreach ($action in @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) + @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report) + @(Get-PlanConsolidationActions -Report $Report)) {
-        if ($null -ne $action) { $actions.Add($action) }
+    foreach ($action in $candidates) {
+        if ($null -eq $action) { continue }
+        # Shared tools are upgraded through the policy's application manager only.
+        if ($action.source.type -eq 'chocolatey' -and $deferredChocolatey.Contains(([string]$action.actionId).Substring('choco-upgrade:'.Length))) { continue }
+        # wsl --update installs the latest release; WinGet's Microsoft.WSL package lags and would conflict.
+        if ($hasWslUpdate -and $action.actionId -eq 'winget-upgrade:Microsoft.WSL') { continue }
+        $actions.Add($action)
     }
 
     # Ordinal order so PowerShell and the Python contract validator agree.
