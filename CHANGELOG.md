@@ -4,6 +4,20 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 2.1.0 — 2026-10-24
+
+### Added
+
+- `Run-Update.cmd ... -Apply -ConfirmAll` updates everything at once. It shows the full validated list, asks you once to type the number of actions, and keeps going past failures, listing them at the end. Per-action confirmation stays the default.
+
+### Changed
+
+- The update plan upgrades tools shared with Chocolatey (Python, VS Build Tools, VC++ 2015+) through WinGet only, the policy's application manager; for Python this is decided per minor version. WinGet's `Microsoft.WSL` upgrade is dropped when `wsl --update` is planned.
+
+### Fixed
+
+- Executor actions no longer hang after the update finished. `flutter upgrade` timed out after 30 minutes because a child process kept the output pipe open. Commands now write their output to files, get an empty stdin, and on timeout are stopped with their partial output kept in the log.
+
 ## 2.0.0 — 2026-10-14
 
 The toolkit can now apply updates. Auditing, evaluating, planning and comparing are still read-only. Only the new update executor changes a PC, under `docs/policies/update-execution-safety.md`.
