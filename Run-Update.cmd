@@ -4,8 +4,9 @@ rem Previews or applies selected actions of an update plan. Nothing runs without
 rem   Run-Update.cmd <update-plan.json> -Risk low            preview every low-risk action
 rem   Run-Update.cmd <update-plan.json> -Risk low -Apply     run them, asking before each one
 rem   Run-Update.cmd <update-plan.json> -Action 3,7 -Apply   run actions 3 and 7
+rem   Run-Update.cmd <update-plan.json> -Risk medium -Apply -ConfirmAll   run everything, one confirmation for the list
 if "%~1"=="" (
-    echo Usage: Run-Update.cmd ^<update-plan.json^> [-Action ^<order or id^>[,...]] [-Risk low^|medium] [-Apply]
+    echo Usage: Run-Update.cmd ^<update-plan.json^> [-Action ^<order or id^>[,...]] [-Risk low^|medium] [-Apply] [-ConfirmAll]
     echo Without -Apply nothing is changed.
     pause
     exit /b 2

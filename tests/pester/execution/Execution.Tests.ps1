@@ -34,15 +34,18 @@ BeforeAll {
     )
 
     function Invoke-TestUpdate {
-        param([string[]]$Action = @(), [string]$Risk = '', [switch]$Apply, [scriptblock]$Runner, [bool]$Elevated = $true, [bool]$Answer = $true)
+        param([string[]]$Action = @(), [string]$Risk = '', [switch]$Apply, [switch]$ConfirmAll, [string]$Typed = '', [scriptblock]$Runner, [bool]$Elevated = $true, [bool]$Answer = $true)
         $script:ran = [System.Collections.Generic.List[object]]::new()
         $script:asked = 0
         $runner = if ($Runner) { $Runner } else { { param($Call) $script:ran.Add($Call); [pscustomobject]@{ exitCode = 0; timedOut = $false; found = $true; output = 'ok' } } }
         $script:answer = $Answer
+        $script:typed = $Typed
+        $script:batchAsked = 0
         $elevatedCheck = if ($Elevated) { { $true } } else { { $false } }
-        Invoke-WorkstationUpdate -Plan $script:plan -PolicyDigest $script:digest -Action $Action -Risk $Risk -Apply:$Apply `
+        Invoke-WorkstationUpdate -Plan $script:plan -PolicyDigest $script:digest -Action $Action -Risk $Risk -Apply:$Apply -ConfirmAll:$ConfirmAll `
             -LogDirectory (Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))) -Now $script:now `
-            -Confirmer { param($Item, $Call) $script:asked++; $script:answer } -Runner $runner -Elevated $elevatedCheck 6>$null
+            -Confirmer { param($Item, $Call) $script:asked++; $script:answer } `
+            -BatchConfirmer { param($Count) $script:batchAsked++; $script:typed } -Runner $runner -Elevated $elevatedCheck 6>$null
     }
 }
 
@@ -134,5 +137,70 @@ Describe 'Running actions' {
         $result.log.actions[0].result | Should -Be 'failed'
         $result.log.actions[0].reason | Should -Match '1603'
         $result.log.actions[1].result | Should -Be 'not-run'
+    }
+}
+
+Describe 'Batch confirmation' {
+    It 'runs every runnable action after the operator types their number, without asking per action' {
+        $result = Invoke-TestUpdate -Risk medium -Apply -ConfirmAll -Typed '3'
+        $script:batchAsked | Should -Be 1
+        $script:asked | Should -Be 0
+        @($script:ran | ForEach-Object filePath) -join ',' | Should -Be 'winget,choco,wsl'
+        $result.log.mode | Should -Be 'apply-confirm-all'
+        @($result.log.actions | Where-Object result -eq 'succeeded') | Should -HaveCount 3
+    }
+
+    It 'runs nothing when the typed number does not match' {
+        $result = Invoke-TestUpdate -Risk medium -Apply -ConfirmAll -Typed 'yes'
+        $script:ran.Count | Should -Be 0
+        @($result.log.actions | Where-Object { $_.reason -eq 'Batch not confirmed by the operator.' }) | Should -HaveCount 3
+    }
+
+    It 'keeps going past a failure and records it' {
+        $failFirst = {
+            param($Call)
+            $script:ran.Add($Call)
+            $code = if ($Call.filePath -eq 'winget') { 1603 } else { 0 }
+            [pscustomobject]@{ exitCode = $code; timedOut = $false; found = $true; output = '' }
+        }
+        $result = Invoke-TestUpdate -Risk medium -Apply -ConfirmAll -Typed '3' -Runner $failFirst
+        $script:ran.Count | Should -Be 3
+        ($result.log.actions | Where-Object order -eq 1).result | Should -Be 'failed'
+        ($result.log.actions | Where-Object order -eq 4).result | Should -Be 'succeeded'
+    }
+
+    It 'is still a dry run without -Apply' {
+        Invoke-TestUpdate -Risk medium -ConfirmAll -Typed '3' | Out-Null
+        $script:ran.Count | Should -Be 0
+        $script:batchAsked | Should -Be 0
+    }
+}
+
+Describe 'Process runner' {
+    BeforeAll {
+        $script:windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    }
+
+    It 'returns when the process exits even if a child it started keeps running' {
+        $command = 'Start-Process -FilePath ping.exe -ArgumentList ''-n 30 127.0.0.1'' -NoNewWindow; Write-Output parent-done'
+        $watch = [Diagnostics.Stopwatch]::StartNew()
+        $outcome = Invoke-ExecutionCall -Call ([pscustomobject]@{ filePath = $script:windowsPowerShell; arguments = @('-NoProfile', '-Command', $command) })
+        $watch.Elapsed.TotalSeconds | Should -BeLessThan 20
+        $outcome.timedOut | Should -BeFalse
+        $outcome.output | Should -Match 'parent-done'
+    }
+
+    It 'answers a prompt with end-of-input instead of waiting' {
+        $outcome = Invoke-ExecutionCall -Call ([pscustomobject]@{ filePath = $script:windowsPowerShell; arguments = @('-NoProfile', '-Command', '$null = Read-Host prompt; Write-Output answered') })
+        $outcome.timedOut | Should -BeFalse
+    }
+
+    It 'passes the exit code through and quotes cmd separators' {
+        (Invoke-ExecutionCall -Call ([pscustomobject]@{ filePath = 'cmd.exe'; arguments = @('/d', '/c', 'exit 7') })).exitCode | Should -Be 7
+        ConvertTo-ExecutionArgumentString -Arguments @('cmdline-tools;latest', 'add', '-g', 'a@1.0') | Should -Be '"cmdline-tools;latest" add -g a@1.0'
+    }
+
+    It 'reports a command that cannot be found' {
+        (Invoke-ExecutionCall -Call ([pscustomobject]@{ filePath = 'workstation-no-such-tool'; arguments = @() })).found | Should -BeFalse
     }
 }

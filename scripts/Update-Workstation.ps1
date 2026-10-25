@@ -4,6 +4,7 @@ param(
     [string[]]$Action = @(),
     [ValidateSet('', 'low', 'medium')][string]$Risk = '',
     [switch]$Apply,
+    [switch]$ConfirmAll,
     [ValidateNotNullOrEmpty()][string]$PolicyPath,
     [ValidateNotNullOrEmpty()][string]$LogDirectory
 )
@@ -28,10 +29,12 @@ if (-not (Test-Path -LiteralPath $Plan -PathType Leaf)) { throw "Update plan was
 $planObject = ConvertFrom-WorkstationJson -Json (Get-Content -LiteralPath $Plan -Encoding UTF8 -Raw)
 $policyDigest = Get-ExecutionFileDigest -Path ([IO.Path]::GetFullPath($PolicyPath))
 
-$result = Invoke-WorkstationUpdate -Plan $planObject -PolicyDigest $policyDigest -Action $Action -Risk $Risk -Apply:$Apply -LogDirectory $LogDirectory
+$result = Invoke-WorkstationUpdate -Plan $planObject -PolicyDigest $policyDigest -Action $Action -Risk $Risk -Apply:$Apply -ConfirmAll:$ConfirmAll -LogDirectory $LogDirectory
 
 Write-Host ''
 if (-not $Apply) { Write-Host 'Dry run: nothing was changed. Add -Apply to run the selected actions.' }
 $result.log.actions | Group-Object result | ForEach-Object { Write-Host ("{0}: {1}" -f $_.Name, $_.Count) }
+$failures = @($result.log.actions | Where-Object result -eq 'failed')
+foreach ($failure in $failures) { Write-Host ("  failed {0}. {1}: {2}" -f $failure.order, $failure.title, $failure.reason) }
 Write-Host "Log: $($result.logPath)"
 Write-Host 'After applying updates, re-run the audit and the plan; the new plan shows what remains.'
