@@ -71,6 +71,13 @@ Describe 'Execution allow-list' {
         (ConvertTo-ExecutionCall -Action $script:plan.actions[1]).requiresElevation | Should -BeTrue
     }
 
+    It 'pins pip to the target version' {
+        $call = ConvertTo-ExecutionCall -Action (New-TestAction -Order 1 -Id 'tool-upgrade:pip' -Command 'python -m pip install pip==26.2.1' -Target '26.2.1' -Source 'toolchain')
+        $call.arguments -join ' ' | Should -Be '-m pip install pip==26.2.1'
+        { ConvertTo-ExecutionCall -Action (New-TestAction -Order 1 -Id 'tool-upgrade:pip' -Command 'python -m pip install pip==25.3' -Target '26.2.1' -Source 'toolchain') } | Should -Throw
+        { ConvertTo-ExecutionCall -Action (New-TestAction -Order 1 -Id 'tool-upgrade:pip' -Command 'python -m pip install --upgrade pip' -Target '26.2.1' -Source 'toolchain') } | Should -Throw
+    }
+
     It 'refuses <Name>' -ForEach @(
         @{ Name = 'a manual action'; Command = $null; Subject = $null; Target = $null }
         @{ Name = 'an unknown command'; Command = 'winget uninstall --id Git.Git'; Subject = 'winget:Git.Git'; Target = $null }
@@ -198,6 +205,14 @@ Describe 'Process runner' {
     It 'passes the exit code through and quotes cmd separators' {
         (Invoke-ExecutionCall -Call ([pscustomobject]@{ filePath = 'cmd.exe'; arguments = @('/d', '/c', 'exit 7') })).exitCode | Should -Be 7
         ConvertTo-ExecutionArgumentString -Arguments @('cmdline-tools;latest', 'add', '-g', 'a@1.0') | Should -Be '"cmdline-tools;latest" add -g a@1.0'
+    }
+
+    # Run-Update.cmd hosts the executor in Windows PowerShell 5.1, which loses ExitCode unless the
+    # process handle is opened early; Pester itself runs on PowerShell 7.
+    It 'passes the exit code through on Windows PowerShell 5.1' {
+        $module = Join-Path $PSScriptRoot '..\..\..\scripts\Execution\Execution.Core.psm1'
+        $probe = "Import-Module '$module'; (Invoke-ExecutionCall -Call ([pscustomobject]@{ filePath = 'cmd.exe'; arguments = @('/d', '/c', 'exit 7') })).exitCode"
+        (& $script:windowsPowerShell -NoProfile -NonInteractive -Command $probe | Select-Object -Last 1) | Should -Be '7'
     }
 
     It 'reports a command that cannot be found' {
