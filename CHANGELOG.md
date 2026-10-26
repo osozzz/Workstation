@@ -4,6 +4,19 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 2.2.0 — 2026-10-26
+
+### Added
+
+- After an `-Apply` run, the PC is audited again automatically and the log records which updates are verified, still pending or resolved. The fresh plan replaces the old one for the next run. `-SkipVerify` turns this off.
+- Failed updates explain their cause: known WinGet result codes, programs the installer reports as in use (for example bash.exe for Git), the installer log path, stalled downloads, vendor HTTP 403 and installer-technology changes.
+- Before a run, the executor lists running apps that would block their own update and warns when WinGet downloads through Delivery Optimization. `Update-Workstation.ps1 -FixWinGetDownloader` switches WinGet to `wininet` after a confirmation, backing up its settings first.
+- Latest-version checks for .NET (SDK), Rust, Go and Python itself, from their official sources. Their policy tracks are now evaluated, and Rust plans `rustup update stable`.
+
+### Changed
+
+- Updating the Android command-line tools is a manual action (Android Studio > SDK Manager), because sdkmanager cannot replace the tools it runs from.
+
 ## 2.1.1 — 2026-10-25
 
 ### Fixed

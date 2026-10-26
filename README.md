@@ -62,6 +62,7 @@ Optional project and Git discovery needs `config\workstation.local.json`; see `c
 - `v1.3.0` — Update Coverage
 - `v2.0.0` — Controlled Updates
 - `v2.1.0` — Batch Updates
+- `v2.2.0` — Reliable Updates
 
 ## Clone
 
