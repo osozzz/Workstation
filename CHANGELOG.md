@@ -4,6 +4,13 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 2.3.0 — 2026-10-26
+
+### Added
+
+- Editor extensions: VS Code, Cursor, Windsurf and Trae are audited (version and installed extensions), and the plan updates each editor's extensions with its own `--update-extensions`, which only touches outdated ones.
+- Pending Windows and driver updates are reported from a read-only Windows Update Agent search (the cached scan when offline) and listed in the plan as manual actions; installing them stays with Windows Update.
+
 ## 2.2.0 — 2026-10-26
 
 ### Added
