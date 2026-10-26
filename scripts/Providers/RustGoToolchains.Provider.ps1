@@ -901,6 +901,15 @@ $components.Add([pscustomobject][ordered]@{
     versionIntelligence = New-NotApplicableVersionIntelligence
 })
 
+# Latest stable Rust (GitHub releases) and Go (go.dev) for installed toolchains.
+Import-Module (Join-Path $PSScriptRoot '..\Core\VersionIntelligence.Core.psm1') -Force
+Set-AuditComponentLatestVersion -Context $Context -Components $components -Evidence $evidence -ComponentId 'rustc' `
+    -Source 'github-releases:rust-lang/rust' -Uri 'https://api.github.com/repos/rust-lang/rust/releases/latest' `
+    -EvidenceId 'rust.version-intelligence.rustc-source' -Message 'Latest stable Rust release.' -Read { param($Data) ([string]$Data.tag_name).TrimStart('v') }
+Set-AuditComponentLatestVersion -Context $Context -Components $components -Evidence $evidence -ComponentId 'go' `
+    -Source 'go.dev-downloads' -Uri 'https://go.dev/dl/?mode=json' `
+    -EvidenceId 'go.version-intelligence.source' -Message 'Latest stable Go release.' -Read { param($Data) Get-LatestGoVersion -Data $Data }
+
 $anyPresent = @(
     $components |
         Where-Object { $_.state -in @('present', 'partial') }

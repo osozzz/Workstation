@@ -590,7 +590,10 @@ $script:PolicyRules = [ordered]@{
             -Message $(if ($androidHome) { 'ANDROID_HOME is configured.' } else { 'An Android SDK is installed but ANDROID_HOME is not configured.' })
     }
     'android.acceptLicensesDuringAudit' = 'Audit-safety setting enforced by the audit itself; no machine evidence applies.'
-    'python.defaultTrack' = 'No latest-version source exists for Python yet.'
+    'python.defaultTrack' = {
+        param($Context, $Expected, $Policy)
+        Invoke-PolicyTrackRule -Context $Context -PolicyKey 'python.defaultTrack' -Track $Expected -ComponentId 'python'
+    }
     'python.windowsManager' = {
         param($Context, $Expected, $Policy)
         if ($null -eq (Get-PolicyComponent -Context $Context -ComponentId 'python') -or $Expected -ne 'python-install-manager') { return }
@@ -609,7 +612,10 @@ $script:PolicyRules = [ordered]@{
     'python.projectsMustUseLocalCompatibleVersion' = 'Project-level Python compatibility is not inspected.'
     'python.virtualEnvironments' = 'Virtual environments are not inspected.'
     'python.packageToolsTrack' = 'No latest-version source exists for Python package tools.'
-    'dotnet.defaultTrack' = 'No latest-version source exists for .NET yet.'
+    'dotnet.defaultTrack' = {
+        param($Context, $Expected, $Policy)
+        Invoke-PolicyTrackRule -Context $Context -PolicyKey 'dotnet.defaultTrack' -Track $Expected -ComponentId 'dotnet-sdk'
+    }
     'dotnet.projectsMustUseLocalCompatibleVersion' = 'Project-level .NET compatibility is not inspected.'
     'dotnet.workloadsTrack' = 'No latest-version source exists for .NET workloads.'
     'dotnet.inspectWorkloadsReadOnly' = 'Audit-safety setting enforced by the audit itself; no machine evidence applies.'
@@ -620,13 +626,19 @@ $script:PolicyRules = [ordered]@{
         Invoke-PolicyPresenceRule -Context $Context -PolicyKey 'rust.manager' -Expected $Expected -GovernedComponentId $toolchain -PreferredComponentId $Expected
     }
     'rust.defaultChannel' = 'The active Rust channel is not normalized in the report yet.'
-    'rust.defaultTrack' = 'No latest-version source exists for Rust yet.'
+    'rust.defaultTrack' = {
+        param($Context, $Expected, $Policy)
+        Invoke-PolicyTrackRule -Context $Context -PolicyKey 'rust.defaultTrack' -Track $Expected -ComponentId 'rustc'
+    }
     'rust.managerTrack' = 'No latest-version source exists for rustup yet.'
     'rust.projectsMayPinToolchain' = 'Permission, not a requirement; nothing to verify.'
     'rust.autoInstallDuringAudit' = 'Audit-safety setting enforced by the audit itself; no machine evidence applies.'
     'rust.minimumSafeInspectionVersion' = 'Audit-safety threshold applied by the Rust provider before inspection.'
     'rust.legacyManagerPolicy' = 'Migration guidance for legacy Rust installs; no single report value decides it.'
-    'go.defaultTrack' = 'No latest-version source exists for Go yet.'
+    'go.defaultTrack' = {
+        param($Context, $Expected, $Policy)
+        Invoke-PolicyTrackRule -Context $Context -PolicyKey 'go.defaultTrack' -Track $Expected -ComponentId 'go'
+    }
     'go.projectsMustUseLocalCompatibleVersion' = 'Project-level Go compatibility is not inspected.'
     'go.inspectEnvironmentReadOnly' = 'Audit-safety setting enforced by the audit itself; no machine evidence applies.'
     'developerClis.defaultTrack' = 'No latest-version source exists for developer CLIs yet.'

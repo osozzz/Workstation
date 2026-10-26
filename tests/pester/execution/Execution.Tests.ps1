@@ -334,3 +334,11 @@ Describe 'Verification after a run' {
         $verification.remainingPlanCount | Should -Be 2
     }
 }
+
+Describe 'Rust toolchain update' {
+    It 'allows rustup update stable' {
+        $call = ConvertTo-ExecutionCall -Action (New-TestAction -Order 1 -Id 'policy:rust.defaultTrack' -Command 'rustup update stable' -Target '1.99.1' -Source 'policy')
+        $call.filePath | Should -Be 'rustup'
+        $call.arguments -join ' ' | Should -Be 'update stable'
+    }
+}

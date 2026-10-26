@@ -88,6 +88,7 @@ function ConvertTo-ExecutionCall {
         'flutter channel master'              = @('flutter', @('channel', 'master'))
         'pnpm self-update'                    = @('pnpm', @('self-update'))
         'uv self update'                      = @('uv', @('self', 'update'))
+        'rustup update stable'                = @('rustup', @('update', 'stable'))
         'sdkmanager platform-tools'           = @('sdkmanager', @('platform-tools'))
         'sdkmanager cmdline-tools;latest'     = @('sdkmanager', @('cmdline-tools;latest'))
     }

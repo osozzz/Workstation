@@ -30,6 +30,10 @@ $script:PolicyActions = @{
     'java.defaultTrack'                = @{ kind = 'upgrade'; risk = 'medium'; reversible = $false; title = 'Upgrade the Java runtime' }
     'android.preferAndroidHome'        = @{ kind = 'configure'; risk = 'low'; reversible = $true; title = 'Set ANDROID_HOME to the Android SDK folder' }
     'python.windowsManager'            = @{ kind = 'install'; risk = 'low'; reversible = $true; title = 'Install the Python Install Manager'; command = { 'winget install --id Python.PythonInstallManager --exact' } }
+    'python.defaultTrack'              = @{ kind = 'upgrade'; risk = 'medium'; reversible = $false; title = 'Upgrade Python to its policy track' }
+    'dotnet.defaultTrack'              = @{ kind = 'upgrade'; risk = 'medium'; reversible = $false; title = 'Upgrade the .NET SDK to its policy track' }
+    'rust.defaultTrack'                = @{ kind = 'upgrade'; risk = 'low'; reversible = $false; title = 'Upgrade the stable Rust toolchain'; command = { 'rustup update stable' } }
+    'go.defaultTrack'                  = @{ kind = 'upgrade'; risk = 'medium'; reversible = $false; title = 'Upgrade Go to its policy track' }
     'rust.manager'                     = @{ kind = 'install'; risk = 'high'; reversible = $false; title = 'Migrate Rust to rustup' }
 }
 

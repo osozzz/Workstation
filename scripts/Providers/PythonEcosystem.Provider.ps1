@@ -940,6 +940,11 @@ foreach ($tool in $toolSources) {
     $component[0].versionIntelligence = New-AuditLatestVersionIntelligence -SourceResult $sourceResult -LatestStable $latest -Message "Latest stable $($tool.Id) release."
 }
 
+# Latest stable Python release (endoflife.date tracks python.org releases per cycle).
+Set-AuditComponentLatestVersion -Context $Context -Components $components -Evidence $evidence -ComponentId 'python' `
+    -Source 'endoflife.date:python' -Uri 'https://endoflife.date/api/python.json' `
+    -EvidenceId 'python.version-intelligence.python-source' -Message 'Latest stable Python release.' -Read { param($Data) Get-LatestPythonVersion -Data $Data }
+
 # uv updates itself only when it was installed with the standalone installer (~\.local\bin);
 # a pip, pipx or WinGet installation must be updated by that manager.
 $uvComponent = @($components | Where-Object { $_.componentId -eq 'uv' -and $_.state -in @('present', 'partial') } | Select-Object -First 1)
