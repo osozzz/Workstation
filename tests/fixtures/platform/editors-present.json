@@ -1,0 +1,166 @@
+{
+  "providerId": "editors.extensions",
+  "category": "editor",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "vscode",
+      "name": "Visual Studio Code",
+      "state": "present",
+      "installed": true,
+      "activeVersion": {
+        "raw": "1.143.1",
+        "normalized": "1.143.1",
+        "channel": ""
+      },
+      "discoveredVersions": [
+        {
+          "raw": "1.143.1",
+          "normalized": "1.143.1",
+          "channel": ""
+        }
+      ],
+      "installations": [
+        {
+          "path": "C:\\Program Files\\Microsoft VS Code\\bin\\code.cmd",
+          "version": {
+            "raw": "1.143.1",
+            "normalized": "1.143.1",
+            "channel": ""
+          },
+          "active": true,
+          "source": "command"
+        }
+      ],
+      "commandResolutions": [
+        {
+          "command": "code",
+          "path": "C:\\Program Files\\Microsoft VS Code\\bin\\code.cmd",
+          "commandType": "Application",
+          "version": {
+            "raw": "0.0.0.0",
+            "normalized": "0.0.0.0",
+            "channel": ""
+          },
+          "precedence": 0,
+          "active": true
+        }
+      ],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "cursor",
+      "name": "Cursor",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "windsurf",
+      "name": "Windsurf",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    },
+    {
+      "componentId": "trae",
+      "name": "Trae",
+      "state": "missing",
+      "installed": false,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "editors.vscode.version",
+      "type": "command",
+      "source": "code --version",
+      "exitCode": 0,
+      "captured": "1.143.1",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false
+      }
+    },
+    {
+      "evidenceId": "editors.vscode.extensions",
+      "type": "command",
+      "source": "code --list-extensions --show-versions",
+      "exitCode": 0,
+      "captured": "ms-python.python@2026.10.0",
+      "redacted": false,
+      "attributes": {
+        "status": "success",
+        "timedOut": false,
+        "truncated": false
+      }
+    },
+    {
+      "evidenceId": "editors.vscode.extensions.normalized",
+      "type": "derived",
+      "source": "normalized code extension list",
+      "exitCode": null,
+      "captured": "",
+      "redacted": false,
+      "attributes": {
+        "status": "known",
+        "extensionCount": 1,
+        "extensions": [
+          {
+            "id": "ms-python.python",
+            "version": "2026.10.0"
+          }
+        ]
+      }
+    }
+  ]
+}

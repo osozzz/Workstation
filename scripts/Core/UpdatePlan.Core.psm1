@@ -486,6 +486,36 @@ function Get-PlanConsolidationActions {
     }
 }
 
+$script:EditorClis = @{ vscode = 'code'; cursor = 'cursor'; windsurf = 'windsurf'; trae = 'trae' }
+
+function Get-PlanEditorActions {
+    <#
+    .SYNOPSIS
+    One maintenance action per editor with extensions: its own CLI updates only the outdated ones.
+    Checking each extension against its marketplace would take hundreds of requests per audit.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$Report)
+
+    $provider = @($Report.providers | Where-Object { $_.providerId -eq 'editors.extensions' }) | Select-Object -First 1
+    if ($null -eq $provider) { return }
+
+    foreach ($component in @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'components')) {
+        if ($null -eq $component -or $component.state -ne 'present' -or -not $script:EditorClis.ContainsKey([string]$component.componentId)) { continue }
+        $evidenceId = "editors.$($component.componentId).extensions.normalized"
+        $list = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq $evidenceId } | Select-Object -First 1
+        $count = [int](Get-ComparisonOptionalPropertyValue -InputObject (Get-ComparisonOptionalPropertyValue -InputObject $list -Name 'attributes') -Name 'extensionCount')
+        if ($count -eq 0) { continue }
+
+        $cli = $script:EditorClis[[string]$component.componentId]
+        New-PlanAction -ActionId "editor-extensions:$($component.componentId)" -Kind upgrade -SourceType editor -PolicyKey $null -ComponentId ([string]$component.componentId) -SubjectId $null `
+            -Title "Update $($component.name) extensions" -CurrentVersion $null -TargetVersion $null -Command "$cli --update-extensions" `
+            -Risk low -Reversible $false `
+            -Message "$($component.name) has $count extension(s); its CLI updates the ones with a newer version and leaves the rest. Reload the editor afterwards." `
+            -Evidence @([pscustomobject][ordered]@{ providerId = 'editors.extensions'; componentId = [string]$component.componentId; evidenceId = $evidenceId })
+    }
+}
+
 function New-WorkstationUpdatePlan {
     <#
     .SYNOPSIS
@@ -505,7 +535,7 @@ function New-WorkstationUpdatePlan {
     $consolidation = @(Get-PlanConsolidationActions -Report $Report -PreferredManager $preferredManager -DeferredChocolateyIds $deferredChocolatey)
 
     $candidates = @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) +
-        @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report) + $consolidation
+        @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report) + @(Get-PlanEditorActions -Report $Report) + $consolidation
     $hasWslUpdate = @($candidates | Where-Object { $null -ne $_ -and $_.actionId -eq 'wsl-update:wsl' }).Count -gt 0
 
     $actions = [System.Collections.Generic.List[object]]::new()

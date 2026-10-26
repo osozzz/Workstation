@@ -352,3 +352,17 @@ Describe 'Causes seen in the PC #1 batch' {
         (Get-ExecutionFailureDetail -Call ([pscustomobject]@{ filePath = 'winget'; arguments = @() }) -ExitCode $Code).reason | Should -Match $Pattern
     }
 }
+
+Describe 'Editor extension updates' {
+    It 'allows <Cli> --update-extensions' -ForEach @(@{ Cli = 'code' }, @{ Cli = 'cursor' }, @{ Cli = 'windsurf' }, @{ Cli = 'trae' }) {
+        $call = ConvertTo-ExecutionCall -Action (New-TestAction -Order 1 -Id "editor-extensions:$Cli" -Command "$Cli --update-extensions" -Source 'editor')
+        $call.filePath | Should -Be $Cli
+        $call.arguments | Should -Be @('--update-extensions')
+    }
+
+    It 'counts a successful editor update as verified although it is planned again' {
+        $log = [pscustomobject]@{ actions = @([pscustomobject]@{ order = 1; actionId = 'editor-extensions:vscode'; title = 'Update Visual Studio Code extensions'; result = 'succeeded' }) }
+        $newPlan = [pscustomobject]@{ report = [pscustomobject]@{ generatedAt = 'x' }; actions = @([pscustomobject]@{ actionId = 'editor-extensions:vscode'; currentVersion = $null; targetVersion = $null }) }
+        (Get-ExecutionVerification -Log $log -NewPlan $newPlan).actions[0].verification | Should -Be 'verified'
+    }
+}

@@ -26,6 +26,8 @@ EXPECTED_FIXTURES = {
     "chocolatey-missing.json",
     "wsl-present.json",
     "wsl-missing.json",
+    "editors-present.json",
+    "editors-missing.json",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (

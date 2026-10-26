@@ -42,6 +42,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "winget.baseline",
     "chocolatey.baseline",
     "wsl.baseline",
+    "editors.extensions",
     "projects.local",
     "projects.javascript-web",
     "projects.non-javascript",

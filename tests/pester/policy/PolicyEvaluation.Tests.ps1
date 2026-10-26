@@ -574,6 +574,25 @@ Describe 'Update plan' {
         $ids | Should -Not -Contain 'winget-upgrade:Microsoft.WSL'
     }
 
+    It 'plans one extension update per editor that has extensions' {
+        $editors = [pscustomobject]@{
+            providerId = 'editors.extensions'; status = 'success'; warnings = @()
+            components = @(
+                [pscustomobject]@{ componentId = 'vscode'; name = 'Visual Studio Code'; state = 'present' }
+                [pscustomobject]@{ componentId = 'windsurf'; name = 'Windsurf'; state = 'present' }
+                [pscustomobject]@{ componentId = 'cursor'; name = 'Cursor'; state = 'missing' }
+            )
+            evidence   = @(
+                [pscustomobject]@{ evidenceId = 'editors.vscode.extensions.normalized'; attributes = [pscustomobject]@{ extensionCount = 205 } }
+                [pscustomobject]@{ evidenceId = 'editors.windsurf.extensions.normalized'; attributes = [pscustomobject]@{ extensionCount = 0 } }
+            )
+        }
+        $actions = @((Invoke-TestPlan (New-TestReport -ExtraProviders @($editors))).actions | Where-Object { $_.source.type -eq 'editor' })
+        $actions | Should -HaveCount 1
+        $actions[0].command | Should -Be 'code --update-extensions'
+        $actions[0].message | Should -Match '205 extension'
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0
