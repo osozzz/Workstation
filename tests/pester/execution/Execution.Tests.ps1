@@ -34,18 +34,21 @@ BeforeAll {
     )
 
     function Invoke-TestUpdate {
-        param([string[]]$Action = @(), [string]$Risk = '', [switch]$Apply, [switch]$ConfirmAll, [string]$Typed = '', [scriptblock]$Runner, [bool]$Elevated = $true, [bool]$Answer = $true)
+        param([string[]]$Action = @(), [string]$Risk = '', [switch]$Apply, [switch]$ConfirmAll, [string]$Typed = '', [scriptblock]$Runner, [bool]$Elevated = $true, [bool]$Answer = $true, [string[]]$Running = @(), [string]$Downloader = 'wininet')
         $script:ran = [System.Collections.Generic.List[object]]::new()
         $script:asked = 0
         $runner = if ($Runner) { $Runner } else { { param($Call) $script:ran.Add($Call); [pscustomobject]@{ exitCode = 0; timedOut = $false; found = $true; output = 'ok' } } }
         $script:answer = $Answer
         $script:typed = $Typed
         $script:batchAsked = 0
+        $script:running = $Running
+        $script:downloader = $Downloader
         $elevatedCheck = if ($Elevated) { { $true } } else { { $false } }
         Invoke-WorkstationUpdate -Plan $script:plan -PolicyDigest $script:digest -Action $Action -Risk $Risk -Apply:$Apply -ConfirmAll:$ConfirmAll `
             -LogDirectory (Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))) -Now $script:now `
             -Confirmer { param($Item, $Call) $script:asked++; $script:answer } `
-            -BatchConfirmer { param($Count) $script:batchAsked++; $script:typed } -Runner $runner -Elevated $elevatedCheck 6>$null
+            -BatchConfirmer { param($Count) $script:batchAsked++; $script:typed } -Runner $runner -Elevated $elevatedCheck `
+            -ProcessLister { $script:running } -DownloaderCheck { $script:downloader } 6>$null
     }
 }
 
@@ -217,5 +220,91 @@ Describe 'Process runner' {
 
     It 'reports a command that cannot be found' {
         (Invoke-ExecutionCall -Call ([pscustomobject]@{ filePath = 'workstation-no-such-tool'; arguments = @() })).found | Should -BeFalse
+    }
+}
+
+Describe 'Failure explanations' {
+    BeforeAll {
+        $script:wingetCall = [pscustomobject]@{ filePath = 'winget'; arguments = @('upgrade', '--id', 'Git.Git', '--exact') }
+    }
+
+    It 'reads the blocking programs from the installer log WinGet reports' {
+        $installerLog = Join-Path $TestDrive 'Git.Git.log'
+        Set-Content -LiteralPath $installerLog -Encoding UTF8 -Value @(
+            '2026-10-26 00:07:19.384   Defaulting to Cancel for suppressed message box (Retry/Cancel):'
+            '                          The following process(es) use Git for Windows:'
+            '                          bash.exe (PID 15512)'
+            '                          bash.exe (PID 9576)'
+            '2026-10-26 00:07:19.384   Failed to proceed to next wizard page; aborting.'
+        )
+        $output = "Installer failed with exit code: 1`nInstaller log is available at: $installerLog"
+        $detail = Get-ExecutionFailureDetail -Call $script:wingetCall -ExitCode -1978335226 -Output $output
+        $detail.result | Should -Be 'failed'
+        $detail.reason | Should -Match '0x8A150006'
+        $detail.reason | Should -Match 'using it: bash\.exe\. Close them'
+        $detail.reason | Should -Match ([regex]::Escape($installerLog))
+    }
+
+    It 'classifies WinGet result <Code> as <Result>' -ForEach @(
+        @{ Code = -1978335189; Result = 'skipped' }
+        @{ Code = -1978334967; Result = 'succeeded' }
+        @{ Code = -1978334975; Result = 'failed' }
+        @{ Code = 5; Result = 'failed' }
+    ) {
+        (Get-ExecutionFailureDetail -Call $script:wingetCall -ExitCode $Code).result | Should -Be $Result
+    }
+
+    It 'explains a stalled download' {
+        $detail = Get-ExecutionFailureDetail -Call $script:wingetCall -ExitCode $null -TimedOut $true -Output "Found Docker Desktop`nDownloading https://desktop.docker.com/installer.exe"
+        $detail.reason | Should -Match 'download stalled'
+        $detail.reason | Should -Match 'wininet'
+    }
+
+    It 'treats exit code 0 as success' {
+        (Get-ExecutionFailureDetail -Call $script:wingetCall -ExitCode 0).result | Should -Be 'succeeded'
+    }
+}
+
+Describe 'Preflight' {
+    It 'names running apps that would block their own update' {
+        $apps = @(Get-ExecutionBlockingApps -Calls @($script:wingetCall) -RunningProcesses @('explorer', 'bash'))
+        $apps | Should -HaveCount 1
+        $apps[0].app | Should -Be 'Git Bash windows'
+        @(Get-ExecutionBlockingApps -Calls @($script:wingetCall) -RunningProcesses @('explorer')) | Should -HaveCount 0
+    }
+
+    It 'reads the WinGet downloader setting (<Name>)' -ForEach @(
+        @{ Name = 'wininet with comments'; Content = "{`n  // comment`n  `"network`": { `"downloader`": `"wininet`" }`n}"; Expected = 'wininet' }
+        @{ Name = 'unset'; Content = '{ "visual": { "progressBar": "rainbow" } }'; Expected = 'default' }
+        @{ Name = 'malformed'; Content = '{ not json'; Expected = $null }
+    ) {
+        $path = Join-Path $TestDrive "settings-$([guid]::NewGuid().ToString('N')).json"
+        Set-Content -LiteralPath $path -Encoding UTF8 -Value $Content
+        Get-WinGetDownloader -SettingsPath $path | Should -Be $Expected
+        Get-WinGetDownloader -SettingsPath (Join-Path $TestDrive 'missing.json') | Should -Be 'default'
+    }
+
+    It 'records blocking apps and the downloader in the run log' {
+        $result = Invoke-TestUpdate -Action @('1') -Running @('bash') -Downloader 'default'
+        @($result.log.preflight.blockingApps) | Should -HaveCount 1
+        $result.log.preflight.winGetDownloader | Should -Be 'default'
+    }
+}
+
+Describe 'WinGet downloader fix' {
+    It 'sets wininet, keeps other settings and backs up the file' {
+        $path = Join-Path $TestDrive 'existing\settings.json'
+        New-Item -ItemType Directory -Path (Split-Path $path) -Force | Out-Null
+        Set-Content -LiteralPath $path -Encoding UTF8 -Value "{`n  // keep me?`n  `"visual`": { `"progressBar`": `"rainbow`" }`n}"
+        $backup = Set-WinGetDownloader -SettingsPath $path
+        Test-Path -LiteralPath $backup | Should -BeTrue
+        Get-WinGetDownloader -SettingsPath $path | Should -Be 'wininet'
+        (Get-Content -LiteralPath $path -Raw | ConvertFrom-Json).visual.progressBar | Should -Be 'rainbow'
+    }
+
+    It 'creates the settings file when WinGet has none' {
+        $path = Join-Path $TestDrive 'new\settings.json'
+        Set-WinGetDownloader -SettingsPath $path | Should -BeNullOrEmpty
+        Get-WinGetDownloader -SettingsPath $path | Should -Be 'wininet'
     }
 }
