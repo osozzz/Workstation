@@ -43,6 +43,7 @@ EXPECTED_REPORT_PROVIDER_IDS = {
     "chocolatey.baseline",
     "wsl.baseline",
     "editors.extensions",
+    "windows.update",
     "projects.local",
     "projects.javascript-web",
     "projects.non-javascript",

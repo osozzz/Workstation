@@ -9,6 +9,7 @@ This is the authoritative statement of what the read-only audit covers at v1.0.0
 | Windows and PowerShell | `host.system` | `windows`, `powershell.windows`, `powershell.core` | not applicable |
 | Installed applications and updates | `winget.baseline` | `winget`; optional full inventory (`-IncludeWingetInventory`); available upgrades | review-only upgrade availability per package |
 | Windows Subsystem for Linux | `wsl.baseline` | `wsl --version` (with `WSL_UTF8=1`); distributions and their state (`wsl --list --verbose`), without starting any | latest stable release from the `microsoft/WSL` GitHub releases |
+| Windows and driver updates | `windows.update` | `windows-update`: pending updates from a read-only Windows Update Agent search (`IsInstalled=0 and IsHidden=0`; the last cached scan when offline) | review-only; installing stays with Windows Update |
 | Editor extensions | `editors.extensions` | `vscode`, `cursor`, `windsurf`, `trae`: version and installed extensions (`<cli> --list-extensions --show-versions`) | not checked per extension; the plan runs `<cli> --update-extensions`, which updates only outdated ones |
 | Chocolatey packages and updates | `chocolatey.baseline` | `choco`; installed packages (`choco list`); outdated packages (`choco outdated`) | review-only upgrade availability per package; pinned packages are reported and left alone |
 | JavaScript runtimes and package managers | `javascript.toolchain` | `node`, `npm`, `pnpm`, `corepack`, `nvm-windows` | Node (LTS and Current), npm, pnpm |

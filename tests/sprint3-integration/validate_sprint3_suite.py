@@ -491,10 +491,10 @@ def validate_failure_isolation_gate() -> None:
 
     required_markers = (
         "synthetic.failure",
-        "Expected twenty-three built-in providers plus the synthetic failure provider.",
+        "Expected twenty-four built-in providers plus the synthetic failure provider.",
+        "providerCount -ne 25",
+        "Expected all 24 built-in providers to continue after an additional provider path failure.",
         "providerCount -ne 24",
-        "Expected all 23 built-in providers to continue after an additional provider path failure.",
-        "providerCount -ne 23",
     )
 
     for marker in required_markers:

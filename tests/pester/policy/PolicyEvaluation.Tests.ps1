@@ -593,6 +593,21 @@ Describe 'Update plan' {
         $actions[0].message | Should -Match '205 extension'
     }
 
+    It 'plans each pending Windows Update as a manual action' {
+        $updates = @(
+            [pscustomobject]@{ updateId = 'a1b2'; title = 'PowerShell v7.6.9 (x64)'; kb = @('5021051'); type = 'software'; mayReboot = $false }
+            [pscustomobject]@{ updateId = 'c3d4-e5f6'; title = 'Intel - System - 1.2.3'; kb = @(); type = 'driver'; mayReboot = $false }
+        )
+        $provider = [pscustomobject]@{ providerId = 'windows.update'; status = 'success'; components = @(); warnings = @()
+            evidence = @([pscustomobject]@{ evidenceId = 'windows.update.pending'; attributes = [pscustomobject]@{ updates = $updates } }) }
+        $byId = @{}
+        foreach ($action in @((Invoke-TestPlan (New-TestReport -ExtraProviders @($provider))).actions)) { $byId[$action.actionId] = $action }
+        $byId['windows-update:KB5021051'].command | Should -BeNullOrEmpty
+        $byId['windows-update:KB5021051'].risk | Should -Be 'low'
+        $byId['windows-update:c3d4-e5f6'].risk | Should -Be 'medium'
+        $byId['windows-update:c3d4-e5f6'].message | Should -Match 'driver'
+    }
+
     It 'is empty for a compliant report' {
         $plan = Invoke-TestPlan (New-TestReport)
         $plan.summary.actionCount | Should -Be 0
