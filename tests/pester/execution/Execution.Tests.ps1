@@ -308,3 +308,29 @@ Describe 'WinGet downloader fix' {
         Get-WinGetDownloader -SettingsPath $path | Should -Be 'wininet'
     }
 }
+
+Describe 'Verification after a run' {
+    It 'marks ran actions verified or still pending against the new plan' {
+        $log = [pscustomobject]@{ actions = @(
+                [pscustomobject]@{ order = 1; actionId = 'winget-upgrade:Git.Git'; title = 'Upgrade Git'; result = 'succeeded' }
+                [pscustomobject]@{ order = 2; actionId = 'winget-upgrade:Zoom.Zoom'; title = 'Upgrade Zoom'; result = 'succeeded' }
+                [pscustomobject]@{ order = 3; actionId = 'winget-upgrade:Docker.DockerDesktop'; title = 'Upgrade Docker'; result = 'failed' }
+                [pscustomobject]@{ order = 4; actionId = 'tool-upgrade:uv'; title = 'Upgrade uv'; result = 'not-run' }
+            ) }
+        $newPlan = [pscustomobject]@{ report = [pscustomobject]@{ generatedAt = '2026-10-26T02:00:00+00:00' }; actions = @(
+                [pscustomobject]@{ actionId = 'winget-upgrade:Zoom.Zoom'; currentVersion = '7.1.9'; targetVersion = '7.2.1' }
+                [pscustomobject]@{ actionId = 'winget-upgrade:Docker.DockerDesktop'; currentVersion = '4.91.0'; targetVersion = '4.96.3' }
+            ) }
+        $verification = Get-ExecutionVerification -Log $log -NewPlan $newPlan
+        $byOrder = @{}
+        foreach ($item in $verification.actions) { $byOrder[[int]$item.order] = $item }
+        $byOrder[1].verification | Should -Be 'verified'
+        $byOrder[2].verification | Should -Be 'still-pending'
+        $byOrder[2].currentVersion | Should -Be '7.1.9'
+        $byOrder[3].verification | Should -Be 'still-pending'
+        $byOrder[4].verification | Should -Be 'resolved'
+        $verification.verifiedCount | Should -Be 1
+        $verification.stillPendingCount | Should -Be 2
+        $verification.remainingPlanCount | Should -Be 2
+    }
+}

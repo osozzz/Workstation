@@ -6,6 +6,7 @@ param(
     [ValidateSet('', 'low', 'medium')][string]$Risk = '',
     [switch]$Apply,
     [switch]$ConfirmAll,
+    [switch]$SkipVerify,
     [ValidateNotNullOrEmpty()][string]$PolicyPath,
     [ValidateNotNullOrEmpty()][string]$LogDirectory
 )
@@ -53,4 +54,33 @@ $result.log.actions | Group-Object result | ForEach-Object { Write-Host ("{0}: {
 $failures = @($result.log.actions | Where-Object result -eq 'failed')
 foreach ($failure in $failures) { Write-Host ("  failed {0}. {1}: {2}" -f $failure.order, $failure.title, $failure.reason) }
 Write-Host "Log: $($result.logPath)"
-Write-Host 'After applying updates, re-run the audit and the plan; the new plan shows what remains.'
+
+$attempted = @($result.log.actions | Where-Object { $_.result -in @('succeeded', 'failed') }).Count
+if (-not $Apply -or $attempted -eq 0) { return }
+if ($SkipVerify) {
+    Write-Host 'Verification skipped. Re-run the audit and the plan to see what remains.'
+    return
+}
+
+# Verify: audit again, rebuild the plan, and compare it with what ran. The new plan replaces the old one
+# so the next run starts from the machine's real state.
+Write-Host ''
+Write-Host 'Verifying: auditing the PC again (a few minutes)...'
+Import-Module (Join-Path $PSScriptRoot 'Core\PolicyEvaluation.Core.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'Core\UpdatePlan.Core.psm1') -Force
+$audit = & (Join-Path $PSScriptRoot 'Audit-Workstation.ps1') -IncludeWingetInventory -PassThru 6>$null
+$policyObject = ConvertFrom-WorkstationJson -Json (Get-Content -LiteralPath $PolicyPath -Encoding UTF8 -Raw)
+$newPlan = New-WorkstationUpdatePlan -Report $audit.Report -Policy $policyObject -PolicyDigest $policyDigest
+$planOutputs = Write-WorkstationUpdatePlanOutputs -Plan $newPlan -OutputDirectory (Join-Path (Split-Path -Parent $LogDirectory) 'update-plan')
+
+$verification = Get-ExecutionVerification -Log $result.log -NewPlan $newPlan
+$result.log | Add-Member -NotePropertyName verification -NotePropertyValue $verification -Force
+Write-ExecutionLog -Path $result.logPath -Log $result.log
+
+Write-Host ''
+Write-Host ("Verified: {0} updated and no longer pending. Still pending: {1}. Now resolved: {2}." -f $verification.verifiedCount, $verification.stillPendingCount, $verification.resolvedCount)
+foreach ($item in @($verification.actions | Where-Object { $_.verification -eq 'still-pending' -and $_.runResult -eq 'succeeded' })) {
+    Write-Host ("  ran but still pending {0}. {1} ({2} -> {3})" -f $item.order, $item.title, $item.currentVersion, $item.targetVersion)
+}
+Write-Host "New plan: $($planOutputs.humanReadablePath) ($($verification.remainingPlanCount) action(s) left)"
+
