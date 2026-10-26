@@ -28,6 +28,8 @@ EXPECTED_FIXTURES = {
     "wsl-missing.json",
     "editors-present.json",
     "editors-missing.json",
+    "windows-update-present.json",
+    "windows-update-failed.json",
 }
 
 FORBIDDEN_FIXTURE_MARKERS = (

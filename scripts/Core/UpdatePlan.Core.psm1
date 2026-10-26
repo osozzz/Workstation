@@ -516,6 +516,37 @@ function Get-PlanEditorActions {
     }
 }
 
+function Get-PlanWindowsUpdateActions {
+    <#
+    .SYNOPSIS
+    One manual action per pending Windows or driver update. Installing them stays with Windows Update.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][psobject]$Report)
+
+    $provider = @($Report.providers | Where-Object { $_.providerId -eq 'windows.update' }) | Select-Object -First 1
+    if ($null -eq $provider) { return }
+    $pending = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq 'windows.update.pending' } | Select-Object -First 1
+    if ($null -eq $pending) { return }
+
+    foreach ($update in @(Get-ComparisonOptionalPropertyValue -InputObject $pending.attributes -Name 'updates')) {
+        if ($null -eq $update) { continue }
+        $kb = @(Get-ComparisonOptionalPropertyValue -InputObject $update -Name 'kb' | Where-Object { [string]$_ -match '^\d+$' }) | Select-Object -First 1
+        $identity = if ($null -ne $kb) { "KB$kb" } else { [string]$update.updateId }
+        $actionId = "windows-update:$identity"
+        if ($actionId -notmatch $script:ActionIdPattern) { continue }
+
+        $isDriver = [string]$update.type -eq 'driver'
+        $mayReboot = (Get-ComparisonOptionalPropertyValue -InputObject $update -Name 'mayReboot') -eq $true
+        $note = if ($mayReboot) { ' It may need a restart.' } else { '' }
+        New-PlanAction -ActionId $actionId -Kind upgrade -SourceType windows-update -PolicyKey $null -ComponentId 'windows-update' -SubjectId $null `
+            -Title ([string]$update.title) -CurrentVersion $null -TargetVersion $null -Command $null `
+            -Risk $(if ($isDriver -or $mayReboot) { 'medium' } else { 'low' }) -Reversible $false `
+            -Message "Pending $(if ($isDriver) { 'driver' } else { 'Windows' }) update. Install it from Settings > Windows Update.$note" `
+            -Evidence @([pscustomobject][ordered]@{ providerId = 'windows.update'; componentId = 'windows-update'; evidenceId = 'windows.update.pending' })
+    }
+}
+
 function New-WorkstationUpdatePlan {
     <#
     .SYNOPSIS
@@ -535,7 +566,7 @@ function New-WorkstationUpdatePlan {
     $consolidation = @(Get-PlanConsolidationActions -Report $Report -PreferredManager $preferredManager -DeferredChocolateyIds $deferredChocolatey)
 
     $candidates = @(Get-PlanPolicyActions -Evaluation $evaluation -Report $Report) + @(Get-PlanWinGetActions -Report $Report) + @(Get-PlanChocolateyActions -Report $Report) +
-        @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report) + @(Get-PlanEditorActions -Report $Report) + $consolidation
+        @(Get-PlanWslActions -Report $Report) + @(Get-PlanNpmRegistryActions -Report $Report) + @(Get-PlanToolActions -Report $Report) + @(Get-PlanEditorActions -Report $Report) + @(Get-PlanWindowsUpdateActions -Report $Report) + $consolidation
     $hasWslUpdate = @($candidates | Where-Object { $null -ne $_ -and $_.actionId -eq 'wsl-update:wsl' }).Count -gt 0
 
     $actions = [System.Collections.Generic.List[object]]::new()

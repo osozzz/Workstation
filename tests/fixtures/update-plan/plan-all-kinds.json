@@ -19,12 +19,12 @@
     }
   },
   "summary": {
-    "actionCount": 11,
+    "actionCount": 12,
     "lowRiskCount": 7,
-    "mediumRiskCount": 3,
+    "mediumRiskCount": 4,
     "highRiskCount": 1,
     "reversibleCount": 2,
-    "manualCount": 4
+    "manualCount": 5
   },
   "actions": [
     {
@@ -259,6 +259,31 @@
     },
     {
       "order": 10,
+      "actionId": "windows-update:KB5021051",
+      "kind": "upgrade",
+      "source": {
+        "type": "windows-update",
+        "policyKey": null
+      },
+      "componentId": "windows-update",
+      "subjectId": null,
+      "title": "PowerShell v7.6.9 (x64)",
+      "currentVersion": null,
+      "targetVersion": null,
+      "command": null,
+      "risk": "medium",
+      "reversible": false,
+      "message": "Pending Windows update. Install it from Settings > Windows Update. It may need a restart.",
+      "evidence": [
+        {
+          "providerId": "windows.update",
+          "componentId": "windows-update",
+          "evidenceId": "windows.update.pending"
+        }
+      ]
+    },
+    {
+      "order": 11,
       "actionId": "wsl-update:wsl",
       "kind": "upgrade",
       "source": {
@@ -283,7 +308,7 @@
       ]
     },
     {
-      "order": 11,
+      "order": 12,
       "actionId": "policy:node.manager",
       "kind": "install",
       "source": {

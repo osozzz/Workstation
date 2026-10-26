@@ -1,0 +1,61 @@
+{
+  "providerId": "windows.update",
+  "category": "host",
+  "status": "success",
+  "observedAt": "2026-09-21T00:00:00Z",
+  "components": [
+    {
+      "componentId": "windows-update",
+      "name": "Windows Update",
+      "state": "present",
+      "installed": true,
+      "activeVersion": null,
+      "discoveredVersions": [],
+      "installations": [],
+      "commandResolutions": [],
+      "versionIntelligence": {
+        "status": "not-applicable",
+        "latestStable": null,
+        "latestLts": null,
+        "latestCurrent": null,
+        "source": null,
+        "checkedAt": null,
+        "message": null
+      }
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "evidence": [
+    {
+      "evidenceId": "windows.update.pending",
+      "type": "derived",
+      "source": "Windows Update Agent search (IsInstalled=0 and IsHidden=0)",
+      "exitCode": null,
+      "captured": "",
+      "redacted": false,
+      "attributes": {
+        "message": null,
+        "status": "known",
+        "updateCount": 1,
+        "updates": [
+          {
+            "updateId": "a1b2c3d4-0000-0000-0000-000000000000",
+            "title": "Synthetic cumulative update",
+            "kb": [
+              "5000000"
+            ],
+            "type": "software",
+            "isMandatory": false,
+            "mayReboot": true,
+            "categories": [
+              "Updates"
+            ]
+          }
+        ],
+        "online": true,
+        "reviewOnly": true
+      }
+    }
+  ]
+}

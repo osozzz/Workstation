@@ -149,7 +149,8 @@
                 "npm-registry",
                 "toolchain",
                 "consolidation",
-                "editor"
+                "editor",
+                "windows-update"
               ]
             },
             "policyKey": {
