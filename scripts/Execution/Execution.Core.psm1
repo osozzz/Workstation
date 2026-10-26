@@ -35,7 +35,7 @@ function ConvertTo-ExecutionCall {
     $sourceType = [string](Get-ExecutionProperty -InputObject (Get-ExecutionProperty -InputObject $Action -Name 'source') -Name 'type')
 
     if ([string]::IsNullOrWhiteSpace($command)) { throw 'The action is manual; it has no command to run.' }
-    if ($command -cnotmatch '^[A-Za-z0-9 ._+@/;:-]+$') { throw "The command contains characters outside the allow-list: $command" }
+    if ($command -cnotmatch '^[A-Za-z0-9 ._+@/;:=-]+$') { throw "The command contains characters outside the allow-list: $command" }
 
     $call = { param($File, $Arguments, $Elevation = $false, $Agreements = $false)
         [pscustomobject][ordered]@{ filePath = $File; arguments = @($Arguments); requiresElevation = $Elevation; acceptsAgreements = $Agreements }
@@ -74,6 +74,12 @@ function ConvertTo-ExecutionCall {
         return & $call ($match.Groups['manager'].Value.Split(' ')[0]) $arguments
     }
 
+    $match = [regex]::Match($command, '^python -m pip install pip==(?<version>\d+(?:\.\d+){1,3})$')
+    if ($match.Success) {
+        if ($match.Groups['version'].Value -cne $target) { throw "The pip version '$($match.Groups['version'].Value)' is not the action's target version '$target'." }
+        return & $call 'python' @('-m', 'pip', 'install', "pip==$($match.Groups['version'].Value)")
+    }
+
     $exact = @{
         'wsl --update'                        = @('wsl', @('--update'))
         'flutter upgrade'                     = @('flutter', @('upgrade'))
@@ -81,7 +87,6 @@ function ConvertTo-ExecutionCall {
         'flutter channel beta'                = @('flutter', @('channel', 'beta'))
         'flutter channel master'              = @('flutter', @('channel', 'master'))
         'pnpm self-update'                    = @('pnpm', @('self-update'))
-        'python -m pip install --upgrade pip' = @('python', @('-m', 'pip', 'install', '--upgrade', 'pip'))
         'uv self update'                      = @('uv', @('self', 'update'))
         'sdkmanager platform-tools'           = @('sdkmanager', @('platform-tools'))
         'sdkmanager cmdline-tools;latest'     = @('sdkmanager', @('cmdline-tools;latest'))
@@ -211,6 +216,9 @@ function Invoke-ExecutionCall {
         if (-not [string]::IsNullOrEmpty($argumentString)) { $startParameters['ArgumentList'] = $argumentString }
 
         $process = Start-Process @startParameters
+        # Windows PowerShell 5.1 reports ExitCode as $null unless the process handle is opened
+        # before the process exits; every successful update was logged as "Exit code ." without this.
+        $null = $process.Handle
         $exited = $process.WaitForExit($script:ActionTimeoutSeconds * 1000)
         if (-not $exited) {
             try { $process.Kill() } catch { }

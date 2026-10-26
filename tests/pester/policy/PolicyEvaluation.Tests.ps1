@@ -481,7 +481,7 @@ Describe 'Update plan' {
         $byId = @{}
         foreach ($action in @((Invoke-TestPlan (New-TestReport -ExtraProviders @($python, $android))).actions)) { $byId[$action.actionId] = $action }
 
-        $byId['tool-upgrade:pip'].command | Should -Be 'python -m pip install --upgrade pip'
+        $byId['tool-upgrade:pip'].command | Should -Be 'python -m pip install pip==26.2.1'
         $byId['tool-upgrade:uv'].command | Should -BeNullOrEmpty
         $byId['tool-upgrade:uv'].message | Should -Match 'package manager that installed it'
         $byId['tool-upgrade:sdkmanager'].command | Should -Be 'sdkmanager cmdline-tools;latest'

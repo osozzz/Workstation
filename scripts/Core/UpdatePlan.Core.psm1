@@ -273,10 +273,16 @@ function Get-PlanChocolateyActions {
 
         $current = [string]$upgrade.installedVersion
         $target = [string]$upgrade.availableVersion
+        $message = 'Chocolatey reports a newer version. Chocolatey upgrades need an elevated (administrator) shell.'
+        if ($packageId -match '^python3?\d*$') {
+            # Chocolatey's Python installer puts its folder first in the machine PATH, which can change
+            # the active python (3.13 replaced 3.14 on PC #1).
+            $message += ' Its installer moves its Python folder to the front of the machine PATH, which can change which python is active.'
+        }
         New-PlanAction -ActionId $actionId -Kind upgrade -SourceType chocolatey -PolicyKey $null -ComponentId $null `
             -SubjectId "choco:$packageId" -Title "Upgrade $packageId (Chocolatey)" -CurrentVersion $current -TargetVersion $target `
             -Command "choco upgrade $packageId -y" -Risk (Get-PlanUpgradeRisk -Current $current -Target $target) `
-            -Reversible $false -Message 'Chocolatey reports a newer version. Chocolatey upgrades need an elevated (administrator) shell.' -Evidence @($reference)
+            -Reversible $false -Message $message -Evidence @($reference)
     }
 }
 
@@ -351,7 +357,7 @@ function Get-PlanNpmRegistryActions {
 
 # Developer tools updated by their own commands; versions come from each tool's latest-version source.
 $script:ToolActions = @(
-    @{ ProviderId = 'python.ecosystem'; ComponentId = 'pip'; Title = 'Upgrade pip for the active Python'; Command = 'python -m pip install --upgrade pip' }
+    @{ ProviderId = 'python.ecosystem'; ComponentId = 'pip'; Title = 'Upgrade pip for the active Python'; Command = 'python -m pip install pip=={target}' }
     @{ ProviderId = 'python.ecosystem'; ComponentId = 'uv'; Title = 'Upgrade uv'; Command = 'uv self update'; RequiresEvidence = 'python.uv.install-kind' }
     @{ ProviderId = 'mobile.flutter-android'; ComponentId = 'adb'; Title = 'Upgrade Android SDK platform-tools'; Command = 'sdkmanager platform-tools' }
     @{ ProviderId = 'mobile.flutter-android'; ComponentId = 'sdkmanager'; Title = 'Upgrade Android SDK command-line tools'; Command = 'sdkmanager cmdline-tools;latest' }
@@ -373,7 +379,9 @@ function Get-PlanToolActions {
         $comparable = $current -replace '-\d+$', ''
         if ([string]::IsNullOrWhiteSpace($comparable) -or [string]::IsNullOrWhiteSpace($target) -or (Compare-PolicyVersion -Left $comparable -Right $target) -ge 0) { continue }
 
-        $command = $spec.Command
+        # Pin the version the plan reviewed; an unpinned upgrade resolves against whatever index the
+        # interpreter sees at run time (it downgraded pip 26.2.1 to 25.3 on PC #1).
+        $command = $spec.Command.Replace('{target}', $target)
         $message = "A newer $($spec.ComponentId) release is available."
         if ($spec.ContainsKey('RequiresEvidence')) {
             $kind = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq $spec.RequiresEvidence } | Select-Object -First 1
