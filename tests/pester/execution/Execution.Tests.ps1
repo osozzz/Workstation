@@ -342,3 +342,13 @@ Describe 'Rust toolchain update' {
         $call.arguments -join ' ' | Should -Be 'update stable'
     }
 }
+
+Describe 'Causes seen in the PC #1 batch' {
+    It 'explains WinGet result <Code>' -ForEach @(
+        @{ Code = -1978335090; Pattern = 'different installer technology' }
+        @{ Code = -2145844845; Pattern = 'HTTP 403' }
+        @{ Code = -1978335189; Pattern = 'no update that applies' }
+    ) {
+        (Get-ExecutionFailureDetail -Call ([pscustomobject]@{ filePath = 'winget'; arguments = @() }) -ExitCode $Code).reason | Should -Match $Pattern
+    }
+}
