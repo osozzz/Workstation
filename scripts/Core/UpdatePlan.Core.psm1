@@ -364,7 +364,8 @@ $script:ToolActions = @(
     @{ ProviderId = 'python.ecosystem'; ComponentId = 'pip'; Title = 'Upgrade pip for the active Python'; Command = 'python -m pip install pip=={target}' }
     @{ ProviderId = 'python.ecosystem'; ComponentId = 'uv'; Title = 'Upgrade uv'; Command = 'uv self update'; RequiresEvidence = 'python.uv.install-kind' }
     @{ ProviderId = 'mobile.flutter-android'; ComponentId = 'adb'; Title = 'Upgrade Android SDK platform-tools'; Command = 'sdkmanager platform-tools' }
-    @{ ProviderId = 'mobile.flutter-android'; ComponentId = 'sdkmanager'; Title = 'Upgrade Android SDK command-line tools'; Command = 'sdkmanager cmdline-tools;latest' }
+    # sdkmanager cannot replace the cmdline-tools it runs from (its own jars are locked); Android Studio can.
+    @{ ProviderId = 'mobile.flutter-android'; ComponentId = 'sdkmanager'; Title = 'Upgrade Android SDK command-line tools'; Command = $null; Note = 'sdkmanager cannot update the command-line tools it runs from; update them in Android Studio > SDK Manager > SDK Tools.' }
 )
 
 function Get-PlanToolActions {
@@ -385,8 +386,9 @@ function Get-PlanToolActions {
 
         # Pin the version the plan reviewed; an unpinned upgrade resolves against whatever index the
         # interpreter sees at run time (it downgraded pip 26.2.1 to 25.3 on PC #1).
-        $command = $spec.Command.Replace('{target}', $target)
+        $command = if ($null -ne $spec.Command) { $spec.Command.Replace('{target}', $target) } else { $null }
         $message = "A newer $($spec.ComponentId) release is available."
+        if ($spec.ContainsKey('Note')) { $message = "$message $($spec.Note)" }
         if ($spec.ContainsKey('RequiresEvidence')) {
             $kind = @(Get-ComparisonOptionalPropertyValue -InputObject $provider -Name 'evidence') | Where-Object { $null -ne $_ -and $_.evidenceId -eq $spec.RequiresEvidence } | Select-Object -First 1
             if ($null -eq $kind -or (Get-ComparisonOptionalPropertyValue -InputObject $kind.attributes -Name 'selfUpdateSupported') -ne $true) {

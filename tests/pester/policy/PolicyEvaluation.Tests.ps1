@@ -497,7 +497,8 @@ Describe 'Update plan' {
         $byId['tool-upgrade:pip'].command | Should -Be 'python -m pip install pip==26.2.1'
         $byId['tool-upgrade:uv'].command | Should -BeNullOrEmpty
         $byId['tool-upgrade:uv'].message | Should -Match 'package manager that installed it'
-        $byId['tool-upgrade:sdkmanager'].command | Should -Be 'sdkmanager cmdline-tools;latest'
+        $byId['tool-upgrade:sdkmanager'].command | Should -BeNullOrEmpty
+        $byId['tool-upgrade:sdkmanager'].message | Should -Match 'Android Studio'
         $byId['tool-upgrade:sdkmanager'].risk | Should -Be 'medium'
         # adb 37.0.1-14910828 is the 37.0.1 release plus a build number, not behind 37.0.1.
         $byId.ContainsKey('tool-upgrade:adb') | Should -BeFalse

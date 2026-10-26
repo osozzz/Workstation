@@ -260,10 +260,12 @@ function Write-ExecutionLog {
 $script:WinGetResults = @{
     -1978335226 = @{ result = 'failed'; reason = 'The installer failed (WinGet 0x8A150006).' }
     -1978335212 = @{ result = 'failed'; reason = 'WinGet found no installed package with this ID (0x8A150014).' }
-    -1978335189 = @{ result = 'skipped'; reason = 'Already up to date; there was nothing to install (WinGet 0x8A15002B).' }
+    -1978335189 = @{ result = 'skipped'; reason = 'WinGet found no update that applies to this installation (0x8A15002B); update it from the app itself.' }
+    -1978335090 = @{ result = 'failed'; reason = 'The new version uses a different installer technology than the installed one; uninstall it and install the new version (WinGet 0x8A15008E).' }
     -1978334975 = @{ result = 'failed'; reason = 'The application is running; close it and retry (WinGet 0x8A150101).' }
     -1978334974 = @{ result = 'failed'; reason = 'Another installation is in progress; retry when it finishes (WinGet 0x8A150102).' }
     -1978334967 = @{ result = 'succeeded'; reason = 'Installed; restart Windows to finish (WinGet 0x8A150109).' }
+    -2145844845 = @{ result = 'failed'; reason = 'The vendor download server refused the download (HTTP 403, 0x80190193); retry later.' }
 }
 
 # Apps that block their own update while they run. Matched against the WinGet package ID.
