@@ -255,6 +255,159 @@ function Write-ExecutionLog {
     [IO.File]::WriteAllText($Path, $json + "`n", [Text.UTF8Encoding]::new($false))
 }
 
+# WinGet result codes the executor explains (0x8A15xxxx, as signed 32-bit values).
+$script:WinGetResults = @{
+    -1978335226 = @{ result = 'failed'; reason = 'The installer failed (WinGet 0x8A150006).' }
+    -1978335212 = @{ result = 'failed'; reason = 'WinGet found no installed package with this ID (0x8A150014).' }
+    -1978335189 = @{ result = 'skipped'; reason = 'Already up to date; there was nothing to install (WinGet 0x8A15002B).' }
+    -1978334975 = @{ result = 'failed'; reason = 'The application is running; close it and retry (WinGet 0x8A150101).' }
+    -1978334974 = @{ result = 'failed'; reason = 'Another installation is in progress; retry when it finishes (WinGet 0x8A150102).' }
+    -1978334967 = @{ result = 'succeeded'; reason = 'Installed; restart Windows to finish (WinGet 0x8A150109).' }
+}
+
+# Apps that block their own update while they run. Matched against the WinGet package ID.
+$script:BlockingProcesses = @(
+    @{ Package = '^Git\.Git$'; Processes = @('bash', 'mintty', 'git-bash'); Name = 'Git Bash windows' }
+    @{ Package = '^Docker\.DockerDesktop$'; Processes = @('Docker Desktop'); Name = 'Docker Desktop' }
+    @{ Package = '^Google\.Chrome'; Processes = @('chrome'); Name = 'Google Chrome' }
+    @{ Package = '^Mozilla\.Firefox'; Processes = @('firefox'); Name = 'Firefox' }
+    @{ Package = '^Zen-Team\.Zen-Browser'; Processes = @('zen'); Name = 'Zen Browser' }
+    @{ Package = '^Zoom\.Zoom'; Processes = @('Zoom'); Name = 'Zoom' }
+    @{ Package = '^Postman\.Postman$'; Processes = @('Postman'); Name = 'Postman' }
+    @{ Package = '^Notion\.Notion$'; Processes = @('Notion'); Name = 'Notion' }
+    @{ Package = '^Notion\.NotionCalendar$'; Processes = @('Notion Calendar'); Name = 'Notion Calendar' }
+    @{ Package = '^Figma\.Figma$'; Processes = @('Figma'); Name = 'Figma' }
+    @{ Package = '^Anysphere\.Cursor$'; Processes = @('Cursor'); Name = 'Cursor' }
+    @{ Package = '^Anthropic\.Claude$'; Processes = @('claude'); Name = 'Claude' }
+    @{ Package = '^Codeium\.Windsurf$'; Processes = @('Windsurf'); Name = 'Windsurf' }
+    @{ Package = '^ByteDance\.Trae$'; Processes = @('Trae'); Name = 'Trae' }
+    @{ Package = '^Microsoft\.VisualStudioCode$'; Processes = @('Code'); Name = 'Visual Studio Code' }
+    @{ Package = '^Microsoft\.WindowsTerminal$'; Processes = @('WindowsTerminal'); Name = 'Windows Terminal' }
+    @{ Package = '^Microsoft\.PowerShell$'; Processes = @('pwsh'); Name = 'PowerShell 7 windows' }
+)
+
+function Get-ExecutionBlockingApps {
+    <#
+    .SYNOPSIS
+    For the WinGet actions about to run, the running apps that would make their installer fail.
+    #>
+    param(
+        [AllowEmptyCollection()][object[]]$Calls = @(),
+        [AllowEmptyCollection()][string[]]$RunningProcesses = @()
+    )
+
+    $running = @{}
+    foreach ($name in $RunningProcesses) { $running[$name.ToLowerInvariant()] = $true }
+    $found = [System.Collections.Generic.List[object]]::new()
+    foreach ($call in $Calls) {
+        if ($call.filePath -ne 'winget') { continue }
+        $id = [string]$call.arguments[([array]::IndexOf([string[]]$call.arguments, '--id') + 1)]
+        foreach ($rule in $script:BlockingProcesses) {
+            if ($id -notmatch $rule.Package) { continue }
+            if (@($rule.Processes | Where-Object { $running.ContainsKey($_.ToLowerInvariant()) }).Count -gt 0) {
+                $found.Add([pscustomobject]@{ packageId = $id; app = $rule.Name })
+            }
+        }
+    }
+    return $found.ToArray()
+}
+
+function Get-WinGetDownloader {
+    <#
+    .SYNOPSIS
+    The downloader WinGet is configured to use ('default' when unset, $null when unreadable).
+    Delivery Optimization ('default'/'do') can stall at 0 bytes; 'wininet' avoids it.
+    #>
+    param([string]$SettingsPath = (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json'))
+
+    if (-not (Test-Path -LiteralPath $SettingsPath)) { return 'default' }
+    try {
+        # settings.json allows // comments.
+        $text = (Get-Content -LiteralPath $SettingsPath -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*//' }) -join "`n"
+        $settings = $text | ConvertFrom-Json
+        $network = $settings.PSObject.Properties['network']
+        if ($null -eq $network -or $null -eq $network.Value.PSObject.Properties['downloader']) { return 'default' }
+        return [string]$network.Value.downloader
+    }
+    catch {
+        return $null
+    }
+}
+
+function Set-WinGetDownloader {
+    <#
+    .SYNOPSIS
+    Sets network.downloader to wininet in WinGet's settings.json, after a backup. Other settings are kept;
+    // comments are not (WinGet does not need them). Returns the backup path, or $null when no file existed.
+    #>
+    param([string]$SettingsPath = (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\LocalState\settings.json'))
+
+    $backup = $null
+    $settings = [pscustomobject]@{}
+    if (Test-Path -LiteralPath $SettingsPath) {
+        $backup = "$SettingsPath.$(Get-Date -Format yyyyMMdd-HHmmss).bak"
+        Copy-Item -LiteralPath $SettingsPath -Destination $backup
+        $text = (Get-Content -LiteralPath $SettingsPath -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*//' }) -join "`n"
+        if (-not [string]::IsNullOrWhiteSpace($text)) { $settings = $text | ConvertFrom-Json }
+    }
+
+    if ($null -eq $settings.PSObject.Properties['network']) {
+        $settings | Add-Member -NotePropertyName network -NotePropertyValue ([pscustomobject]@{})
+    }
+    if ($null -eq $settings.network.PSObject.Properties['downloader']) {
+        $settings.network | Add-Member -NotePropertyName downloader -NotePropertyValue 'wininet'
+    }
+    else {
+        $settings.network.downloader = 'wininet'
+    }
+
+    [IO.Directory]::CreateDirectory((Split-Path -Parent $SettingsPath)) | Out-Null
+    [IO.File]::WriteAllText($SettingsPath, ($settings | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
+    return $backup
+}
+
+function Get-ExecutionFailureDetail {
+    <#
+    .SYNOPSIS
+    Classifies a finished call: known WinGet results, the cause in the installer log, stalled downloads.
+    Returns @{ result; reason }.
+    #>
+    param(
+        [Parameter(Mandatory)][psobject]$Call,
+        [AllowNull()][object]$ExitCode,
+        [bool]$TimedOut = $false,
+        [AllowNull()][string]$Output = ''
+    )
+
+    $lines = @(([string]$Output) -split '\r?\n' | Where-Object { $_.Trim() })
+    $last = if ($lines.Count -gt 0) { $lines[-1] } else { '' }
+
+    if ($TimedOut) {
+        if ($Call.filePath -eq 'winget' -and $last -match '(?i)^\s*(Downloading|Descargando)\b') {
+            return @{ result = 'failed'; reason = "The download stalled and timed out after $($script:ActionTimeoutSeconds) seconds. WinGet's Delivery Optimization downloader can hang; set network.downloader to wininet (winget settings) and retry." }
+        }
+        return @{ result = 'failed'; reason = "Timed out after $($script:ActionTimeoutSeconds) seconds; the process was stopped. Last output: $($last.Trim())" }
+    }
+    if ($null -eq $ExitCode -or [int]$ExitCode -eq 0) { return @{ result = 'succeeded'; reason = $null } }
+
+    $known = $null
+    if ($Call.filePath -eq 'winget' -and $script:WinGetResults.ContainsKey([int]$ExitCode)) { $known = $script:WinGetResults[[int]$ExitCode] }
+    $result = if ($null -ne $known) { $known.result } else { 'failed' }
+    $reason = if ($null -ne $known) { $known.reason } else { "Exit code $ExitCode." }
+
+    # WinGet prints the installer's own log path; its last lines usually name the cause.
+    $logMatch = [regex]::Match([string]$Output, '[A-Za-z]:\\[^\r\n"<>|]+?\.log')
+    if ($result -eq 'failed' -and $logMatch.Success -and (Test-Path -LiteralPath $logMatch.Value)) {
+        $installerLog = @(Get-Content -LiteralPath $logMatch.Value -Encoding UTF8 -Tail 60 -ErrorAction SilentlyContinue)
+        $blocking = @($installerLog | ForEach-Object { if ($_ -match '^\s*(\S+\.exe) \(PID \d+\)') { $Matches[1] } } | Select-Object -Unique)
+        if ($blocking.Count -gt 0) {
+            $reason += " The installer stopped because these programs were using it: $($blocking -join ', '). Close them and retry."
+        }
+        $reason += " Installer log: $($logMatch.Value)"
+    }
+    return @{ result = $result; reason = $reason }
+}
+
 function Invoke-WorkstationUpdate {
     <#
     .SYNOPSIS
@@ -283,6 +436,8 @@ function Invoke-WorkstationUpdate {
         [scriptblock]$BatchConfirmer,
         [scriptblock]$Runner = { param($Call) Invoke-ExecutionCall -Call $Call },
         [scriptblock]$Elevated = { Test-ExecutionElevated },
+        [scriptblock]$ProcessLister = { @(Get-Process | ForEach-Object ProcessName) },
+        [scriptblock]$DownloaderCheck = { Get-WinGetDownloader },
         [DateTimeOffset]$Now = [DateTimeOffset]::Now
     )
 
@@ -342,6 +497,28 @@ function Invoke-WorkstationUpdate {
         $runnable.Add([pscustomobject]@{ item = $item; call = $call; entry = $entry })
     }
 
+    # Preflight: what will make an action fail before it starts.
+    $calls = @($runnable | ForEach-Object { $_.call })
+    $log | Add-Member -NotePropertyName preflight -NotePropertyValue ([pscustomobject][ordered]@{ blockingApps = @(); winGetDownloader = $null })
+    if ($calls.Count -gt 0) {
+        $blockingApps = @(Get-ExecutionBlockingApps -Calls $calls -RunningProcesses @(& $ProcessLister))
+        $log.preflight.blockingApps = $blockingApps
+        if ($blockingApps.Count -gt 0) {
+            Write-Host ''
+            Write-Host 'Close these apps first, or their updates will fail:'
+            foreach ($app in $blockingApps) { Write-Host "   - $($app.app) ($($app.packageId))" }
+        }
+        if (@($calls | Where-Object { $_.filePath -eq 'winget' }).Count -gt 0) {
+            $downloader = & $DownloaderCheck
+            $log.preflight.winGetDownloader = $downloader
+            if ($downloader -ne 'wininet') {
+                Write-Host ''
+                Write-Host 'WinGet downloads through Delivery Optimization, which can stall at 0 bytes. To avoid it, run "winget settings" and add: "network": { "downloader": "wininet" }'
+            }
+        }
+        Write-ExecutionLog -Path $logPath -Log $log
+    }
+
     if ($Apply -and $ConfirmAll -and $runnable.Count -gt 0) {
         Write-Host ''
         Write-Host "$($runnable.Count) action(s) will run without asking again. Failures are recorded and the remaining actions still run."
@@ -376,13 +553,15 @@ function Invoke-WorkstationUpdate {
             $output = [string]$outcome.output
             $entry.outputTail = if ($output.Length -gt $script:OutputTailLength) { $output.Substring($output.Length - $script:OutputTailLength) } else { $output }
 
-            if ($outcome.timedOut) { $entry.result = 'failed'; $entry.reason = "Timed out after $($script:ActionTimeoutSeconds) seconds; the process was stopped." }
-            elseif (-not $outcome.found) { $entry.result = 'failed'; $entry.reason = "Command '$($candidate.call.filePath)' was not found." }
-            elseif ($outcome.exitCode -ne 0) { $entry.result = 'failed'; $entry.reason = "Exit code $($outcome.exitCode)." }
-            else { $entry.result = 'succeeded' }
+            if (-not $outcome.found) { $entry.result = 'failed'; $entry.reason = "Command '$($candidate.call.filePath)' was not found." }
+            else {
+                $detail = Get-ExecutionFailureDetail -Call $candidate.call -ExitCode $outcome.exitCode -TimedOut ([bool]$outcome.timedOut) -Output $output
+                $entry.result = $detail.result
+                $entry.reason = $detail.reason
+            }
 
             Write-ExecutionLog -Path $logPath -Log $log
-            if ($entry.result -ne 'failed') { Write-Host '   Done.'; continue }
+            if ($entry.result -ne 'failed') { Write-Host $(if ($entry.reason) { "   Done. $($entry.reason)" } else { '   Done.' }); continue }
 
             if ($ConfirmAll) {
                 Write-Host "   Failed: $($entry.reason) Continuing with the next action."
@@ -404,5 +583,9 @@ Export-ModuleMember -Function @(
     'Select-ExecutionAction',
     'Get-ExecutionFileDigest',
     'Invoke-ExecutionCall',
+    'Get-ExecutionFailureDetail',
+    'Get-ExecutionBlockingApps',
+    'Get-WinGetDownloader',
+    'Set-WinGetDownloader',
     'Invoke-WorkstationUpdate'
 )

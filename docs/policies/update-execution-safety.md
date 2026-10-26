@@ -53,6 +53,12 @@ WinGet calls add `--accept-package-agreements --accept-source-agreements --disab
 - Each command runs with its output written to files and an empty standard input. The executor waits only for the process it started, so a child process left running by a tool (for example the Dart processes `flutter upgrade` starts) cannot keep an action running after the update finished, and a prompt receives end-of-input instead of waiting. On timeout the process is stopped and its partial output is kept in the log.
 - Interrupting with Ctrl+C stops after the current action. Later actions are not started.
 
+## Preflight and failure explanations
+
+- Before anything runs, the executor lists running apps that block their own update (for example Git Bash windows for Git, Docker Desktop for Docker) and warns when WinGet still downloads through Delivery Optimization, which can stall at 0 bytes.
+- A failed action's reason names the cause when it can be known: known WinGet result codes, the programs the installer log says were in use, the installer log path, or a stalled download. WinGet's "already up to date" result is recorded as skipped, and "restart to finish" as succeeded.
+- `Update-Workstation.ps1 -FixWinGetDownloader` sets WinGet's `network.downloader` to `wininet` after an explicit yes, backing up `settings.json` first. It is the only setting the executor writes.
+
 ## Execution log
 
 - Each run, including a dry run, writes `reports/update-log/<timestamp>.json` before the first action and updates it after every action. The log records the plan digest, the selected actions, the exact command, start and end times, exit code, a bounded output tail, and the result (`succeeded`, `failed`, `skipped`, or `not-run`).
@@ -61,7 +67,7 @@ WinGet calls add `--accept-package-agreements --accept-source-agreements --disab
 
 ## Never
 
-- Uninstall software, or change PATH or environment variables.
+- Uninstall software, or change PATH or environment variables. The only configuration the executor writes is WinGet's downloader, with `-FixWinGetDownloader` and an explicit yes.
 - Change Git repositories, project files, or lockfiles.
 - Run manual actions, high-risk actions, or commands outside the allow-list.
 - Run without the operator's confirmation, per action or for the whole listed batch.

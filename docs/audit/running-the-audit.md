@@ -75,6 +75,8 @@ To update everything at once, open the terminal as administrator (so Chocolatey 
 .\Run-Update.cmd reports\update-plan\update-plan.json -Risk medium -Apply -ConfirmAll
 ```
 
+Before the first run, close the apps the preview lists. If it warns about Delivery Optimization, run `.\scripts\Update-Workstation.ps1 -FixWinGetDownloader` once (it asks first).
+
 This is the only step that changes the PC, and it follows `../policies/update-execution-safety.md`. Without `-Apply` it only previews. With `-Apply` it asks before every action and stops at the first failure; with `-ConfirmAll` it shows the full list, asks you to type the number of actions once, and keeps going past failures, listing them at the end. Manual and high-risk actions never run. Chocolatey actions run only from an elevated (administrator) shell. Plans older than 24 hours, or built from a different policy, are refused. Each run writes a log to `reports\update-log\`. Afterwards, audit and plan again; the new plan shows what remains.
 
 ## 7. Optional: compare with another PC
