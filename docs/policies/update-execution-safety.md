@@ -30,6 +30,7 @@ Only these command shapes run. The executor parses each one from the plan's `com
 | `wsl --update` | Exact text. |
 | `pnpm self-update` | Exact text. |
 | `python -m pip install pip==<version>` | `<version>` equals the action's `targetVersion`; runs the active `python`. An unpinned upgrade is not allowed. |
+| `rustup update stable` | Exact text. |
 | `uv self update` | Exact text; only when uv was installed with its standalone installer. |
 | `sdkmanager platform-tools` | Exact text. |
 | `sdkmanager cmdline-tools;latest` | Exact text; passed as one argument. |

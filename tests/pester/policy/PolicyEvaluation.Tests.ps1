@@ -122,6 +122,19 @@ Describe 'Track rules' {
         $finding.observed.latestLts | Should -Be '24.21.0'
     }
 
+    It 'evaluates the <Key> track and plans <Command>' -ForEach @(
+        @{ Key = 'python.defaultTrack'; Component = 'python'; Installed = '3.13.17'; Latest = '3.15.1'; Command = $null }
+        @{ Key = 'dotnet.defaultTrack'; Component = 'dotnet-sdk'; Installed = '9.0.311'; Latest = '10.0.204'; Command = $null }
+        @{ Key = 'rust.defaultTrack'; Component = 'rustc'; Installed = '1.98.0'; Latest = '1.99.1'; Command = 'rustup update stable' }
+        @{ Key = 'go.defaultTrack'; Component = 'go'; Installed = '1.26.9'; Latest = '1.27.3'; Command = $null }
+    ) {
+        $report = New-TestReport -Components @(New-TestComponent -Id $Component -Version $Installed -Intelligence (New-TestIntelligence -Stable $Latest))
+        (Get-TestFinding (Invoke-TestEvaluation $report) $Key).status | Should -Be 'deviation'
+        $action = @((New-WorkstationUpdatePlan -Report $report -Policy (New-TestPolicy) -PolicyDigest $script:digest).actions | Where-Object actionId -eq "policy:$Key")[0]
+        $action.targetVersion | Should -Be $Latest
+        $action.command | Should -Be $Command
+    }
+
     It 'is unknown when latest-version information is unavailable' {
         $report = New-TestReport -Components @(New-TestComponent -Id flutter -Version '3.44.1' -Channel stable -Intelligence ([pscustomobject]@{ status = 'unavailable' }))
         $finding = Get-TestFinding (Invoke-TestEvaluation $report) 'flutter.sdkTrack'

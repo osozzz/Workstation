@@ -565,7 +565,82 @@ function New-AuditLatestVersionIntelligence {
     return New-AuditVersionIntelligence -Status $failedStatus -LatestStable $null -LatestLts $null -LatestCurrent $null -Source $source -CheckedAt $checkedAt -Message $failedMessage
 }
 
+function Get-LatestDotNetSdkVersion {
+    <#
+    .SYNOPSIS
+    Newest SDK of the supported, non-preview channels in the .NET releases index.
+    #>
+    param([AllowNull()][object]$Data)
+
+    $sdks = @($Data.'releases-index' | Where-Object { $_.'support-phase' -in @('active', 'maintenance') -and [string]$_.'latest-sdk' -match '^\d+(\.\d+){2}$' } |
+            ForEach-Object { [string]$_.'latest-sdk' })
+    return ($sdks | Sort-Object { [version]$_ } -Descending | Select-Object -First 1)
+}
+
+function Get-LatestGoVersion {
+    <#
+    .SYNOPSIS
+    First stable release in go.dev/dl/?mode=json (newest first), without the "go" prefix.
+    #>
+    param([AllowNull()][object]$Data)
+
+    $release = @($Data | Where-Object { $_.stable -eq $true }) | Select-Object -First 1
+    if ($null -eq $release) { return $null }
+    return ([string]$release.version) -replace '^go', ''
+}
+
+function Get-LatestPythonVersion {
+    <#
+    .SYNOPSIS
+    Latest patch of the newest released cycle in endoflife.date's Python list (newest cycle first).
+    #>
+    param([AllowNull()][object]$Data, [string]$Today = (Get-Date).ToString('yyyy-MM-dd'))
+
+    $cycle = @($Data | Where-Object { [string]$_.releaseDate -le $Today -and [string]$_.latest -match '^\d+\.\d+\.\d+$' }) | Select-Object -First 1
+    if ($null -eq $cycle) { return $null }
+    return [string]$cycle.latest
+}
+
+function Set-AuditComponentLatestVersion {
+    <#
+    .SYNOPSIS
+    For an installed component, reads its latest stable version from a JSON source and sets its version
+    intelligence; records the source as evidence. Does nothing when the component is absent.
+    .PARAMETER Read
+    Receives the parsed JSON and returns the latest stable version text, or $null.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$Context,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Components,
+        [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Evidence,
+        [Parameter(Mandatory)][string]$ComponentId,
+        [Parameter(Mandatory)][string]$Source,
+        [Parameter(Mandatory)][uri]$Uri,
+        [Parameter(Mandatory)][string]$EvidenceId,
+        [Parameter(Mandatory)][scriptblock]$Read,
+        [Parameter(Mandatory)][string]$Message,
+        [ValidateRange(256, 1048576)][int]$MaximumResponseBytes = 262144
+    )
+
+    $component = $Components | Where-Object { $_.componentId -eq $ComponentId -and $_.state -in @('present', 'partial') } | Select-Object -First 1
+    if ($null -eq $component) { return }
+
+    $sourceResult = Invoke-AuditContextVersionSource -Context $Context -Source $Source -Uri $Uri -MaximumResponseBytes $MaximumResponseBytes
+    $Evidence.Add((New-AuditEvidence -EvidenceId $EvidenceId -Type api -Source $Source -Captured $null -Attributes (Get-AuditVersionSourceEvidenceAttributes -SourceResult $sourceResult)))
+    $parsed = ConvertFrom-AuditVersionSourceJson -SourceResult $sourceResult
+    $latest = $null
+    if ($parsed.status -eq 'known') {
+        try { $latest = [string](& $Read $parsed.data) } catch { $latest = $null }
+    }
+    $component.versionIntelligence = New-AuditLatestVersionIntelligence -SourceResult $sourceResult -LatestStable $latest -Message $Message
+}
+
 Export-ModuleMember -Function @(
+    'Set-AuditComponentLatestVersion',
+    'Get-LatestDotNetSdkVersion',
+    'Get-LatestGoVersion',
+    'Get-LatestPythonVersion',
     'Invoke-AuditContextVersionSource',
     'New-AuditLatestVersionIntelligence',
     'New-AuditVersionIntelligence',

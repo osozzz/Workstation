@@ -559,6 +559,12 @@ $components.Add([pscustomobject][ordered]@{
     versionIntelligence = New-NotApplicableVersionIntelligence
 })
 
+# Latest stable .NET SDK from the official release index (preview and RC channels excluded).
+Import-Module (Join-Path $PSScriptRoot '..\Core\VersionIntelligence.Core.psm1') -Force
+Set-AuditComponentLatestVersion -Context $Context -Components $components -Evidence $evidence -ComponentId 'dotnet-sdk' `
+    -Source 'dotnet-releases-index' -Uri 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json' `
+    -EvidenceId 'dotnet.version-intelligence.sdk-source' -Message 'Latest stable .NET SDK across supported channels.' -Read { param($Data) Get-LatestDotNetSdkVersion -Data $Data }
+
 $status = Get-AuditProviderStatus -Warnings $warnings.ToArray() -Errors $errors.ToArray() -Partial:$hasPartial
 
 return [pscustomobject][ordered]@{
