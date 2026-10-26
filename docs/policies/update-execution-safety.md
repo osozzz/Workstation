@@ -63,7 +63,7 @@ WinGet calls add `--accept-package-agreements --accept-source-agreements --disab
 
 - Each run, including a dry run, writes `reports/update-log/<timestamp>.json` before the first action and updates it after every action. The log records the plan digest, the selected actions, the exact command, start and end times, exit code, a bounded output tail, and the result (`succeeded`, `failed`, `skipped`, or `not-run`).
 - The log is local and ignored by Git, like audit reports. It may contain machine-specific output.
-- After a run, re-audit and re-plan. The new plan is the source of truth for what remains.
+- After an `-Apply` run that attempted actions, the executor verifies the result: it audits the PC again, rebuilds the plan, writes it to `reports/update-plan/`, and records in the log, for each action, whether it is `verified` (ran and no longer planned), `still-pending`, or `resolved` (no longer planned although it did not run). `-SkipVerify` skips this; the new plan is then made by hand. The new plan is the source of truth for what remains.
 
 ## Never
 

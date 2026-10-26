@@ -408,6 +408,51 @@ function Get-ExecutionFailureDetail {
     return @{ result = $result; reason = $reason }
 }
 
+function Get-ExecutionVerification {
+    <#
+    .SYNOPSIS
+    Compares a run log with the plan built from a fresh audit after the run.
+    An action that ran and no longer appears in the new plan is verified; one that is still planned is still pending.
+    #>
+    param(
+        [Parameter(Mandatory)][psobject]$Log,
+        [Parameter(Mandatory)][psobject]$NewPlan
+    )
+
+    $pending = @{}
+    foreach ($action in @($NewPlan.actions)) { $pending[[string]$action.actionId] = $action }
+
+    $entries = foreach ($entry in @($Log.actions)) {
+        $still = $pending.ContainsKey([string]$entry.actionId)
+        $verification = if ($entry.result -eq 'succeeded') {
+            if ($still) { 'still-pending' } else { 'verified' }
+        }
+        elseif ($still) { 'still-pending' }
+        else { 'resolved' }
+
+        [pscustomobject][ordered]@{
+            order          = $entry.order
+            actionId       = $entry.actionId
+            title          = $entry.title
+            runResult      = $entry.result
+            verification   = $verification
+            currentVersion = $(if ($still) { $pending[[string]$entry.actionId].currentVersion } else { $null })
+            targetVersion  = $(if ($still) { $pending[[string]$entry.actionId].targetVersion } else { $null })
+        }
+    }
+    $entries = @($entries)
+
+    return [pscustomobject][ordered]@{
+        checkedAt           = [DateTimeOffset]::Now.ToString('o')
+        reportGeneratedAt   = $NewPlan.report.generatedAt
+        verifiedCount       = @($entries | Where-Object verification -eq 'verified').Count
+        stillPendingCount   = @($entries | Where-Object verification -eq 'still-pending').Count
+        resolvedCount       = @($entries | Where-Object verification -eq 'resolved').Count
+        remainingPlanCount  = @($NewPlan.actions).Count
+        actions             = $entries
+    }
+}
+
 function Invoke-WorkstationUpdate {
     <#
     .SYNOPSIS
@@ -587,5 +632,7 @@ Export-ModuleMember -Function @(
     'Get-ExecutionBlockingApps',
     'Get-WinGetDownloader',
     'Set-WinGetDownloader',
+    'Get-ExecutionVerification',
+    'Write-ExecutionLog',
     'Invoke-WorkstationUpdate'
 )
