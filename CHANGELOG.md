@@ -4,6 +4,17 @@ All notable changes to this workstation toolkit are documented here.
 
 ## Unreleased
 
+## 2.1.1 — 2026-10-25
+
+### Fixed
+
+- Executed updates are no longer logged as failed. On Windows PowerShell 5.1, which `Run-Update.cmd` uses, the exit code was always empty, so every successful update was counted as a failure.
+- The pip action pins the reviewed version (`python -m pip install pip==<version>`). An unpinned upgrade in an elevated shell downgraded pip from 26.2.1 to 25.3.
+
+### Changed
+
+- Chocolatey Python upgrades warn that their installer can change which python is active.
+
 ## 2.1.0 — 2026-10-24
 
 ### Added
