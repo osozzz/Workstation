@@ -19,8 +19,8 @@
     }
   },
   "summary": {
-    "actionCount": 10,
-    "lowRiskCount": 6,
+    "actionCount": 11,
+    "lowRiskCount": 7,
     "mediumRiskCount": 3,
     "highRiskCount": 1,
     "reversibleCount": 2,
@@ -54,6 +54,31 @@
     },
     {
       "order": 2,
+      "actionId": "editor-extensions:vscode",
+      "kind": "upgrade",
+      "source": {
+        "type": "editor",
+        "policyKey": null
+      },
+      "componentId": "vscode",
+      "subjectId": null,
+      "title": "Update Visual Studio Code extensions",
+      "currentVersion": null,
+      "targetVersion": null,
+      "command": "code --update-extensions",
+      "risk": "low",
+      "reversible": false,
+      "message": "Visual Studio Code has 205 extension(s); its CLI updates the ones with a newer version and leaves the rest. Reload the editor afterwards.",
+      "evidence": [
+        {
+          "providerId": "editors.extensions",
+          "componentId": "vscode",
+          "evidenceId": "editors.vscode.extensions.normalized"
+        }
+      ]
+    },
+    {
+      "order": 3,
       "actionId": "npm-global-upgrade:zcatalyst-cli",
       "kind": "upgrade",
       "source": {
@@ -78,7 +103,7 @@
       ]
     },
     {
-      "order": 3,
+      "order": 4,
       "actionId": "policy:android.preferAndroidHome",
       "kind": "configure",
       "source": {
@@ -103,7 +128,7 @@
       ]
     },
     {
-      "order": 4,
+      "order": 5,
       "actionId": "policy:path.allowMissingEntries",
       "kind": "cleanup",
       "source": {
@@ -128,7 +153,7 @@
       ]
     },
     {
-      "order": 5,
+      "order": 6,
       "actionId": "tool-upgrade:uv",
       "kind": "upgrade",
       "source": {
@@ -153,7 +178,7 @@
       ]
     },
     {
-      "order": 6,
+      "order": 7,
       "actionId": "winget-upgrade:Git.Git",
       "kind": "upgrade",
       "source": {
@@ -178,7 +203,7 @@
       ]
     },
     {
-      "order": 7,
+      "order": 8,
       "actionId": "consolidate-managers:python",
       "kind": "cleanup",
       "source": {
@@ -208,7 +233,7 @@
       ]
     },
     {
-      "order": 8,
+      "order": 9,
       "actionId": "policy:node.defaultTrack",
       "kind": "upgrade",
       "source": {
@@ -233,7 +258,7 @@
       ]
     },
     {
-      "order": 9,
+      "order": 10,
       "actionId": "wsl-update:wsl",
       "kind": "upgrade",
       "source": {
@@ -258,7 +283,7 @@
       ]
     },
     {
-      "order": 10,
+      "order": 11,
       "actionId": "policy:node.manager",
       "kind": "install",
       "source": {

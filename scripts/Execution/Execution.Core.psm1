@@ -89,6 +89,10 @@ function ConvertTo-ExecutionCall {
         'pnpm self-update'                    = @('pnpm', @('self-update'))
         'uv self update'                      = @('uv', @('self', 'update'))
         'rustup update stable'                = @('rustup', @('update', 'stable'))
+        'code --update-extensions'            = @('code', @('--update-extensions'))
+        'cursor --update-extensions'          = @('cursor', @('--update-extensions'))
+        'windsurf --update-extensions'        = @('windsurf', @('--update-extensions'))
+        'trae --update-extensions'            = @('trae', @('--update-extensions'))
         'sdkmanager platform-tools'           = @('sdkmanager', @('platform-tools'))
         'sdkmanager cmdline-tools;latest'     = @('sdkmanager', @('cmdline-tools;latest'))
     }
@@ -428,7 +432,8 @@ function Get-ExecutionVerification {
     $entries = foreach ($entry in @($Log.actions)) {
         $still = $pending.ContainsKey([string]$entry.actionId)
         $verification = if ($entry.result -eq 'succeeded') {
-            if ($still) { 'still-pending' } else { 'verified' }
+            # Editor extension updates are maintenance actions planned on every run; a success verifies them.
+            if ($still -and -not ([string]$entry.actionId).StartsWith('editor-extensions:')) { 'still-pending' } else { 'verified' }
         }
         elseif ($still) { 'still-pending' }
         else { 'resolved' }

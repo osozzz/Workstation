@@ -179,7 +179,7 @@ throw 'Synthetic early provider failure for Sprint 5 isolation validation.'
 
     Assert-True ($report.schemaVersion -eq '1.0.0') 'Integrated audit must preserve report schema 1.0.0.'
     Assert-True ($report.audit.mode -eq 'read-only') 'Integrated Sprint 5 audit must remain read-only.'
-    Assert-True ($report.summary.providerCount -eq 23) 'Expected 22 built-in providers plus one controlled failure provider.'
+    Assert-True ($report.summary.providerCount -eq 24) 'Expected 23 built-in providers plus one controlled failure provider.'
 
     $syntheticFailure = Get-Provider -Report $report -ProviderId 'synthetic.version-intelligence-failure'
     Assert-True ($null -ne $syntheticFailure) 'Controlled early failure provider must appear in the report.'
