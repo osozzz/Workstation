@@ -10,7 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [{ "label": "main", "title": "Workstation", "width": 1180, "height": 780, "minWidth": 760, "minHeight": 560 }],
+    "windows": [{ "label": "main", "title": "Workstation", "width": 1240, "height": 820, "minWidth": 760, "minHeight": 560, "decorations": false }],
     "security": {
       "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
     }
