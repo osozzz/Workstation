@@ -599,7 +599,9 @@ function Invoke-WorkstationUpdate {
                 Write-Host "Running $($item.order). $($item.title)"
             }
 
+            # Written before the action runs, so the desktop app can show what is running now.
             $entry.startedAt = [DateTimeOffset]::Now.ToString('o')
+            Write-ExecutionLog -Path $logPath -Log $log
             $outcome = & $Runner $candidate.call
             $entry.finishedAt = [DateTimeOffset]::Now.ToString('o')
             $entry.exitCode = $outcome.exitCode

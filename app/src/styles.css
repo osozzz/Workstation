@@ -1,0 +1,541 @@
+:root {
+  /* Dark is the main design: PCB solder mask, silkscreen ink, copper traces. */
+  --board: #10211e;
+  --board-raised: #16302b;
+  --board-line: #27473f;
+  --ink: #e8efe9;
+  --ink-soft: #a7bab1;
+  --copper: #d9a05b;
+  --copper-ink: #10211e;
+  --low: #6fcfb0;
+  --medium: #e8c15a;
+  --high: #f0746a;
+  --manual: #5d7a70;
+
+  --font: "Schibsted Grotesk Variable", "Segoe UI", sans-serif;
+  --code: "Fragment Mono", Consolas, monospace;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Bare board: pale substrate, dark silkscreen, oxidized copper. */
+    --board: #eef3ef;
+    --board-raised: #ffffff;
+    --board-line: #cfdbd3;
+    --ink: #12302a;
+    --ink-soft: #4d6a60;
+    --copper: #9a6322;
+    --copper-ink: #ffffff;
+    --low: #1d8a68;
+    --medium: #a97a06;
+    --high: #c8402f;
+    --manual: #93aaa0;
+    color-scheme: light;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--board);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+code {
+  font-family: var(--code);
+  font-size: 0.87em;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  height: 100%;
+}
+
+/* Navigation */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 22px 12px;
+  border-right: 1px solid var(--board-line);
+}
+
+.rail-host {
+  padding: 0 12px 20px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rail-host small {
+  display: block;
+  color: var(--ink-soft);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.rail-link {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-soft);
+  text-align: left;
+  cursor: pointer;
+}
+
+.rail-link:hover {
+  color: var(--ink);
+}
+
+.rail-link[aria-current="page"] {
+  background: var(--board-raised);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Page */
+
+.page {
+  overflow-y: auto;
+  padding: 44px 48px 64px;
+}
+
+.page-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.headline {
+  font-size: clamp(34px, 4.4vw, 52px);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+
+.subline {
+  margin-top: 10px;
+  color: var(--ink-soft);
+  font-size: 17px;
+}
+
+.page-title {
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.section-title {
+  margin-bottom: 10px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--copper);
+  background: var(--board-raised);
+}
+
+.button {
+  padding: 8px 16px;
+  border: 1px solid var(--board-line);
+  border-radius: 6px;
+  background: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--copper);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  border-color: var(--copper);
+  background: var(--copper);
+  color: var(--copper-ink);
+}
+
+/* The update strip: every pending update is one tick, grouped by where it comes from. */
+
+.strip {
+  display: flex;
+  gap: 18px;
+  margin-top: 36px;
+}
+
+/* A group grows with its number of updates, but is never narrower than its label. */
+.strip-group {
+  flex: var(--count) 0 auto;
+}
+
+.strip-ticks {
+  display: flex;
+  gap: 3px;
+  height: 72px;
+}
+
+.tick {
+  flex: 1 1 0;
+  min-width: 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--tick);
+  cursor: pointer;
+  transition: transform 120ms ease-out;
+}
+
+.tick:hover,
+.tick:focus-visible {
+  transform: scaleY(1.14);
+}
+
+.tick[data-risk="low"] {
+  --tick: var(--low);
+}
+
+.tick[data-risk="medium"] {
+  --tick: var(--medium);
+}
+
+.tick[data-risk="high"] {
+  --tick: var(--high);
+}
+
+/* A manual update is drawn as an outline: it stays until you do it. */
+.tick[data-manual="true"] {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--manual);
+}
+
+.tick[data-state="done"] {
+  background: var(--ink-soft);
+  opacity: 0.35;
+}
+
+/* The one running update breathes; it answers the operator's own action. */
+.tick[data-state="running"] {
+  animation: running 1.4s ease-in-out infinite;
+}
+
+@keyframes running {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.tick[data-state="failed"] {
+  --tick: var(--high);
+  background: repeating-linear-gradient(135deg, var(--high) 0 3px, transparent 3px 6px);
+}
+
+.strip-label {
+  margin-top: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.strip-label b {
+  font-weight: 600;
+}
+
+.strip-label span {
+  color: var(--ink-soft);
+}
+
+.tick-detail {
+  min-height: 24px;
+  margin-top: 14px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.legend i {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: -2px;
+}
+
+/* Lower half of the overview */
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 40px;
+  margin-top: 44px;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  padding: 11px 0;
+  border-top: 1px solid var(--board-line);
+}
+
+.row p {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.row-title {
+  font-weight: 500;
+}
+
+.row-side {
+  color: var(--ink-soft);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.versions {
+  font-family: var(--code);
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.versions b {
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.score strong {
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.score span {
+  color: var(--ink-soft);
+}
+
+/* Updates */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0 8px;
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+
+.chip {
+  padding: 5px 12px;
+  border: 1px solid var(--board-line);
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--copper);
+  color: var(--copper);
+}
+
+.update {
+  display: grid;
+  grid-template-columns: 20px 9px minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--board-line);
+}
+
+.update input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--copper);
+}
+
+.update .risk-bar {
+  width: 5px;
+  height: 22px;
+  border-radius: 2px;
+}
+
+.update details {
+  grid-column: 3 / -1;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.update summary {
+  cursor: pointer;
+}
+
+.update code {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.confirm {
+  width: min(620px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--board-line);
+  border-radius: 10px;
+  background: var(--board-raised);
+  color: var(--ink);
+}
+
+.confirm::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.confirm p {
+  margin-top: 10px;
+  color: var(--ink-soft);
+}
+
+.confirm-list {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.confirm-list p {
+  margin-top: 0;
+}
+
+.confirm-list code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* History */
+
+.result {
+  font-size: 14px;
+}
+
+.result[data-result="succeeded"] {
+  color: var(--low);
+}
+
+.result[data-result="failed"] {
+  color: var(--high);
+}
+
+.empty {
+  margin-top: 28px;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 760px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--board-line);
+    padding: 10px 12px;
+  }
+
+  .rail-host {
+    width: 100%;
+    padding-bottom: 6px;
+  }
+
+  .page {
+    padding: 28px 20px 48px;
+  }
+
+  .strip {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

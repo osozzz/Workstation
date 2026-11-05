@@ -659,7 +659,8 @@ $evidence.Add((New-AuditEvidence -EvidenceId 'mobile.environment' -Type environm
     androidSdkRootConfigured = -not [string]::IsNullOrWhiteSpace($androidSdkRoot)
 }))
 
-$flutterResult = Invoke-AuditCommand -Command 'flutter' -Arguments @('--version') -TimeoutSeconds 25
+# The first call of the day can pass 25 seconds, while later calls take about 2.
+$flutterResult = Invoke-AuditCommand -Command 'flutter' -Arguments @('--version') -TimeoutSeconds 60
 $flutterChannel = if ($flutterResult.Found) { Get-FlutterChannel -Text $flutterResult.Captured } else { $null }
 $flutterVersion = if ($flutterResult.Found) { Get-VersionRecordFromText -Text $flutterResult.Captured -Channel $flutterChannel } else { $null }
 

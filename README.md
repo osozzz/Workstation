@@ -45,6 +45,19 @@ The read-only audit covers Windows and PowerShell, WinGet applications and updat
 
 Optional project and Git discovery needs `config\workstation.local.json`; see `config/README.md`. The step-by-step procedure for auditing and evaluating a PC is in `docs/audit/running-the-audit.md`.
 
+## Desktop app
+
+`app/` is a Tauri app that does the same work without a terminal: it audits the PC, lists the updates, installs the ones you select, and shows live progress and past runs. It only starts the scripts in `scripts/` and reads their reports, so every rule in `docs/policies/update-execution-safety.md` still applies.
+
+```powershell
+cd app
+pnpm install
+pnpm tauri dev     # run it from this repository
+pnpm tauri build   # build the installer into app\src-tauri\target\release\bundle\nsis
+```
+
+Building needs Node.js, pnpm, and Rust. The installed app needs no terminal, but it does not include `config\workstation.local.json`, so it skips local project and Git discovery.
+
 ## Roadmap
 
 - `v0.1.0` — Initial Audit Skeleton

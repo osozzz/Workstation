@@ -1184,11 +1184,37 @@ jobs:
           ./tests/javascript-version-intelligence/validate_javascript_version_intelligence.ps1
           ./tests/winget-upgrade-intelligence/validate_winget_upgrade_intelligence.ps1
 
+  # The desktop app: typecheck, frontend build, Rust build, and installer.
+  desktop-app:
+    name: desktop-app
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Install pnpm
+        shell: pwsh
+        run: |
+          npm install --global pnpm@12.16.1
+
+      - name: Install app dependencies
+        shell: pwsh
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Build the app and its installer
+        shell: pwsh
+        run: |
+          pnpm tauri build
+
   # Stable required check for the main ruleset: passes only when every area passes.
   validate:
     name: validate
     if: always()
-    needs: [static-analysis, pester, contracts, providers, comparison, integration, windows-powershell]
+    needs: [static-analysis, pester, contracts, providers, comparison, integration, windows-powershell, desktop-app]
     runs-on: ubuntu-latest
     steps:
       - name: Require every hardening area to pass

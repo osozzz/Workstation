@@ -7,6 +7,7 @@ param(
     [switch]$Apply,
     [switch]$ConfirmAll,
     [switch]$SkipVerify,
+    [ValidateRange(1, 10000)][int]$ConfirmedCount,
     [ValidateNotNullOrEmpty()][string]$PolicyPath,
     [ValidateNotNullOrEmpty()][string]$LogDirectory
 )
@@ -46,7 +47,14 @@ if (-not (Test-Path -LiteralPath $Plan -PathType Leaf)) { throw "Update plan was
 $planObject = ConvertFrom-WorkstationJson -Json (Get-Content -LiteralPath $Plan -Encoding UTF8 -Raw)
 $policyDigest = Get-ExecutionFileDigest -Path ([IO.Path]::GetFullPath($PolicyPath))
 
-$result = Invoke-WorkstationUpdate -Plan $planObject -PolicyDigest $policyDigest -Action $Action -Risk $Risk -Apply:$Apply -ConfirmAll:$ConfirmAll -LogDirectory $LogDirectory
+# -ConfirmedCount carries a confirmation the operator already gave in the desktop app, after seeing the
+# list there. It goes through the same check as typing the number: a mismatch runs nothing.
+$updateParameters = @{ Plan = $planObject; PolicyDigest = $policyDigest; Action = $Action; Risk = $Risk; Apply = $Apply; ConfirmAll = $ConfirmAll; LogDirectory = $LogDirectory }
+if ($ConfirmedCount -gt 0) {
+    $updateParameters['ConfirmAll'] = $true
+    $updateParameters['BatchConfirmer'] = { param($Count) [string]$ConfirmedCount }.GetNewClosure()
+}
+$result = Invoke-WorkstationUpdate @updateParameters
 
 Write-Host ''
 if (-not $Apply) { Write-Host 'Dry run: nothing was changed. Add -Apply to run the selected actions.' }

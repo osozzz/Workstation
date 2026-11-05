@@ -20,3 +20,12 @@ Thumbs.db
 
 # Python bytecode
 __pycache__/
+
+# Local browser tooling
+.playwright-mcp/
+
+# Desktop app build output
+app/node_modules/
+app/dist/
+app/src-tauri/target/
+app/src-tauri/gen/
