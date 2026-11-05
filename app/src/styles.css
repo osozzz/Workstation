@@ -204,6 +204,7 @@ code {
 
 .strip {
   display: flex;
+  flex-wrap: wrap;
   gap: 18px;
   margin-top: 36px;
 }
@@ -344,6 +345,7 @@ code {
 
 .row-title {
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 .row-side {

@@ -56,7 +56,7 @@ pnpm tauri dev     # run it from this repository
 pnpm tauri build   # build the installer into app\src-tauri\target\release\bundle\nsis
 ```
 
-Building needs Node.js, pnpm, and Rust. The installed app needs no terminal, but it does not include `config\workstation.local.json`, so it skips local project and Git discovery.
+Building needs Node.js, pnpm, and Rust. The installed app needs no terminal. Choose your project folders in Settings, so its audits include local project and Git discovery. It keeps those settings and its reports in `%LOCALAPPDATA%\com.osozzz.workstation`, so they survive app updates.
 
 ## Roadmap
 

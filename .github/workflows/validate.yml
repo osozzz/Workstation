@@ -1210,6 +1210,11 @@ jobs:
         run: |
           pnpm tauri build
 
+      - name: Test the app's settings rules
+        shell: pwsh
+        run: |
+          cargo test --manifest-path src-tauri/Cargo.toml
+
   # Stable required check for the main ruleset: passes only when every area passes.
   validate:
     name: validate

@@ -9,7 +9,8 @@ param(
     [switch]$SkipVerify,
     [ValidateRange(1, 10000)][int]$ConfirmedCount,
     [ValidateNotNullOrEmpty()][string]$PolicyPath,
-    [ValidateNotNullOrEmpty()][string]$LogDirectory
+    [ValidateNotNullOrEmpty()][string]$LogDirectory,
+    [ValidateNotNullOrEmpty()][string]$DataDirectory
 )
 
 # Applies selected update-plan actions under docs/policies/update-execution-safety.md.
@@ -23,7 +24,8 @@ Import-Module (Join-Path $PSScriptRoot 'Execution\Execution.Core.psm1') -Force
 
 # Resolved here, not in param(): Windows PowerShell 5.1 leaves $PSScriptRoot empty in -File defaults.
 if ([string]::IsNullOrWhiteSpace($PolicyPath)) { $PolicyPath = Join-Path $PSScriptRoot '..\config\workstation.policy.json' }
-if ([string]::IsNullOrWhiteSpace($LogDirectory)) { $LogDirectory = Join-Path $PSScriptRoot '..\reports\update-log' }
+if ([string]::IsNullOrWhiteSpace($DataDirectory)) { $DataDirectory = Join-Path $PSScriptRoot '..' }
+if ([string]::IsNullOrWhiteSpace($LogDirectory)) { $LogDirectory = Join-Path $DataDirectory 'reports\update-log' }
 
 # -FixWinGetDownloader: the documented fix for stalled WinGet downloads, applied only after a yes.
 if ($FixWinGetDownloader) {
@@ -76,7 +78,7 @@ Write-Host ''
 Write-Host 'Verifying: auditing the PC again (a few minutes)...'
 Import-Module (Join-Path $PSScriptRoot 'Core\PolicyEvaluation.Core.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'Core\UpdatePlan.Core.psm1') -Force
-$audit = & (Join-Path $PSScriptRoot 'Audit-Workstation.ps1') -IncludeWingetInventory -PassThru 6>$null
+$audit = & (Join-Path $PSScriptRoot 'Audit-Workstation.ps1') -OutputDirectory (Join-Path $DataDirectory 'reports') -LocalConfigurationPath (Join-Path $DataDirectory 'config\workstation.local.json') -IncludeWingetInventory -PassThru 6>$null
 $policyObject = ConvertFrom-WorkstationJson -Json (Get-Content -LiteralPath $PolicyPath -Encoding UTF8 -Raw)
 $newPlan = New-WorkstationUpdatePlan -Report $audit.Report -Policy $policyObject -PolicyDigest $policyDigest
 $planOutputs = Write-WorkstationUpdatePlanOutputs -Plan $newPlan -OutputDirectory (Join-Path (Split-Path -Parent $LogDirectory) 'update-plan')

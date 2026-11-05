@@ -19,7 +19,7 @@ Pinned PowerShell modules are installed through `.github/scripts/Install-PinnedM
 | `comparison` | Comparison contract, every comparison category, report outputs, the audit, comparison, evaluation and plan launchers, the Sprint 6 gate | `../architecture/comparison-contract.md` |
 | `integration` | Real audit smoke tests on the runner, plus the controlled Sprint 4 integration audit validated by the Sprint 2, 3, and 4 suites | `../architecture/audit-provider-contract.md` |
 | `windows-powershell` | Project/Git discovery and version-intelligence validators under `shell: powershell` | `../policies/powershell-runtime.md` |
-| `desktop-app` | Desktop app typecheck, frontend and Rust builds, and the installer | `../../README.md` |
+| `desktop-app` | Desktop app typecheck, frontend and Rust builds, the installer, and the Rust tests for the project folder rules | `../../README.md` |
 
 ## Proof that gates can fail
 

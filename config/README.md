@@ -4,6 +4,8 @@ Machine-specific Workstation settings belong in `config/workstation.local.json`.
 
 That file is intentionally ignored by Git and must never contain shared baseline data.
 
+The installed desktop app keeps its own copy in `%LOCALAPPDATA%\com.osozzz.workstation\config\workstation.local.json`. Its Settings screen changes `projects.developmentRoots` there and keeps the other settings.
+
 Start from:
 
 `config/workstation.local.example.json`

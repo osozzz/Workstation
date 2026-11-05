@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ageInHours, describeAge, inApp, loadLatestLog, loadSnapshot, refresh, runUpdate, sourceNames, sourceOrder, type Action, type ActionResult, type LogAction, type Risk, type RunLog, type Snapshot } from "./data";
+import { ageInHours, describeAge, inApp, loadFolders, loadLatestLog, loadSnapshot, pickFolder, refresh, runUpdate, saveFolders, sourceNames, sourceOrder, type Action, type ActionResult, type LogAction, type Risk, type RunLog, type Snapshot } from "./data";
 
-type View = "overview" | "updates" | "history";
+type View = "overview" | "updates" | "history" | "settings";
 
 const riskColor: Record<Risk, string> = { low: "var(--low)", medium: "var(--medium)", high: "var(--high)" };
 
@@ -86,14 +86,16 @@ export function App() {
         <NavLink label="Overview" view="overview" current={view} onSelect={setView} />
         <NavLink label="Updates" count={ready} view="updates" current={view} onSelect={setView} />
         <NavLink label="History" view="history" current={view} onSelect={setView} />
+        <NavLink label="Settings" view="settings" current={view} onSelect={setView} />
       </nav>
       <main className="page">
         <div className="page-inner">
           {error && <p className="notice" role="alert">{error}</p>}
           {!error && snapshot === null && <p className="empty">Reading the last audit…</p>}
-          {snapshot && view === "overview" && <Overview snapshot={snapshot} run={run} auditing={auditing} onAudit={audit} onOpenUpdates={() => setView("updates")} />}
+          {snapshot && view === "overview" && <Overview snapshot={snapshot} run={run} auditing={auditing} onAudit={audit} onOpenUpdates={() => setView("updates")} onOpenSettings={() => setView("settings")} />}
           {snapshot && view === "updates" && <Updates snapshot={snapshot} busy={run !== null || auditing} onInstall={install} />}
           {snapshot && view === "history" && <History logs={snapshot.logs} />}
+          {view === "settings" && <Settings onError={setError} />}
         </div>
       </main>
     </div>
@@ -185,8 +187,8 @@ function RunRows({ log }: { log: RunLog }) {
   );
 }
 
-function Overview(props: { snapshot: Snapshot; run: Run | null; auditing: boolean; onAudit(): void; onOpenUpdates(): void }) {
-  const { snapshot, run, auditing, onAudit, onOpenUpdates } = props;
+function Overview(props: { snapshot: Snapshot; run: Run | null; auditing: boolean; onAudit(): void; onOpenUpdates(): void; onOpenSettings(): void }) {
+  const { snapshot, run, auditing, onAudit, onOpenUpdates, onOpenSettings } = props;
   const { plan, evaluation } = snapshot;
   const auditButton = (
     <button className="button" disabled={!inApp || auditing || run !== null} onClick={onAudit}>
@@ -197,8 +199,11 @@ function Overview(props: { snapshot: Snapshot; run: Run | null; auditing: boolea
     return (
       <>
         <h1 className="headline">Audit this PC to see what can be updated</h1>
-        <p className="subline">The audit only reads; it changes nothing.</p>
-        <div style={{ marginTop: 24 }}>{auditButton}</div>
+        <p className="subline">The audit only reads; it changes nothing. It checks projects only in the folders you choose.</p>
+        <div className="toolbar">
+          {auditButton}
+          <button className="button" onClick={onOpenSettings}>Choose project folders</button>
+        </div>
       </>
     );
   }
@@ -413,6 +418,53 @@ function History({ logs }: { logs: RunLog[] }) {
           </section>
         );
       })}
+    </>
+  );
+}
+
+function Settings({ onError }: { onError(message: string | null): void }) {
+  const [folders, setFolders] = useState<string[] | null>(null);
+  const [changed, setChanged] = useState(false);
+  const report = (reason: unknown) => onError(String(reason));
+
+  useEffect(() => {
+    void loadFolders().then(setFolders, report);
+  }, []);
+
+  const save = async (next: string[]) => {
+    onError(null);
+    await saveFolders(next);
+    setFolders(next);
+    setChanged(true);
+  };
+
+  const add = async () => {
+    const folder = await pickFolder();
+    if (folder && !folders?.includes(folder)) await save([...(folders ?? []), folder]);
+  };
+
+  return (
+    <>
+      <h1 className="page-title">Settings</h1>
+      <section style={{ marginTop: 28 }}>
+        <h2 className="section-title">Project folders</h2>
+        <p className="subline" style={{ fontSize: 15, marginTop: 0, marginBottom: 12 }}>
+          The audit checks projects and Git repositories in these folders, and nowhere else.
+        </p>
+        <ul className="rows">
+          {folders?.map((folder) => (
+            <li className="row" key={folder}>
+              <span className="row-title">{folder}</span>
+              <button className="button" aria-label={`Remove ${folder}`} onClick={() => save(folders.filter((f) => f !== folder)).catch(report)}>Remove</button>
+            </li>
+          ))}
+        </ul>
+        {folders?.length === 0 && <p className="empty" style={{ marginTop: 0 }}>No folders yet, so the audit skips projects and Git repositories.</p>}
+        <div className="toolbar">
+          <button className="button" disabled={!inApp || folders === null} onClick={() => add().catch(report)}>Add folder</button>
+        </div>
+        {changed && <p className="empty" style={{ marginTop: 8 }}>Audit this PC from Overview to apply this change.</p>}
+      </section>
     </>
   );
 }

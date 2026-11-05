@@ -76,6 +76,10 @@ export async function loadSnapshot(): Promise<Snapshot> {
 export const refresh = () => invoke<void>("refresh");
 export const runUpdate = (actionIds: string[]) => invoke<void>("update", { actionIds });
 
+export const loadFolders = () => (inApp ? invoke<string[]>("read_data", { name: "folders" }) : Promise.resolve<string[]>([]));
+export const saveFolders = (folders: string[]) => invoke<void>("save_folders", { folders });
+export const pickFolder = () => invoke<string | null>("pick_folder");
+
 export async function loadLatestLog(): Promise<RunLog | null> {
   const logs = await read<RunLog[]>("logs");
   return logs?.find((log) => log.mode !== "dry-run") ?? null;
